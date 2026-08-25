@@ -1,0 +1,36 @@
+# Week 4/5, training configuration
+
+seed: 42
+
+pretrain:
+  epochs: 200
+  batch_size: 64
+  lr: 3.0e-4
+  weight_decay: 0.05
+  warmup_epochs: 10
+  log_every: 10
+  checkpoint_dir: "checkpoints/pretrain"
+  # Collapse-detection thresholds (Week 4's "highest-risk" checkpoint):
+  # embedding std below this, averaged over a window, flags collapse.
+  collapse_std_threshold: 0.05
+  collapse_window: 20
+  # Gradient clipping: required in practice, not optional, an early run on
+  # the real 175-species labeled corpus (not synthetic test data) diverged
+  # from loss=0.02 to loss=24 over 200 epochs without this. Set to null/0 to
+  # disable (not recommended).
+  grad_clip_norm: 1.0
+
+finetune:
+  epochs: 100
+  batch_size: 32
+  lr: 1.0e-4
+  weight_decay: 0.01
+  freeze_encoder_epochs: 5
+  checkpoint_dir: "checkpoints/finetune"
+  train_frac: 0.7
+  val_frac: 0.15
+  test_frac: 0.15
+
+benchmark:
+  doubling_time_split_hours: 5.0
+  metrics: ["rmse", "r2", "spearman"]

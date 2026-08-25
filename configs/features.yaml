@@ -1,0 +1,39 @@
+# Week 2, feature engineering configuration
+
+cub:
+  # gRodon reproduces Codon Usage Bias between the highly-expressed ribosomal
+  # protein gene set and the whole genome, via the MILC statistic (Supek &
+  # Vlahovicek 2005), consistent with gRodon2's implementation.
+  highly_expressed_gene_regex: "ribosomal protein"
+  statistic: "MILC"
+
+genome_traits:
+  include:
+    - genome_size_bp
+    - gc_content
+    - rrna_16s_count
+    - rrna_23s_count
+    - rrna_5s_count
+    - trna_count
+    - regulatory_gene_count
+
+phylogeny:
+  # GTDB-distance branch: rooted patristic distance matrix from the GTDB
+  # reference tree, reduced via classical MDS (PCoA) to a fixed-length vector.
+  embedding_dim: 16
+  method: "classical_mds"
+
+rrna16s:
+  # Separate baseline branch (not the primary phylogeny signal): pairwise
+  # 16S percent-identity distance, reduced the same way as the GTDB branch
+  # so the two are directly comparable.
+  embedding_dim: 16
+  method: "classical_mds"
+  kmer_k: 6  # k-mer profile used as a fast alignment-free distance proxy
+
+temperature:
+  # Arrhenius correction of raw growth rate to a common reference temperature.
+  # mu_ref = mu_raw * exp(-Ea/R * (1/T_ref - 1/T_obs))
+  reference_temp_k: 293.15  # 20 C
+  activation_energy_j_per_mol: 65000.0  # canonical microbial Ea (~65 kJ/mol)
+  gas_constant_j_per_mol_k: 8.314
