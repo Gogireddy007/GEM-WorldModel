@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Week 6: linear/nonlinear probing of the joint latent for oligotroph vs.
+"""Linear/nonlinear probing of the joint latent for oligotroph vs.
 copiotroph status (heuristic proxy label, see eval/probing.py caveat),
 followed by activation intervention on the most predictive dimension.
 """
@@ -50,7 +50,7 @@ def main():
     if len(set(labels)) < 2 or len(df) < 10:
         logger.warning(
             f"only {len(df)} samples / {len(set(labels))} label classes, probing results below are illustrative "
-            "only, not statistically meaningful at this sample size. Scale up scripts/week2_build_features.py "
+            "only, not statistically meaningful at this sample size. Scale up scripts/build_features.py "
             "for a real result."
         )
 

@@ -1,12 +1,12 @@
-"""Week 4: self-supervised masked-branch pretraining, with explicit
-collapse-detection since the plan calls this the highest-risk step in the
+"""Self-supervised masked-branch pretraining, with explicit
+collapse-detection since this is the highest-risk step in the
 whole project.
 
 Collapse is flagged when the mean per-dimension std of target-encoder outputs
 (embedding_std, see models/losses.py), averaged over a trailing window, drops
 below `collapse_std_threshold`. This is a monitoring signal, not an automatic
 fix, a collapsing run should be stopped and its hyperparameters (EMA decay,
-LR, latent_dim) revisited, per the plan's Week 4 buffer.
+LR, latent_dim) revisited.
 
 The opposite failure mode, representation EXPLOSION rather than collapse, is real too: an early run on the actual 175-species labeled corpus (not the
 synthetic data used in unit tests) diverged from loss=0.02 to loss=24 over

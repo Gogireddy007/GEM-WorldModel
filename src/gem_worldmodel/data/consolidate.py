@@ -1,9 +1,9 @@
-"""Week 1 deliverable: cross-reference genome + growth-rate + GTDB placement.
+"""Cross-reference genome + growth-rate + GTDB placement.
 
 Produces two tables under data/processed/:
   - labeled_corpus.csv:   accessions with a growth-rate label AND a GTDB tree
                            placement (used for supervised fine-tuning/benchmark)
-  - unlabeled_corpus.csv: GEM MAGs used as extra pretraining-only data (Week 4)
+  - unlabeled_corpus.csv: GEM MAGs used as extra pretraining-only data
 
 This determines the final *usable* sample size, not every gRodon/Madin
 accession has a GTDB placement, and that gap is exactly what this step is

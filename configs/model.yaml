@@ -1,4 +1,4 @@
-# Week 3, JEPA architecture configuration
+# JEPA architecture configuration
 
 branches:
   # Names must match the keys produced by features/*.py and consumed by

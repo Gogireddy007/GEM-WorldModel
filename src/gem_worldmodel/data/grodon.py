@@ -71,7 +71,7 @@ def fetch_accession_species_map(cfg: dict | None = None) -> pd.DataFrame:
 def load_lab_added_species(cfg: dict | None = None) -> pd.DataFrame:
     """Load lab-added species ("Iyanu's data") if the CSV has been placed locally.
 
-    Returns an empty frame with the expected schema if the file doesn't exist yet, this is an optional supplement, not a hard dependency of Week 1.
+    Returns an empty frame with the expected schema if the file doesn't exist yet, this is an optional supplement, not a hard dependency of the acquisition step.
     """
     cfg = cfg or load_config("data")
     path = resolve_path(cfg["lab_added_species"]["local_csv"])

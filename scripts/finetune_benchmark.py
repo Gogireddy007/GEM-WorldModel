@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Week 5: fine-tune the growth-rate head on the pretrained context encoder,
+"""Fine-tune the growth-rate head on the pretrained context encoder,
 reproduce gRodon/Phydon baselines on the same split, and run the stratified
 (<5h / >=5h) benchmark.
 """
@@ -63,7 +63,7 @@ def main():
     logger.info(f"n_test={len(test_idx)}")
     print(table.to_string(index=False))
 
-    out_path = processed_dir / "week5_benchmark.csv"
+    out_path = processed_dir / "benchmark_results.csv"
     table.to_csv(out_path, index=False)
     logger.info(f"wrote {out_path}")
 

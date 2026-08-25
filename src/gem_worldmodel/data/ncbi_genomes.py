@@ -1,5 +1,5 @@
 """Fetch NCBI RefSeq/GenBank genome assemblies (full genomic FASTA + annotated
-CDS FASTA) by accession, for feature extraction in Week 2.
+CDS FASTA) by accession, for feature extraction.
 
 Uses NCBI Entrez esearch/esummary (db=assembly) to resolve an accession to its
 FTP directory, then downloads the standard `_genomic.fna.gz` (used for

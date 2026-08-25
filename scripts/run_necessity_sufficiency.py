@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""Week 7: necessity/sufficiency masking per branch, split by <5h vs >=5h
-doubling time, cross-checked against the Week 5 benchmark, the plan's
-actual deliverable: the regime-specific growth-control answer.
+"""Necessity/sufficiency masking per branch, split by <5h vs >=5h
+doubling time, cross-checked against the benchmark run, this is the actual
+target result: the regime-specific growth-control answer.
 """
 
 import pickle
@@ -47,7 +47,7 @@ def main():
     if fast_mask.sum() < 5 or slow_mask.sum() < 5:
         logger.warning(
             "fewer than 5 samples in one regime at this sample size, necessity/sufficiency numbers below "
-            "are illustrative only. Scale up scripts/week2_build_features.py for a real result."
+            "are illustrative only. Scale up scripts/build_features.py for a real result."
         )
 
     y_true_log = target_log.numpy()

@@ -1,5 +1,5 @@
-"""Week 3 required checks: EMA update rule correctness, and confirmation that
-gradients genuinely don't reach the target encoder.
+"""Core JEPA checks: EMA update rule correctness, and confirmation that
+gradients don't reach the target encoder.
 """
 
 import torch

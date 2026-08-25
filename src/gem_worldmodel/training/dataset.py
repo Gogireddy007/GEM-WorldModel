@@ -1,4 +1,4 @@
-"""Turns a Week-2 feature table into per-branch torch tensors: column-median
+"""Turns a feature table into per-branch torch tensors: column-median
 imputation (genomic traits can have NaN rRNA/tRNA counts when barrnap/
 tRNAscan-SE aren't installed, see features/genome_traits.py) followed by
 z-score standardization, fit on the given table.

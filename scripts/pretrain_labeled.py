@@ -1,11 +1,9 @@
 #!/usr/bin/env python
-"""Week 4: self-supervised masked-branch pretraining on the Week 2 feature
-table (real data). This runs on the labeled sample only, the plan's "full
-corpus including species without a labeled growth rate" additionally
-requires building features for the unlabeled GEM MAG corpus
-(data/processed/unlabeled_corpus.csv), which needs a much larger genome-
-download+feature-extraction pass than this session's smoke run covers; see
-README "Known limitations" for how to extend this script to that corpus.
+"""Self-supervised masked-branch pretraining on the feature table built by
+build_features.py (real data). This runs on the labeled sample only. Pretraining
+on the "full corpus including species without a labeled growth rate" needs
+features built for the unlabeled GEM MAG corpus too
+(data/processed/unlabeled_corpus.csv), see pretrain_full.py for that.
 """
 
 import pickle

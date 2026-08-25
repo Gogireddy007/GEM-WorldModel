@@ -1,4 +1,4 @@
-"""Week 6: linear/nonlinear probing of the joint latent for oligotroph vs.
+"""Linear/nonlinear probing of the joint latent for oligotroph vs.
 copiotroph status, plus activation intervention.
 
 One thing to watch out for: oligotroph status is partly defined by the

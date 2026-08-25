@@ -2,10 +2,9 @@
 
 portal.nersc.gov/GEM serves 52,515 metagenome-assembled genomes (MAGs) with a
 ~12MB genome_metadata.tsv and per-genome .fna.gz files under genomes/fna/.
-Most of these MAGs have no measured growth rate, this is deliberately used
-as the large *unlabeled* corpus for self-supervised pretraining (Week 4:
-"including species without a labeled growth rate, since pretraining doesn't
-require labels").
+Most of these MAGs have no measured growth rate, so they're used
+as the large unlabeled corpus for self-supervised pretraining, which doesn't
+need labels in the first place.
 
 The lab's Dropbox folder of GEM genomes is treated as an alternative source
 for the same underlying genomes; `fetch_dropbox_folder_zip` downloads it as a
@@ -91,7 +90,7 @@ def select_unlabeled_pretrain_genomes(cfg: dict | None = None) -> pd.DataFrame:
 def fetch_dropbox_folder_zip(cfg: dict | None = None, timeout: int = 600) -> Path:
     """Download the lab's shared Dropbox folder of GEM genomes as a single zip.
 
-    Not called automatically by the Week 1 pipeline, the folder's total size
+    Not called automatically by the data pipeline, the folder's total size
     is unknown ahead of time. Call this explicitly when you want that bulk
     archive as an alternative/supplement to the NERSC portal fetch above.
     """

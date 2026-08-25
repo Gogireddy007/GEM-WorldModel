@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Week 2: build the feature table for a stratified sample of the labeled
+"""Build the feature table for a stratified sample of the labeled
 corpus (real genomes/sequences from NCBI + GTDB), bounded sample size for a
 tractable smoke run; increase `--n-per-class` to scale up.
 """

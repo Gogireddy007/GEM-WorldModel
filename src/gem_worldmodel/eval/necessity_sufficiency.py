@@ -1,6 +1,6 @@
-"""Week 7: necessity/sufficiency masking per branch (CUB/genomic-traits vs.
+"""Necessity/sufficiency masking per branch (CUB/genomic-traits vs.
 GTDB-distance vs. 16S baseline), compared separately for <5h and >5h doubling
-time, cross-checked against the Week 5 benchmark.
+time, cross-checked against the benchmark run.
 
 Necessity: zero out one branch at inference time (replace with its batch
 mean, i.e. "uninformative"), measure the performance drop. A branch whose

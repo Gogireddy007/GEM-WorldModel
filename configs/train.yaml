@@ -1,4 +1,4 @@
-# Week 4/5, training configuration
+# Training configuration
 
 seed: 42
 
@@ -10,7 +10,7 @@ pretrain:
   warmup_epochs: 10
   log_every: 10
   checkpoint_dir: "checkpoints/pretrain"
-  # Collapse-detection thresholds (Week 4's "highest-risk" checkpoint):
+  # Collapse-detection thresholds (this is the highest-risk step in the whole pipeline):
   # embedding std below this, averaged over a window, flags collapse.
   collapse_std_threshold: 0.05
   collapse_window: 20
