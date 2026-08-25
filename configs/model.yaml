@@ -1,0 +1,38 @@
+# Week 3, JEPA architecture configuration
+
+branches:
+  # Names must match the keys produced by features/*.py and consumed by
+  # models/masking.py. Order defines input concatenation order per-branch.
+  - name: genomic_traits
+    input_dim: 7
+  - name: gtdb_distance
+    input_dim: 16
+  - name: rrna16s
+    input_dim: 16
+
+encoder:
+  hidden_dim: 128
+  latent_dim: 64
+  num_layers: 3
+  dropout: 0.1
+
+target_encoder:
+  ema_decay: 0.996  # xi <- ema_decay * xi + (1 - ema_decay) * theta
+
+predictor:
+  hidden_dim: 128
+  num_layers: 2
+
+masking:
+  # One branch withheld per training step, sampled uniformly across the
+  # branches listed above.
+  strategy: "single_branch_uniform"
+
+loss:
+  # Latent prediction loss D(s_hat, s): mean squared error in the (stop-grad)
+  # target latent space, following JEPA / I-JEPA.
+  type: "mse"
+
+growth_rate_head:
+  hidden_dim: 64
+  num_layers: 2

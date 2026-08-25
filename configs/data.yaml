@@ -1,0 +1,50 @@
+# Week 1, data source configuration
+#
+# Verified live against the actual sources on 2026-08-24:
+#   - gRodon2's training data ships as R .rda files (not CSV) under inst/extdata/.
+#     The growth-rate table is GrowthRates_Madin.rda (928 species: species, d
+#     [doubling time, hours], OptTemp, GrowthTemp, Extremophile), paired with
+#     Accession2Species_Madin.rda (accession -> species name, 193k rows).
+#   - GTDB serves per-release static files at data.gtdb.ecogenomic.org; the
+#     bac120 tree (~2.4MB) and taxonomy table (~9.9MB) are cheap to pull in
+#     full. The full metadata table is ~289MB compressed and only fetched if
+#     explicitly requested.
+#   - The NERSC GEM portal (portal.nersc.gov/GEM) serves 52,515 MAGs with a
+#     12MB genome_metadata.tsv and per-genome .fna.gz files under genomes/fna/
+#, used as the large *unlabeled* pretraining corpus (Week 4: "including
+#     species without a labeled growth rate").
+
+grodon:
+  repo: "jlw-ecoevo/gRodon2"
+  branch: "master"
+  raw_base: "https://raw.githubusercontent.com/{repo}/{branch}/inst/extdata"
+  growth_rates_file: "GrowthRates_Madin.rda"
+  accession_map_file: "Accession2Species_Madin.rda"
+
+lab_added_species:
+  # "Iyanu's data": lab-added species extending gRodon's reference set beyond
+  # Madin et al. Populated manually until the lab shares the canonical
+  # sheet/repo location; consolidate.py treats this file as optional.
+  local_csv: "data/raw/lab_added_species.csv"
+
+gtdb:
+  base_url: "https://data.gtdb.ecogenomic.org/releases/latest"
+  bac_tree_file: "bac120.tree.gz"
+  bac_taxonomy_file: "bac120_taxonomy.tsv.gz"
+  bac_metadata_file: "bac120_metadata.tsv.gz"  # large (~289MB), fetched only if requested
+  fetch_full_metadata: false
+
+gem_portal:
+  base_url: "https://portal.nersc.gov/GEM"
+  metadata_path: "genomes/genome_metadata.tsv"
+  genome_fna_path_template: "genomes/fna/{genome_id}.fna.gz"
+  dropbox_folder_url: "https://www.dropbox.com/scl/fo/23jxb4srwu4ajwxg8w9ab/AI1vZU-l1thbodD5RnNGAFk?rlkey=hvh5xckxw6c455dhb26vrjrbe&dl=1"
+  # Cap on how many individual MAG genomes to pull for the pretraining corpus
+  # in a given run; None means "as many as consolidate.py selects".
+  max_unlabeled_genomes: 2000
+
+doubling_time_split_hours: 5.0
+
+paths:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
