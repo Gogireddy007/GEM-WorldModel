@@ -1,4 +1,4 @@
-# Week 1, data source configuration
+# Data source configuration
 #
 # Verified live against the actual sources on 2026-08-24:
 #   - gRodon2's training data ships as R .rda files (not CSV) under inst/extdata/.
@@ -10,9 +10,9 @@
 #     full. The full metadata table is ~289MB compressed and only fetched if
 #     explicitly requested.
 #   - The NERSC GEM portal (portal.nersc.gov/GEM) serves 52,515 MAGs with a
-#     12MB genome_metadata.tsv and per-genome .fna.gz files under genomes/fna/
-#, used as the large *unlabeled* pretraining corpus (Week 4: "including
-#     species without a labeled growth rate").
+#     12MB genome_metadata.tsv and per-genome .fna.gz files under genomes/fna/,
+#     used as the large unlabeled pretraining corpus, since these species have
+#     no labeled growth rate and pretraining doesn't need one.
 
 grodon:
   repo: "jlw-ecoevo/gRodon2"

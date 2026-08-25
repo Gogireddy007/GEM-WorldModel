@@ -1,10 +1,10 @@
-"""Week 2 orchestration: turn a labeled-corpus row set into the full feature
+"""Turn a labeled-corpus row set into the full feature
 table (genomic traits, CUB, GTDB-distance embedding, 16S baseline embedding,
 Arrhenius-corrected target).
 
 `build_feature_table` downloads real genome assemblies per accession (NCBI)
 and real 16S sequences (NCBI), it's slow per-genome, so callers typically
-pass a bounded sample (see scripts/week2_build_features.py) rather than the
+pass a bounded sample (see scripts/build_features.py) rather than the
 full labeled corpus in one call.
 """
 

@@ -1,4 +1,4 @@
-"""Week 1 validation report: species count, growth-rate coverage, doubling-time
+"""Data validation report: species count, growth-rate coverage, doubling-time
 distribution above/below the 5h split, and temperature metadata coverage.
 """
 
@@ -29,13 +29,13 @@ def validate_labeled_corpus(df: pd.DataFrame, cfg: dict | None = None) -> dict:
         "split_hours": split,
     }
 
-    logger.info("=== Week 1 validation report ===")
+    logger.info("=== data validation report ===")
     for k, v in report.items():
         logger.info(f"  {k}: {v}")
 
     if report["n_usable_rows"] < 50:
         logger.warning(
             "usable sample size is small (<50), check GTDB accession matching "
-            "before proceeding to Week 2 feature engineering"
+            "before proceeding to feature engineering"
         )
     return report

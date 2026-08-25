@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-"""Week 3 sanity script: proves no-collapse behavior on a few dummy batches
-before committing to the real Week 4 pretraining run. Complements
+"""Sanity script that proves no-collapse behavior on a few dummy batches
+before committing to a real pretraining run. Complements
 tests/test_ema.py (EMA correctness + stop-gradient) with a runnable, visible
 check of encoder output variance across steps.
 """
@@ -37,7 +37,7 @@ def main():
     assert not any(p.grad is not None for p in model.target_encoder.bank.parameters()), (
         "gradients leaked into the target encoder"
     )
-    logger.info("Week 3 sanity check passed: no collapse, no gradient leakage into target encoder")
+    logger.info("sanity check passed: no collapse, no gradient leakage into target encoder")
 
 
 if __name__ == "__main__":

@@ -11,12 +11,12 @@ Fixed a handful of real bugs found while running the pipeline at larger scale:
 - GEM's genome IDs are JGI-style identifiers, not NCBI accessions, so they never match the official GTDB tree. Added `data/gem_tree.py` to use GEM's own tree instead, matched by OTU id.
 - Retry logic with backoff and a shared connection pool for the GEM download scripts, after measuring real failure rates in the 25-70% range under concurrent load against the NERSC portal.
 
-With these fixes, Weeks 1 through 7 now run cleanly on the real, corrected 175-species labeled corpus, and GC content is filled in for basically the entire 52,515-genome GEM corpus (99.95%).
+With these fixes, the full pipeline now runs cleanly on the real, corrected 175-species labeled corpus, and GC content is filled in for basically the entire 52,515-genome GEM corpus (99.95%).
 
 ## 0.1.0, 2026-08-24
 
-Initial build covering Weeks 1 through 7 of the plan.
+Initial build covering the full pipeline: data acquisition, feature engineering, the JEPA architecture, pretraining, fine-tuning, and explainability analysis.
 
-Week 1 pulls data live from gRodon2/Madin on GitHub, GTDB, and the NERSC GEM portal. Week 2 does feature engineering: genome size and GC content computed exactly, CUB via a from-scratch MILC reimplementation, GTDB-distance embeddings via classical MDS over patristic distances, a 16S baseline via NCBI fetch plus k-mer distance, and Arrhenius temperature correction for the growth-rate target. Week 3 is the JEPA core itself, context and target encoders, EMA, branch masking, predictor, latent loss, with unit tests confirming the EMA formula and that gradients never reach the target encoder. Week 4 is the self-supervised pretraining loop with collapse monitoring. Week 5 fine-tunes the growth-rate head and benchmarks against gRodon/Phydon reproductions. Week 6 does linear and nonlinear probing for oligotroph/copiotroph status plus activation intervention. Week 7 does necessity/sufficiency masking per branch, split by doubling-time regime.
+Data acquisition pulls data live from gRodon2/Madin on GitHub, GTDB, and the NERSC GEM portal. Feature engineering computes genome size and GC content exactly, CUB via a from-scratch MILC reimplementation, GTDB-distance embeddings via classical MDS over patristic distances, a 16S baseline via NCBI fetch plus k-mer distance, and Arrhenius temperature correction for the growth-rate target. The JEPA core itself has context and target encoders, EMA, branch masking, a predictor, and a latent loss, with unit tests confirming the EMA formula and that gradients never reach the target encoder. Pretraining is the self-supervised loop with collapse monitoring. Fine-tuning attaches and trains the growth-rate head, then benchmarks against gRodon/Phydon reproductions. Probing does linear and nonlinear analysis of oligotroph/copiotroph status plus activation intervention. Necessity/sufficiency analysis masks each branch, split by doubling-time regime.
 
 The first live runs used a small 20-species sample just to prove the pipeline worked end to end, not to produce meaningful numbers.

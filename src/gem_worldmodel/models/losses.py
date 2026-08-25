@@ -1,7 +1,7 @@
 """Latent prediction loss D(s_hat, s), plus a collapse-monitoring metric.
 
 Representation collapse (all latents converging to a constant vector) is
-flagged in the plan as the highest risk in the whole project (Week 4). We
+the highest risk in the whole pretraining step. We
 track the per-dimension standard deviation of target-encoder outputs across
 a batch as the collapse signal, it goes to ~0 exactly when collapse happens.
 """

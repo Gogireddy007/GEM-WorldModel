@@ -1,13 +1,12 @@
 #!/usr/bin/env python
-"""Week 4 at real scale: self-supervised masked-branch pretraining across BOTH
+"""Self-supervised masked-branch pretraining at real scale, across BOTH
 the labeled corpus (gRodon/Madin, 3 real branches) and the GEM MAG corpus
 (genomic_traits + gtdb_distance for the full 52,515; + real rrna16s for
 whatever subset scripts/gem_slow_features.py --with-16s has completed by the
-time this runs), in one model, matching the plan's "full corpus including
-species without a labeled growth rate, since pretraining doesn't require
-labels."
+time this runs), in one model. Pretraining doesn't need growth-rate labels,
+so species without one still contribute here.
 
-Run scripts/week1_pull_data.py, scripts/week2_build_features.py,
+Run scripts/pull_data.py, scripts/build_features.py,
 scripts/gem_fast_features.py, and scripts/gem_slow_features.py first.
 """
 
@@ -43,7 +42,7 @@ def main():
         corpora.append({"name": "labeled_grodon", "tensors": labeled_tensors, "branches": all_branches})
         logger.info(f"labeled corpus: {len(labeled_df)} rows, branches={all_branches}")
     else:
-        logger.warning(f"{labeled_path} not found, run scripts/week2_build_features.py first")
+        logger.warning(f"{labeled_path} not found, run scripts/build_features.py first")
 
     gem_base_path = processed_dir / "unlabeled_corpus_features.csv"
     gem_enriched_path = processed_dir / "unlabeled_corpus_features_enriched.csv"

@@ -1,4 +1,4 @@
-"""Week 5: attach the growth-rate head on top of the pretrained context
+"""Attach the growth-rate head on top of the pretrained context
 encoder's joint representation (all branches, unmasked) and fine-tune on the
 labeled subset.
 """

@@ -1,5 +1,5 @@
 """gRodon and Phydon baseline reproductions, refit on the same train/test
-split as our model (Week 5: "for a fair comparison").
+split as our model, for a fair comparison.
 
 These are re-implementations of each method's *feature set and model class*,
 refit on our split, not the original papers' fixed published coefficients,

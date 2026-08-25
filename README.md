@@ -53,16 +53,16 @@ make test      # pytest, no network calls
 
 ## Running the pipeline
 
-Each script maps to one week of the original plan and can be run standalone or chained with `make pipeline`:
+Each script covers one stage and can be run standalone or chained with `make pipeline`:
 
 ```bash
-make week1                     # pull + cross-reference gRodon/GTDB/GEM data
-make week2 N_PER_CLASS=122     # build the feature table for the labeled corpus
-make week3                     # JEPA sanity check (no collapse, no grad leakage to target encoder)
-make week4                     # self-supervised masked-branch pretraining
-make week5                     # fine-tune growth-rate head + gRodon/Phydon benchmark
-make week6                     # probing + activation intervention
-make week7                     # necessity/sufficiency masking, split by doubling-time regime
+make pull-data                          # pull + cross-reference gRodon/GTDB/GEM data
+make build-features N_PER_CLASS=122     # build the feature table for the labeled corpus
+make sanity-check                       # JEPA sanity check (no collapse, no grad leakage to target encoder)
+make pretrain                           # self-supervised masked-branch pretraining
+make finetune-benchmark                 # fine-tune growth-rate head + gRodon/Phydon benchmark
+make probe                              # probing + activation intervention
+make necessity-sufficiency              # necessity/sufficiency masking, split by doubling-time regime
 ```
 
 For the GEM MAG corpus specifically:
@@ -73,7 +73,7 @@ make gem-slow    # real GC content, streaming download, several hours at full sc
 make gem-16s     # real 16S extraction via barrnap on a genome subset, CPU-bound, slow
 ```
 
-A note on scale: the actual usable labeled corpus turned out to be much smaller than it first looked. Of the roughly 87,000 gRodon/Madin accessions, 93% have GTDB taxonomy, but only about 0.3% (271 accessions, 175 species) are real tips on the GTDB reference tree. That 175-species number is the true ceiling for anything using the phylogeny branch, and `week2`'s stratified sample now reflects that.
+A note on scale: the actual usable labeled corpus turned out to be much smaller than it first looked. Of the roughly 87,000 gRodon/Madin accessions, 93% have GTDB taxonomy, but only about 0.3% (271 accessions, 175 species) are real tips on the GTDB reference tree. That 175-species number is the true ceiling for anything using the phylogeny branch, and `build_features.py`'s stratified sample now reflects that.
 
 ## Known limitations
 
@@ -85,7 +85,7 @@ The gRodon and Phydon baselines in `training/baselines.py` are reimplementations
 
 16S sequences come from NCBI by organism name (one representative record per species) rather than being extracted directly from genome assemblies for the labeled corpus. For the GEM MAG corpus, real 16S extraction via barrnap is genuinely slow (measured throughput was well under 1 genome/second even with several workers), so full coverage of all 52,515 genomes isn't practical in one sitting. `gem_slow_features.py --with-16s` processes a bounded subset instead.
 
-The oligotroph/copiotroph label used in Week 6 probing has no bundled literature-curated source. `eval/probing.py:heuristic_trophic_label` is an explicitly flagged proxy based on genome size and rRNA copy number, meant for testing the pipeline, not for drawing real conclusions. Swap in an actual ecological label before treating those probing results as meaningful. The same caveat applies to the CUB/oligotroph relationship generally: oligotrophs tend to show weak codon usage bias in the first place, so a probe that finds CUB-correlated structure predicting oligotroph status risks confirming something that's circular by construction rather than discovering it.
+The oligotroph/copiotroph label used in probing has no bundled literature-curated source. `eval/probing.py:heuristic_trophic_label` is an explicitly flagged proxy based on genome size and rRNA copy number, meant for testing the pipeline, not for drawing real conclusions. Swap in an actual ecological label before treating those probing results as meaningful. The same caveat applies to the CUB/oligotroph relationship generally: oligotrophs tend to show weak codon usage bias in the first place, so a probe that finds CUB-correlated structure predicting oligotroph status risks confirming something that's circular by construction rather than discovering it.
 
 ## Layout
 
@@ -98,6 +98,8 @@ src/gem_worldmodel/
   models/            encoders.py, masking.py, predictor.py, losses.py, heads.py, jepa.py
   training/          dataset.py, pretrain.py, finetune.py, baselines.py
   eval/              benchmark.py, probing.py, intervention.py, necessity_sufficiency.py
-scripts/             week1_pull_data.py ... week7_necessity_sufficiency.py, gem_fast_features.py, gem_slow_features.py
+scripts/             pull_data.py, build_features.py, pretrain_sanity_check.py, pretrain_labeled.py,
+                     pretrain_full.py, finetune_benchmark.py, probe_intervene.py,
+                     run_necessity_sufficiency.py, gem_fast_features.py, gem_slow_features.py
 tests/               unit + smoke tests, no network calls
 ```

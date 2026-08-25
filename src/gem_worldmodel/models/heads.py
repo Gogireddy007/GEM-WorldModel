@@ -1,5 +1,5 @@
 """Growth-rate prediction head, fine-tuned on top of the pretrained context
-encoder's joint latent (Week 5).
+encoder's joint latent.
 """
 
 import torch

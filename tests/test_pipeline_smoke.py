@@ -1,6 +1,6 @@
-"""End-to-end smoke tests for Weeks 3-7 on small synthetic data, no network
-calls. Real end-to-end runs against live data are done via scripts/week*.py
-(see README for how to reproduce those).
+"""End-to-end smoke tests for the JEPA/training/eval pipeline on small
+synthetic data, no network calls. Real end-to-end runs against live data are
+done via the scripts in scripts/ (see README for how to reproduce those).
 """
 
 import numpy as np

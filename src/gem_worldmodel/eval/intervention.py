@@ -1,8 +1,8 @@
-"""Week 6: activation intervention, perturb the latent dimension identified
+"""Activation intervention: perturb the latent dimension identified
 by probing.py as most predictive of oligotroph/copiotroph status, and check
 whether the fine-tuned growth-rate head's prediction actually shifts.
 
-This is the corroborating half of Week 6: a probe finding correlation isn't
+This is the corroborating half of the probing step: a probe finding correlation isn't
 enough (see the circularity caveat in probing.py), intervention tests
 whether that dimension is causally load-bearing for the model's own growth-
 rate prediction, not just statistically associated with the label.

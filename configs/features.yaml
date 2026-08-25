@@ -1,4 +1,4 @@
-# Week 2, feature engineering configuration
+# Feature engineering configuration
 
 cub:
   # gRodon reproduces Codon Usage Bias between the highly-expressed ribosomal
