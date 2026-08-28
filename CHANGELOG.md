@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1, 2026-08-26
+
+The two long-running GEM corpus downloads finished. GC content now covers 52,489 of 52,515 genomes (99.95%). Real 16S extraction via barrnap completed its full 5,000-genome run: 4,652 genomes processed successfully (7% error rate), 1,883 with a real 16S sequence recovered. Combined with the metadata-derived genome size, rRNA/tRNA counts, and phylogenetic embeddings that already covered the full corpus, this is now the actual, final state of the unlabeled GEM dataset for this build, not a partial or projected one.
+
 ## 0.2.0, 2026-08-25
 
 Fixed a handful of real bugs found while running the pipeline at larger scale:
