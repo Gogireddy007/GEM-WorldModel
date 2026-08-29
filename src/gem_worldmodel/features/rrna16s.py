@@ -1,18 +1,20 @@
 """16S rRNA baseline branch, kept as a separate comparison point against the
 GTDB-distance embedding, not the primary phylogeny signal (per the post-pivot plan).
 
-We fetch a representative 16S rRNA sequence per species from NCBI's nucleotide
-database (Entrez), rather than attempting de-novo extraction from raw genome
-assemblies (that would require a dedicated rRNA predictor like barrnap, which
-isn't available in this environment). This is the standard shortcut used when
-the goal is a phylogenetic-distance proxy rather than exact annotation.
+For the labeled corpus, we fetch a representative 16S rRNA sequence per
+species from NCBI's nucleotide database (Entrez) rather than extracting it
+from the genome assembly directly, since that's one sequence per species and
+NCBI already has curated 16S records for named organisms. For the GEM MAG
+corpus, scripts/gem_slow_features.py extracts real 16S sequences directly
+from each assembly via barrnap instead, since MAGs don't have NCBI records to
+fetch, and stores the resulting k-mer profile inline
+(build_16s_embeddings_from_profiles below consumes that directly).
 
 Distance between two 16S sequences is computed as an alignment-free k-mer
 profile distance (fast, no MSA dependency), then reduced to a fixed-length
 embedding via the same classical MDS routine used for the GTDB branch.
 """
 
-import itertools
 import time
 
 import numpy as np
@@ -71,20 +73,55 @@ def kmer_cosine_distance(profile_a: dict[str, int], profile_b: dict[str, int]) -
 
 def build_16s_distance_matrix(sequences: dict[str, str], k: int) -> tuple[np.ndarray, list[str]]:
     """sequences: {species_or_accession: 16S sequence}. Returns (matrix, labels)."""
-    labels = list(sequences.keys())
-    profiles = {label: kmer_profile(sequences[label], k) for label in labels}
-    n = len(labels)
-    mat = np.zeros((n, n), dtype=float)
-    for i, j in itertools.combinations(range(n), 2):
-        d = kmer_cosine_distance(profiles[labels[i]], profiles[labels[j]])
-        mat[i, j] = d
-        mat[j, i] = d
-    return mat, labels
+    profiles = {label: kmer_profile(seq, k) for label, seq in sequences.items()}
+    return build_16s_distance_matrix_from_profiles(profiles)
 
 
 def build_16s_embeddings(sequences: dict[str, str], cfg: dict | None = None) -> dict[str, np.ndarray]:
     cfg = cfg or load_config("features")
     r = cfg["rrna16s"]
     matrix, labels = build_16s_distance_matrix(sequences, k=r["kmer_k"])
+    embedding = classical_mds_embedding(matrix, r["embedding_dim"])
+    return {label: embedding[i] for i, label in enumerate(labels)}
+
+
+def build_16s_distance_matrix_from_profiles(
+    profiles: dict[str, dict[str, int]],
+) -> tuple[np.ndarray, list[str]]:
+    """Same math as pairwise kmer_cosine_distance, but vectorized: builds one
+    dense (n_genomes x vocab_size) count matrix and computes all pairwise
+    cosine distances as a single matrix multiply, instead of looping over
+    pairs in Python. The naive per-pair loop is fine at labeled-corpus scale
+    (~175 genomes, ~15k pairs) but chokes at GEM MAG scale (~1,900 genomes
+    with real 16S, ~1.8M pairs, measured to hang for minutes). A missing
+    k-mer contributes 0 to a profile's count vector either way, so building
+    against the full observed vocabulary instead of each pair's own union
+    gives mathematically identical distances, not an approximation.
+    """
+    labels = list(profiles.keys())
+    n = len(labels)
+    vocab = sorted({kmer for profile in profiles.values() for kmer in profile})
+    vocab_index = {kmer: i for i, kmer in enumerate(vocab)}
+
+    counts = np.zeros((n, len(vocab)), dtype=float)
+    for row, label in enumerate(labels):
+        for kmer, count in profiles[label].items():
+            counts[row, vocab_index[kmer]] = count
+
+    norms = np.linalg.norm(counts, axis=1, keepdims=True)
+    norms[norms == 0] = 1.0  # an all-zero profile stays all-zero after normalizing
+    normalized = counts / norms
+    cosine_sim = normalized @ normalized.T
+    mat = 1.0 - cosine_sim
+    np.fill_diagonal(mat, 0.0)
+    return mat, labels
+
+
+def build_16s_embeddings_from_profiles(
+    profiles: dict[str, dict[str, int]], cfg: dict | None = None
+) -> dict[str, np.ndarray]:
+    cfg = cfg or load_config("features")
+    r = cfg["rrna16s"]
+    matrix, labels = build_16s_distance_matrix_from_profiles(profiles)
     embedding = classical_mds_embedding(matrix, r["embedding_dim"])
     return {label: embedding[i] for i, label in enumerate(labels)}

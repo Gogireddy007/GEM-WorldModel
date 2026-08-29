@@ -12,7 +12,8 @@ from gem_worldmodel.models.heads import GrowthRateHead
 from gem_worldmodel.models.jepa import JEPA
 from gem_worldmodel.training.baselines import GRodonBaseline, PhydonBaseline
 from gem_worldmodel.training.dataset import GENOMIC_TRAIT_COLUMNS, BranchStandardizer
-from gem_worldmodel.training.pretrain import CollapseMonitor, pretrain, pretrain_multi_corpus
+from gem_worldmodel.training.finetune import cross_validate
+from gem_worldmodel.training.pretrain import CollapseMonitor, pretrain, pretrain_multi_corpus, save_checkpoint
 from gem_worldmodel.utils.config import load_config
 
 
@@ -217,3 +218,32 @@ def test_necessity_sufficiency_report_shapes():
     assert set(report["necessity"].keys()) == branch_names
     assert set(report["sufficiency"].keys()) == branch_names
     assert "r2" in report["full_metrics"]
+
+
+def test_cross_validate_gives_one_prediction_per_sample_no_leakage(tmp_path):
+    model_cfg = load_config("model")
+    train_cfg = load_config("train")
+    n = 40
+    tensors = _toy_branch_tensors(model_cfg, n=n)
+
+    jepa = JEPA(model_cfg)
+    ckpt_path = tmp_path / "toy.pt"
+    save_checkpoint(jepa, ckpt_path)
+
+    rng = np.random.default_rng(0)
+    target_log = torch.tensor(rng.normal(0, 1, n), dtype=torch.float32)
+    stratify_labels = (rng.uniform(0, 1, n) < 0.5).astype(int)  # 2-class, roughly balanced
+
+    small_train_cfg = {
+        **train_cfg,
+        "finetune": {**train_cfg["finetune"], "epochs": 3, "freeze_encoder_epochs": 1},
+    }
+    result = cross_validate(
+        model_cfg, ckpt_path, tensors, target_log, stratify_labels, small_train_cfg, k=4
+    )
+
+    assert result["oof_pred_log"].shape == (n,)
+    assert not np.isnan(result["oof_pred_log"]).any()  # every sample got exactly one oof prediction
+    assert set(result["fold_id"]) == {0, 1, 2, 3}
+    # every sample assigned to exactly one fold, none held out twice or never
+    assert (result["fold_id"] >= 0).all()

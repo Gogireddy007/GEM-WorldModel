@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.1, 2026-08-28
+
+Replaced the single 70/15/15 train/val/test split in `finetune_benchmark.py` with 5-fold stratified cross-validation (`training/finetune.py:cross_validate`). At n=175 the old split left a 27-sample test set; now every species is fine-tuned from a fresh checkpoint and held out exactly once, so the benchmark covers all 175 species instead of a fragile slice. gRodon/Phydon baselines are refit per fold on the same splits for a fair comparison. `--checkpoint` flag added so the script can benchmark either the labeled-only or full-corpus pretrained model.
+
+## 0.3.0, 2026-08-28
+
+First real run of combined pretraining across the labeled corpus and the full GEM MAG corpus (`pretrain_full.py`). Two scale bugs came up and got fixed:
+
+- The 16S k-mer distance computation was an O(n²) Python loop, fine at 175 genomes, hung for minutes at GEM's 1,883 real-16S genomes. Rewrote it as a vectorized matrix operation with identical math, 0.43 seconds instead of hanging.
+- Training loss climbed steadily instead of converging once the corpus was actually large (about 155,000 optimizer steps over 200 epochs versus ~600 in earlier runs), a scale-drift failure mode that plain MSE on unnormalized latents is prone to and that gradient clipping alone doesn't stop. Fixed by L2-normalizing both sides of the loss (the SimSiam/BYOL trick), which converges cleanly now.
+
+Also wired the GEM corpus's real 16S data (1,875 genomes) into pretraining as a proper 3-branch sub-corpus, alongside a 2-branch sub-corpus for the other ~49,700 GEM genomes and the 3-branch labeled corpus, all training one shared model.
+
 ## 0.2.1, 2026-08-26
 
 The two long-running GEM corpus downloads finished. GC content now covers 52,489 of 52,515 genomes (99.95%). Real 16S extraction via barrnap completed its full 5,000-genome run: 4,652 genomes processed successfully (7% error rate), 1,883 with a real 16S sequence recovered. Combined with the metadata-derived genome size, rRNA/tRNA counts, and phylogenetic embeddings that already covered the full corpus, this is now the actual, final state of the unlabeled GEM dataset for this build, not a partial or projected one.
