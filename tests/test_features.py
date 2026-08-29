@@ -2,7 +2,7 @@ import dendropy
 import numpy as np
 import pytest
 
-from gem_worldmodel.features import cub, genome_traits, phylogeny, temperature
+from gem_worldmodel.features import cub, genome_traits, phylogeny, rrna16s, temperature
 
 
 def test_genome_size_and_gc(tmp_path):
@@ -75,3 +75,36 @@ def test_classical_mds_embedding_shape():
     dist = np.linalg.norm(pts[:, None, :] - pts[None, :, :], axis=-1)
     emb = phylogeny.classical_mds_embedding(dist, n_components=4, seed=0)
     assert emb.shape == (n, 4)
+
+
+def test_16s_embeddings_from_profiles_match_from_sequences():
+    # Building from precomputed profiles should give the same distances (and
+    # therefore the same embedding, up to MDS's own randomness) as building
+    # from the raw sequences directly, since it's the same underlying math.
+    sequences = {
+        "a": "ACGTACGTACGTACGTAAAA",
+        "b": "ACGTACGTACGTACGTTTTT",
+        "c": "GGGGCCCCGGGGCCCCGGGG",
+        "d": "GGGGCCCCGGGGCCCCAAAA",
+    }
+    k = 4
+    profiles = {label: rrna16s.kmer_profile(seq, k) for label, seq in sequences.items()}
+
+    mat_from_seq, labels_seq = rrna16s.build_16s_distance_matrix(sequences, k)
+    mat_from_profiles, labels_profiles = rrna16s.build_16s_distance_matrix_from_profiles(profiles)
+
+    assert labels_seq == labels_profiles
+    assert np.allclose(mat_from_seq, mat_from_profiles)
+
+
+def test_16s_embeddings_from_profiles_shape():
+    profiles = {
+        "a": {"AAAA": 3, "CCCC": 1},
+        "b": {"AAAA": 1, "CCCC": 3},
+        "c": {"GGGG": 4},
+    }
+    cfg = {"rrna16s": {"kmer_k": 4, "embedding_dim": 5, "method": "classical_mds"}}
+    embeddings = rrna16s.build_16s_embeddings_from_profiles(profiles, cfg)
+    assert set(embeddings.keys()) == {"a", "b", "c"}
+    for vec in embeddings.values():
+        assert vec.shape == (5,)
