@@ -120,6 +120,7 @@ def cross_validate(
 
     oof_pred_log = np.full(n, np.nan)
     fold_id = np.full(n, -1)
+    fold_models = []
 
     skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=seed)
     for fold, (train_val_idx, test_idx) in enumerate(skf.split(np.zeros(n), stratify_labels)):
@@ -141,7 +142,8 @@ def cross_validate(
 
         oof_pred_log[test_idx] = pred
         fold_id[test_idx] = fold
+        fold_models.append({"jepa": result["jepa"], "head": result["head"], "test_idx": test_idx})
         logger.info(f"fold {fold}: test n={len(test_idx)}")
 
     assert (fold_id >= 0).all(), "every sample should be held out exactly once across folds"
-    return {"oof_pred_log": oof_pred_log, "fold_id": fold_id, "k": k}
+    return {"oof_pred_log": oof_pred_log, "fold_id": fold_id, "k": k, "fold_models": fold_models}

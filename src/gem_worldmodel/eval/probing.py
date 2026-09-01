@@ -1,22 +1,22 @@
 """Linear/nonlinear probing of the joint latent for oligotroph vs.
 copiotroph status, plus activation intervention.
 
-One thing to watch out for: oligotroph status is partly defined by the
-absence of a CUB signal in the first place (oligotrophs show weak codon
-usage bias because they aren't under strong translational-efficiency
-selection). So a probe that "discovers" CUB-correlated latent structure
-predicting oligotroph status could just be circular rather than a real
-finding. A positive probing result here is a necessary but not sufficient
-check, it needs corroboration from the intervention test in
-`intervention.py`, and ideally from an ecological label that wasn't itself
-derived from CUB.
+As of 2026-08-31 there IS a real, genome-independent label available:
+features/ecological_traits.py:real_trophic_label, built from Madin et al.
+2020's curated isolation_source data, not from anything computed off the
+genome. scripts/probe_intervene.py uses it by default now.
 
-There's no literature-curated oligotroph/copiotroph label bundled with this
-repo. `heuristic_trophic_label` is a proxy based on rRNA operon copy number
-and genome size (per Klappenbach et al. 2000 and Lauro et al. 2009's
-copiotroph/oligotroph genomic correlates), good enough for testing the
-pipeline end to end but not for drawing real conclusions. Swap in an actual
-ecological label before doing that.
+`heuristic_trophic_label` below is kept only as a documented fallback
+(--use-heuristic), and its old circularity caveat still applies to it
+specifically: it's a proxy based on rRNA operon copy number and genome size
+(per Klappenbach et al. 2000 and Lauro et al. 2009's copiotroph/oligotroph
+genomic correlates), and oligotroph status is partly defined by the absence
+of a CUB signal in the first place, so a probe that "discovers"
+CUB-correlated latent structure predicting the heuristic label risks being
+circular rather than a real finding. Checked empirically: the heuristic and
+real labels only agree 58.9% of the time on the 124 species where both
+exist, barely above chance, so they aren't measuring the same thing and the
+heuristic shouldn't be treated as a stand-in for the real label.
 """
 
 import numpy as np

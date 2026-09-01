@@ -1,5 +1,43 @@
 # Research Log
 
+## 2026-08-31, necessity/sufficiency moved to cross-validation too, and the actual synthesis
+
+`run_necessity_sufficiency.py` had the same problem the benchmark had before it was fixed: it fine-tuned on one split and then evaluated necessity/sufficiency masking on the SAME data (train+val+test all mixed together), not held out. Fixed it the same way, `eval/necessity_sufficiency.py:necessity_sufficiency_report_cv` runs the ablation per cross-validation fold on that fold's own held-out test samples with that fold's own fine-tuned model, and branch-neutralization means come from each fold's train split only, never its test split. Caught a real bug while wiring this in: the coverage assertion checked against the full n instead of the regime-filtered subset, would have crashed on every regime-restricted call. Fixed and added a test that specifically exercises a regime mask, not just the unrestricted case, so this doesn't regress silently again.
+
+Full results and the actual answer to what this whole project was for are in FINDINGS.md.
+
+## 2026-08-31, a real oligotroph/copiotroph label, no more heuristic
+
+The probing step was using a genome-derived proxy for oligotroph/copiotroph status (genome size + rRNA copy number), which had a real circularity problem: oligotrophs are partly defined by weak codon usage bias, so a probe "discovering" CUB-correlated structure predicting that heuristic wasn't necessarily finding anything real. Went looking for an actual literature source instead of treating this as blocked on someone else supplying one.
+
+Found it: Madin et al. 2020 ("A synthesis of bacterial and archaeal phenotypic trait data", Scientific Data) publishes a real, curated trait database with 14,893 species and 79 columns, isolation_source, metabolism, carbon_substrates, gram_stain, and more, assembled from actual physiological records, not computed from genome sequence. Pulled the real data (`data/madin_traits.py`) and built a genome-independent trophic label from isolation_source (`features/ecological_traits.py`): host-associated and engineered/waste environments classified copiotroph-leaning, open water and deep subsurface environments classified oligotroph-leaning, following the standard nutrient-availability basis in the literature (Fierer et al. 2007, Lauro et al. 2009). Soil and sediment sources are left unlabeled on purpose, their organic content is too variable in the literature to assign a direction, and guessing there would defeat the point of using a real label.
+
+Real coverage: 124/175 labeled species (71%), 84 copiotroph-leaning, 40 oligotroph-leaning. Checked the new label against the old heuristic on the 124 species where both exist: they agree 58.9% of the time, barely above chance for a 2-class problem. The heuristic was not a reliable stand-in for a real trophic label.
+
+Reran probing with the real label:
+
+| checkpoint | linear acc / AUC | nonlinear acc / AUC |
+|---|---|---|
+| labeled-only pretrain | 0.789 / 0.750 | 0.711 / 0.747 |
+| full-corpus pretrain | 0.816 / 0.804 | 0.842 / 0.827 |
+
+Both real, above-chance results now, not the heuristic label's numbers from before. And this is a third independent line of evidence (after the pretraining loss curve and the cross-validated benchmark's Spearman gain) that full-corpus pretraining produces a better representation than labeled-only.
+
+## 2026-08-31, recovered the 29 species with missing features
+
+29 of the 175 labeled species never got CUB/GC/rRNA data in the original run, their NCBI downloads must have hit transient rate-limiting during that batch. Retried them individually and all 29 came back clean, real genome and CDS files, real CUB values in the normal range (0.13-0.77), real GC content (26-72%). The labeled corpus is now 175/175 complete across every real feature, not 146/175.
+
+Regenerated both pretrained checkpoints and reran the cross-validated benchmark on the complete data:
+
+| model | R2 (all) | Spearman (all) |
+|---|---|---|
+| gem_worldmodel (labeled-only pretrain) | -0.078 | 0.380 |
+| gem_worldmodel (full-corpus pretrain) | -0.057 | 0.425 |
+| grodon_reproduction | -0.032 | 0.582 |
+| phydon_reproduction | +0.034 | 0.626 |
+
+Same pattern holds as before: full-corpus pretraining still helps Spearman over labeled-only. Both baselines still beat our model on rank correlation. Phydon's R2 actually crossed into positive territory now that it isn't missing 29 rows anymore, small but real, since gRodon and Phydon both use CUB and previously had to exclude or degrade on those rows the way we did.
+
 ## 2026-08-28, cross-validated benchmark replaces the fragile 27-sample test split
 
 The single 70/15/15 split used for fine-tuning and benchmarking left a 27-sample test set at n=175, too small for RMSE/R2/Spearman on it to mean much. Replaced it with 5-fold stratified cross-validation (`training/finetune.py:cross_validate`): every species gets fine-tuned from a fresh copy of the pretrained checkpoint and held out exactly once, so the benchmark now runs over all 175 out-of-fold predictions instead of a slice of 27. The gRodon/Phydon baselines are refit per fold on the exact same splits, so the comparison stays apples-to-apples.
