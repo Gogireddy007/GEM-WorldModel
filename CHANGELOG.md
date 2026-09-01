@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0, 2026-08-31
+
+Moved necessity/sufficiency masking to the same k-fold cross-validation as the benchmark (`eval/necessity_sufficiency.py:necessity_sufficiency_report_cv`), it was evaluating on data the model was fine-tuned on before. Fixed a real bug found while wiring this in (a coverage check against the wrong subset that would have crashed on any regime-restricted call). Added `FINDINGS.md`: the actual synthesis of everything the pipeline has produced, an honest answer to what the project set out to determine, not just per-stage numbers.
+
+## 0.4.0, 2026-08-31
+
+Replaced the genome-derived oligotroph/copiotroph heuristic with a real, genome-independent label. Added `data/madin_traits.py` to pull Madin et al. 2020's curated phenotype trait database (isolation_source, metabolism, and more, real physiological records, not computed from the genome) and `features/ecological_traits.py` to build a trophic label from isolation_source, following the standard nutrient-availability basis in the literature. Covers 124/175 labeled species; ambiguous sources (soil, sediment) are left unlabeled rather than guessed. The old heuristic only agreed with the real label 58.9% of the time and is now a documented `--use-heuristic` fallback in `probe_intervene.py`, not the default. Reran probing: real, above-chance results (0.789-0.842 accuracy depending on checkpoint), a third independent confirmation that full-corpus pretraining beats labeled-only.
+
+## 0.3.2, 2026-08-31
+
+Recovered the 29 labeled species (of 175) that never got CUB/GC/rRNA data in the original run, transient NCBI rate-limiting during that batch, not a permanent gap. All 29 retried cleanly. The labeled corpus is now 175/175 complete on every real feature instead of 146/175. Regenerated both pretrained checkpoints and reran the cross-validated benchmark on the complete data, gRodon and Phydon no longer have to skip rows either, since they also depend on CUB.
+
 ## 0.3.1, 2026-08-28
 
 Replaced the single 70/15/15 train/val/test split in `finetune_benchmark.py` with 5-fold stratified cross-validation (`training/finetune.py:cross_validate`). At n=175 the old split left a 27-sample test set; now every species is fine-tuned from a fresh checkpoint and held out exactly once, so the benchmark covers all 175 species instead of a fragile slice. gRodon/Phydon baselines are refit per fold on the same splits for a fair comparison. `--checkpoint` flag added so the script can benchmark either the labeled-only or full-corpus pretrained model.

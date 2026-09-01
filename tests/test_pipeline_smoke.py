@@ -247,3 +247,49 @@ def test_cross_validate_gives_one_prediction_per_sample_no_leakage(tmp_path):
     assert set(result["fold_id"]) == {0, 1, 2, 3}
     # every sample assigned to exactly one fold, none held out twice or never
     assert (result["fold_id"] >= 0).all()
+    assert len(result["fold_models"]) == 4
+
+
+def test_necessity_sufficiency_cv_uses_only_held_out_predictions():
+    model_cfg = load_config("model")
+    train_cfg = load_config("train")
+    n = 40
+    tensors = _toy_branch_tensors(model_cfg, n=n)
+
+    jepa = JEPA(model_cfg)
+    import tempfile
+    from pathlib import Path
+
+    with tempfile.TemporaryDirectory() as tmp:
+        ckpt_path = Path(tmp) / "toy.pt"
+        save_checkpoint(jepa, ckpt_path)
+
+        rng = np.random.default_rng(0)
+        target_log = torch.tensor(rng.normal(0, 1, n), dtype=torch.float32)
+        stratify_labels = (rng.uniform(0, 1, n) < 0.5).astype(int)
+        small_train_cfg = {
+            **train_cfg,
+            "finetune": {**train_cfg["finetune"], "epochs": 3, "freeze_encoder_epochs": 1},
+        }
+        cv_result = cross_validate(
+            model_cfg, ckpt_path, tensors, target_log, stratify_labels, small_train_cfg, k=4
+        )
+
+    report = necessity_sufficiency.necessity_sufficiency_report_cv(
+        cv_result["fold_models"], tensors, target_log.numpy()
+    )
+    branch_names = {b["name"] for b in model_cfg["branches"]}
+    assert set(report["necessity"].keys()) == branch_names
+    assert set(report["sufficiency"].keys()) == branch_names
+    assert report["n"] == n
+    assert "r2" in report["full_metrics"]
+
+    # A regime mask restricting to roughly half the samples must not trip the
+    # "every in-regime sample covered, no others" assertion inside the
+    # function, this exercises the exact bug found while wiring this in:
+    # covered() was checked against the FULL n instead of the regime subset.
+    regime_mask = stratify_labels.astype(bool)
+    regime_report = necessity_sufficiency.necessity_sufficiency_report_cv(
+        cv_result["fold_models"], tensors, target_log.numpy(), regime_mask
+    )
+    assert regime_report["n"] == int(regime_mask.sum())
