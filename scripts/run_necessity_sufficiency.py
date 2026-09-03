@@ -30,11 +30,17 @@ def main():
         "--checkpoint", type=str, default="jepa_pretrained.pt",
         help="which pretrain checkpoint to fine-tune from (e.g. jepa_pretrained_full.pt for the combined-corpus run)",
     )
+    parser.add_argument(
+        "--seed", type=int, default=None,
+        help="override configs/train.yaml's seed for the CV fold splits (e.g. for a robustness check across seeds)",
+    )
     args = parser.parse_args()
 
     data_cfg = load_config("data")
     model_cfg = load_config("model")
     train_cfg = load_config("train")
+    if args.seed is not None:
+        train_cfg = {**train_cfg, "seed": args.seed}
     processed_dir = resolve_path(data_cfg["paths"]["processed_dir"])
     ckpt_dir = resolve_path(train_cfg["pretrain"]["checkpoint_dir"])
 

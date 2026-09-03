@@ -5,6 +5,7 @@ done via the scripts in scripts/ (see README for how to reproduce those).
 
 import numpy as np
 import pandas as pd
+import pytest
 import torch
 
 from gem_worldmodel.eval import benchmark, intervention, necessity_sufficiency, probing
@@ -14,6 +15,7 @@ from gem_worldmodel.training.baselines import GRodonBaseline, PhydonBaseline
 from gem_worldmodel.training.dataset import GENOMIC_TRAIT_COLUMNS, BranchStandardizer
 from gem_worldmodel.training.finetune import cross_validate
 from gem_worldmodel.training.pretrain import CollapseMonitor, pretrain, pretrain_multi_corpus, save_checkpoint
+from gem_worldmodel.training.raw_baseline import concat_branch_tensors, cross_validate_raw
 from gem_worldmodel.utils.config import load_config
 
 
@@ -48,7 +50,6 @@ def test_pretrain_actually_trains_the_predictor():
     would, trained or not).
     """
     model_cfg = load_config("model")
-    train_cfg = load_config("train")
     tensors = _toy_branch_tensors(model_cfg, n=64)
 
     model = JEPA(model_cfg)
@@ -188,6 +189,51 @@ def test_linear_and_nonlinear_probe_recover_separable_signal():
     assert best_dim == 0
 
 
+def test_linear_and_nonlinear_probe_cv_recover_separable_signal():
+    rng = np.random.default_rng(0)
+    n, d = 100, 8
+    labels = rng.integers(0, 2, n)
+    latents = rng.normal(0, 1, (n, d))
+    latents[:, 0] += labels * 3.0  # same clearly separable signal as the single-split test above
+
+    lin_cv = probing.linear_probe_cv(latents, labels, k=5, seed=0)
+    nonlin_cv = probing.nonlinear_probe_cv(latents, labels, k=5, seed=0, epochs=100)
+
+    # Every one of the 100 samples contributed exactly one out-of-fold prediction.
+    assert lin_cv["n"] == n
+    assert nonlin_cv["n"] == n
+    assert lin_cv["accuracy"] > 0.8
+    assert nonlin_cv["accuracy"] > 0.7
+    assert "auc" in lin_cv and "auc" in nonlin_cv
+    assert lin_cv["coef_full_fit"].shape == (d,)
+
+    best_dim_cv = probing.most_predictive_latent_dim(latents, labels, k=5, seed=0)
+    assert best_dim_cv == 0
+
+
+def test_probe_cv_raises_when_too_few_samples_in_smallest_class():
+    rng = np.random.default_rng(0)
+    latents = rng.normal(0, 1, (20, 4))
+    labels = np.array([1] * 19 + [0])  # only 1 sample in the minority class
+
+    with pytest.raises(ValueError, match="need at least 2 samples"):
+        probing.linear_probe_cv(latents, labels, k=5)
+    with pytest.raises(ValueError, match="need at least 2 samples"):
+        probing.nonlinear_probe_cv(latents, labels, k=5)
+
+
+def test_probe_cv_shrinks_k_when_a_class_is_small():
+    # 3 samples in the minority class means k can be at most 3, even if the
+    # caller asked for k=5, this must not raise, it should just use k=3.
+    rng = np.random.default_rng(0)
+    latents = rng.normal(0, 1, (23, 4))
+    labels = np.array([1] * 20 + [0] * 3)
+
+    result = probing.linear_probe_cv(latents, labels, k=5)
+    assert result["k"] == 3
+    assert result["n"] == 23
+
+
 def test_heuristic_trophic_label_shape():
     labels = probing.heuristic_trophic_label(
         np.array([1e6, 2e6, 3e6, 4e6]), np.array([1, 2, 3, 4])
@@ -198,7 +244,7 @@ def test_heuristic_trophic_label_shape():
 def test_intervention_shifts_prediction_monotonically_for_linear_head():
     torch.manual_seed(0)
     latent_dim = 8
-    head = GrowthRateHead(latent_dim, hidden_dim=4, num_layers=1)  # single linear layer -> monotonic in each dim
+    head = GrowthRateHead(latent_dim, hidden_dim=4, num_layers=1)  # single linear layer, monotonic per dim
     latents = torch.randn(20, latent_dim)
     result = intervention.intervene_on_dimension(latents, head, dim=0)
     assert result["monotonic"]
@@ -293,3 +339,76 @@ def test_necessity_sufficiency_cv_uses_only_held_out_predictions():
         cv_result["fold_models"], tensors, target_log.numpy(), regime_mask
     )
     assert regime_report["n"] == int(regime_mask.sum())
+
+
+def test_concat_branch_tensors_is_deterministic_and_correct_width():
+    model_cfg = load_config("model")
+    n = 10
+    tensors = _toy_branch_tensors(model_cfg, n=n)
+    expected_width = sum(b["input_dim"] for b in model_cfg["branches"])
+
+    x1 = concat_branch_tensors(tensors)
+    x2 = concat_branch_tensors(tensors)
+    assert x1.shape == (n, expected_width)
+    assert torch.equal(x1, x2)  # same dict, same order every time
+
+
+def test_raw_baseline_cv_learns_a_clearly_separable_signal():
+    model_cfg = load_config("model")
+    train_cfg = load_config("train")
+    n = 60
+    tensors = _toy_branch_tensors(model_cfg, n=n)
+
+    rng = np.random.default_rng(0)
+    # target driven by the SUM of all genomic_traits dims (gtdb_distance and
+    # rrna16s are pure noise), spreading the real signal across several
+    # correlated input dims rather than one, which is what a real growth-rate
+    # relationship would look like and is learnable from ~48 samples/fold in
+    # the epoch budget below, a signal on a single isolated dim among 39
+    # total input dims turned out to need far more epochs/samples than this
+    # small a synthetic test can reasonably afford (checked empirically).
+    target_log = tensors["genomic_traits"].sum(dim=1) * 0.5 + torch.tensor(
+        rng.normal(0, 0.1, n), dtype=torch.float32
+    )
+    stratify_labels = (target_log.numpy() > target_log.numpy().mean()).astype(int)
+
+    small_train_cfg = {
+        **train_cfg,
+        "finetune": {**train_cfg["finetune"], "epochs": 500, "lr": 1e-2, "weight_decay": 0.0},
+    }
+    result = cross_validate_raw(tensors, target_log, stratify_labels, small_train_cfg, k=5)
+
+    assert result["oof_pred_log"].shape == (n,)
+    assert not np.isnan(result["oof_pred_log"]).any()
+    corr = np.corrcoef(result["oof_pred_log"], target_log.numpy())[0, 1]
+    assert corr > 0.5  # should recover a strong, real linear relationship
+
+
+def test_raw_baseline_and_jepa_cross_validate_use_identical_fold_membership(tmp_path):
+    """The whole point of this comparison is that it's fair, same fold
+    membership means differences in the resulting metrics are attributable to
+    the encoder, not to two runs happening to get different splits.
+    """
+    model_cfg = load_config("model")
+    train_cfg = load_config("train")
+    n = 40
+    tensors = _toy_branch_tensors(model_cfg, n=n)
+
+    jepa = JEPA(model_cfg)
+    ckpt_path = tmp_path / "toy.pt"
+    save_checkpoint(jepa, ckpt_path)
+
+    rng = np.random.default_rng(0)
+    target_log = torch.tensor(rng.normal(0, 1, n), dtype=torch.float32)
+    stratify_labels = (rng.uniform(0, 1, n) < 0.5).astype(int)
+
+    small_train_cfg = {
+        **train_cfg,
+        "finetune": {**train_cfg["finetune"], "epochs": 3, "freeze_encoder_epochs": 1},
+    }
+    jepa_result = cross_validate(
+        model_cfg, ckpt_path, tensors, target_log, stratify_labels, small_train_cfg, k=4
+    )
+    raw_result = cross_validate_raw(tensors, target_log, stratify_labels, small_train_cfg, k=4)
+
+    assert np.array_equal(jepa_result["fold_id"], raw_result["fold_id"])

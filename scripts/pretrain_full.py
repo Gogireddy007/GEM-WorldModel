@@ -27,11 +27,18 @@ logger = get_logger(__name__)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--epochs", type=int, default=None)
+    parser.add_argument(
+        "--seed", type=int, default=None,
+        help="override configs/train.yaml's seed. Also changes the output checkpoint filename "
+        "to jepa_pretrained_full_seed{N}.pt so it doesn't overwrite the default-seed checkpoint.",
+    )
     args = parser.parse_args()
 
     data_cfg = load_config("data")
     model_cfg = load_config("model")
     train_cfg = load_config("train")
+    if args.seed is not None:
+        train_cfg = {**train_cfg, "seed": args.seed}
     processed_dir = resolve_path(data_cfg["paths"]["processed_dir"])
     all_branches = [b["name"] for b in model_cfg["branches"]]
 
@@ -91,10 +98,12 @@ def main():
     if not corpora:
         raise RuntimeError("no corpora available, run the data pipeline scripts first")
 
+    logger.info(f"pretraining (seed={train_cfg['seed']})")
     result = pretrain_multi_corpus(corpora, model_cfg, train_cfg, epochs=args.epochs)
 
     ckpt_dir = resolve_path(train_cfg["pretrain"]["checkpoint_dir"])
-    save_checkpoint(result["model"], ckpt_dir / "jepa_pretrained_full.pt")
+    ckpt_name = "jepa_pretrained_full.pt" if args.seed is None else f"jepa_pretrained_full_seed{args.seed}.pt"
+    save_checkpoint(result["model"], ckpt_dir / ckpt_name)
     logger.info(
         f"final loss={result['history']['loss'][-1]:.4f} collapsed_at={result['collapsed_at']}"
     )

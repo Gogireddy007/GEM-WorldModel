@@ -13,7 +13,6 @@ doing before trusting either.
 """
 
 import argparse
-import pickle
 
 import numpy as np
 import pandas as pd
@@ -23,9 +22,9 @@ from gem_worldmodel.data.madin_traits import fetch_madin_traits
 from gem_worldmodel.eval.intervention import intervene_on_dimension
 from gem_worldmodel.eval.probing import (
     heuristic_trophic_label,
-    linear_probe,
+    linear_probe_cv,
     most_predictive_latent_dim,
-    nonlinear_probe,
+    nonlinear_probe_cv,
 )
 from gem_worldmodel.features.ecological_traits import real_trophic_label
 from gem_worldmodel.models.heads import GrowthRateHead
@@ -39,16 +38,25 @@ logger = get_logger(__name__)
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--use-heuristic", action="store_true", help="use the old genome-derived proxy instead")
+    parser.add_argument(
+        "--use-heuristic", action="store_true", help="use the old genome-derived proxy instead"
+    )
     parser.add_argument(
         "--checkpoint", type=str, default="jepa_pretrained.pt",
         help="which pretrain checkpoint to probe (e.g. jepa_pretrained_full.pt for the combined-corpus run)",
+    )
+    parser.add_argument("--k", type=int, default=5, help="number of cross-validation folds for the probes")
+    parser.add_argument(
+        "--seed", type=int, default=None,
+        help="override configs/train.yaml's seed for the probe CV folds (e.g. for a robustness check across seeds)",
     )
     args = parser.parse_args()
 
     data_cfg = load_config("data")
     model_cfg = load_config("model")
     train_cfg = load_config("train")
+    if args.seed is not None:
+        train_cfg = {**train_cfg, "seed": args.seed}
     processed_dir = resolve_path(data_cfg["paths"]["processed_dir"])
     ckpt_dir = resolve_path(train_cfg["pretrain"]["checkpoint_dir"])
 
@@ -93,13 +101,20 @@ def main():
             "illustrative only, not statistically meaningful at this sample size."
         )
 
-    lin = linear_probe(latents_labeled, labels)
-    nonlin = nonlinear_probe(latents_labeled, labels)
-    logger.info(f"linear probe: accuracy={lin['accuracy']:.3f} auc={lin.get('auc', float('nan')):.3f}")
-    logger.info(f"nonlinear probe: accuracy={nonlin['accuracy']:.3f} auc={nonlin.get('auc', float('nan')):.3f}")
+    probe_seed = args.seed if args.seed is not None else 0
+    lin = linear_probe_cv(latents_labeled, labels, k=args.k, seed=probe_seed)
+    nonlin = nonlinear_probe_cv(latents_labeled, labels, k=args.k, seed=probe_seed)
+    logger.info(
+        f"linear probe (k={lin['k']}-fold CV, n={lin['n']}): "
+        f"accuracy={lin['accuracy']:.3f} auc={lin.get('auc', float('nan')):.3f}"
+    )
+    logger.info(
+        f"nonlinear probe (k={nonlin['k']}-fold CV, n={nonlin['n']}): "
+        f"accuracy={nonlin['accuracy']:.3f} auc={nonlin.get('auc', float('nan')):.3f}"
+    )
 
-    best_dim = most_predictive_latent_dim(latents_labeled, labels)
-    logger.info(f"most predictive latent dimension: {best_dim}")
+    best_dim = most_predictive_latent_dim(latents_labeled, labels, k=args.k, seed=probe_seed)
+    logger.info(f"most predictive latent dimension (cross-validated): {best_dim}")
 
     head = GrowthRateHead(jepa.latent_dim, load_config("model")["growth_rate_head"]["hidden_dim"], 1)
     result = intervene_on_dimension(torch.tensor(latents_labeled, dtype=torch.float32), head, best_dim)

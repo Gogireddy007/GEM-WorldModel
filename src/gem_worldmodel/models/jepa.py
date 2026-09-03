@@ -13,6 +13,7 @@ from gem_worldmodel.models.losses import embedding_std, latent_prediction_loss
 from gem_worldmodel.models.masking import BranchMasker
 from gem_worldmodel.models.predictor import Predictor
 from gem_worldmodel.utils.config import load_config
+from gem_worldmodel.utils.torch_utils import eval_mode
 
 
 class JEPA(nn.Module):
@@ -64,5 +65,11 @@ class JEPA(nn.Module):
     def joint_representation(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         """Joint representation over ALL branches (no masking), used downstream
         for the growth-rate head, probing, and intervention experiments.
+
+        Runs the context encoder in eval mode (dropout off) since this is a
+        pure inference call, restoring whatever mode it was in before. Left
+        this out originally and it meant identical inputs gave different
+        outputs across calls, see utils/torch_utils.py:eval_mode.
         """
-        return self.context_encoder(batch)
+        with eval_mode(self.context_encoder):
+            return self.context_encoder(batch)

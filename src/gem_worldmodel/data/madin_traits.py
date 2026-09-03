@@ -14,8 +14,6 @@ features/ecological_traits.py, since a label derived from genome composition
 structure circularly rather than discovering it.
 """
 
-from pathlib import Path
-
 import pandas as pd
 import requests
 

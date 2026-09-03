@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.0, 2026-09-02
+
+Added `--seed` overrides to every pipeline script and used them to check whether the project's findings hold under a different random seed. They partly don't: the headline "full-corpus pretraining beats labeled-only pretraining" benchmark result reverses under seed 1 (labeled-only wins on both R2 and Spearman instead), and the necessity/sufficiency absolute R2 numbers swing so much between seeds that one of them flips sign. What does hold under both seeds: pretraining beats a raw-feature baseline with no encoder, the probing comparison favors full-corpus pretraining, and the rrna16s branch is the most necessary one in both the whole-corpus and slow-grower regimes. FINDINGS.md rewritten with a "Seed robustness check" section and the overclaimed parts walked back rather than left standing.
+
+## 0.6.1, 2026-09-02
+
+Added `training/raw_baseline.py` and `scripts/raw_baseline_benchmark.py`: a raw-feature-only baseline (no JEPA encoder, standardized branch features straight into a regression head) evaluated on the identical cross-validation fold membership as the real benchmark, for a genuinely fair check of whether the encoder is earning its place. It is: R2/Spearman improve monotonically from raw features (-0.097/0.318) through labeled-only pretraining (-0.079/0.380) to full-corpus pretraining (-0.055/0.448). FINDINGS.md updated with this result.
+
+## 0.6.0, 2026-09-02
+
+Found and fixed a significant reproducibility bug: nothing in the codebase ever called `.eval()`, so every model's dropout layers were active during every inference call, including the target encoder during pretraining itself (it's never gradient-trained, so its dropout served no purpose, just noise in the training target). `torch.no_grad()` was used correctly everywhere but only disables gradient tracking, not dropout. `TargetEncoder.train()` now overridden to always force eval mode; added `utils/torch_utils.py:eval_mode` context manager and applied it to every genuine inference-only forward pass across `models/jepa.py`, `training/finetune.py`, and `eval/necessity_sufficiency.py`. Both pretrained checkpoints retrained from scratch (the bug affected pretraining itself, not just evaluation) and the full benchmark/probing/necessity-sufficiency suite rerun. The core finding survived and strengthened: full-corpus R2 improved 0.108 to 0.139, the 16S branch's necessity effect for slow growers strengthened from 1.311 to 1.492. FINDINGS.md rewritten with the corrected, now-reproducible numbers. Added 7 regression tests.
+
+## 0.5.1, 2026-09-02
+
+Fixed the last uncross-validated evaluation in the pipeline: `eval/probing.py`'s `linear_probe`/`nonlinear_probe` used a single 70/30 split (n=124 real-labeled species leaves ~37 test samples). Added `linear_probe_cv`/`nonlinear_probe_cv` and made `most_predictive_latent_dim` cross-validated too, `probe_intervene.py` uses these by default now. The corrected numbers actually sharpened the finding: labeled-only pretraining's linear probe accuracy dropped from a lucky 0.789 to a real 0.710, while the full-corpus checkpoint held steady and its AUC improved, making the "full-corpus pretraining helps" result more robust, not less. Added tests for the edge cases (too few samples in the minority class, k auto-shrinking). FINDINGS.md updated with the corrected numbers.
+
 ## 0.5.0, 2026-08-31
 
 Moved necessity/sufficiency masking to the same k-fold cross-validation as the benchmark (`eval/necessity_sufficiency.py:necessity_sufficiency_report_cv`), it was evaluating on data the model was fine-tuned on before. Fixed a real bug found while wiring this in (a coverage check against the wrong subset that would have crashed on any regime-restricted call). Added `FINDINGS.md`: the actual synthesis of everything the pipeline has produced, an honest answer to what the project set out to determine, not just per-stage numbers.
