@@ -21,6 +21,7 @@ from gem_worldmodel.training.pretrain import load_checkpoint
 from gem_worldmodel.utils.config import load_config
 from gem_worldmodel.utils.logging import get_logger
 from gem_worldmodel.utils.seed import set_seed
+from gem_worldmodel.utils.torch_utils import eval_mode
 
 logger = get_logger(__name__)
 
@@ -71,6 +72,7 @@ def finetune(
             for p in jepa.context_encoder.parameters():
                 p.requires_grad_(True)
 
+        jepa.context_encoder.train()  # explicit, not relying on the mode left over from the last val check
         train_idx = torch.tensor(splits["train"])
         train_batch = {name: tensor[train_idx] for name, tensor in branch_tensors.items()}
         z = jepa.context_encoder(train_batch)
@@ -82,7 +84,7 @@ def finetune(
         optimizer.step()
         history["train_loss"].append(loss.item())
 
-        with torch.no_grad():
+        with torch.no_grad(), eval_mode(jepa.context_encoder):
             val_idx = torch.tensor(splits["val"])
             if len(val_idx) > 0:
                 val_batch = {name: tensor[val_idx] for name, tensor in branch_tensors.items()}
@@ -134,7 +136,7 @@ def cross_validate(
         jepa = load_checkpoint(model_cfg, checkpoint_path)
         result = finetune(jepa, branch_tensors, target_log_doubling_time, train_cfg, splits=splits)
 
-        with torch.no_grad():
+        with torch.no_grad(), eval_mode(result["jepa"].context_encoder):
             test_idx_t = torch.tensor(test_idx)
             test_batch = {name: tensor[test_idx_t] for name, tensor in branch_tensors.items()}
             z = result["jepa"].context_encoder(test_batch)

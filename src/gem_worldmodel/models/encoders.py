@@ -75,8 +75,25 @@ class TargetEncoder(nn.Module):
         self.bank = copy.deepcopy(context_encoder.bank)
         for p in self.bank.parameters():
             p.requires_grad_(False)
+        self.bank.eval()
         self.ema_decay = ema_decay
         self.latent_dim = context_encoder.latent_dim
+
+    def train(self, mode: bool = True) -> "TargetEncoder":
+        """Always stays in eval mode regardless of what's requested. This
+        encoder is never trained by gradient descent, only EMA-updated, so
+        its dropout layers should never be active: they'd just inject random
+        noise into the training TARGET `s`, degrading the JEPA objective for
+        no benefit, dropout's regularization value only applies to something
+        that's actually being fit by gradient descent. Found by direct repro
+        on 2026-09-02: two forward passes on identical input gave a max
+        absolute difference of 1.13 (latents were meant to be L2-normalized
+        to unit scale), because nothing in this codebase ever called
+        `.eval()` and a freshly constructed/loaded nn.Module defaults to
+        `.training = True`. This bug affected every reported number in the
+        project up to that point, see research_log.md.
+        """
+        return super().train(False)
 
     @torch.no_grad()
     def forward(self, branch_name: str, x: torch.Tensor) -> torch.Tensor:

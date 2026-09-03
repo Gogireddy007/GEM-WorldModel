@@ -16,6 +16,7 @@ from gem_worldmodel.eval.benchmark import compute_metrics
 from gem_worldmodel.models.heads import GrowthRateHead
 from gem_worldmodel.models.jepa import JEPA
 from gem_worldmodel.utils.logging import get_logger
+from gem_worldmodel.utils.torch_utils import eval_mode
 
 logger = get_logger(__name__)
 
@@ -45,7 +46,7 @@ def _neutralize(
 def evaluate(
     jepa: JEPA, head: GrowthRateHead, branch_tensors: dict[str, torch.Tensor], y_true_log: np.ndarray
 ) -> dict[str, float]:
-    with torch.no_grad():
+    with torch.no_grad(), eval_mode(jepa.context_encoder):
         z = jepa.context_encoder(branch_tensors)
         pred_log = head(z).numpy()
     return compute_metrics(y_true_log, pred_log)
@@ -115,13 +116,12 @@ def necessity_sufficiency_report_cv(
             continue
         test_tensors = {name: tensor[test_idx] for name, tensor in branch_tensors.items()}
 
-        with torch.no_grad():
+        with torch.no_grad(), eval_mode(jepa.context_encoder):
             oof_pred[test_idx] = head(jepa.context_encoder(test_tensors)).numpy()
-        covered[test_idx] = True
+            covered[test_idx] = True
 
-        for branch in branch_names:
-            keep_all_but = set(branch_names) - {branch}
-            with torch.no_grad():
+            for branch in branch_names:
+                keep_all_but = set(branch_names) - {branch}
                 nec_batch = _neutralize(test_tensors, keep_all_but, mean_source=train_tensors)
                 oof_necessity[branch][test_idx] = head(jepa.context_encoder(nec_batch)).numpy()
                 suf_batch = _neutralize(test_tensors, {branch}, mean_source=train_tensors)
