@@ -6,8 +6,11 @@ in rrna16s.py is kept as a separate baseline for comparison, not the primary
 source.
 """
 
+import re
+
 import dendropy
 import numpy as np
+import pandas as pd
 from sklearn.manifold import MDS
 
 from gem_worldmodel.utils.config import load_config
@@ -118,6 +121,52 @@ def landmark_distance_embedding(
         vec = np.array([dist_map.get(leaf, np.nan) for dist_map in landmark_distances], dtype=float)
         embeddings[leaf.taxon.label] = vec
     return embeddings
+
+
+def genus_centroid_embeddings(
+    non_tip_rows: pd.DataFrame,
+    tip_embeddings: dict[str, np.ndarray],
+    tip_taxonomy: dict[str, str],
+) -> tuple[dict[str, np.ndarray], pd.Series]:
+    """Approximate a phylogenetic-distance embedding for genomes that aren't
+    themselves GTDB tree tips, by reusing the embeddings of tree tips that
+    share the same genus.
+
+    This is deliberately not a new tree placement, it's a same-genus nearest-
+    neighbor stand-in: every non-tip accession whose GTDB genus matches at
+    least one already-embedded tip gets the centroid (mean) of that genus's
+    tip embeddings. Accessions whose genus has no embedded tip get no entry
+    (caller decides whether to drop them or fill NaN).
+
+    Returns (embeddings, genus_series) where embeddings maps accession ->
+    vector and genus_series maps accession -> the g__ token matched on, so
+    callers can log/audit exactly what was approximated and how.
+    """
+
+    def extract_genus(taxonomy: str) -> str | None:
+        m = re.search(r"g__[^;]*", taxonomy or "")
+        return m.group(0) if m else None
+
+    tip_genus_to_embeddings: dict[str, list[np.ndarray]] = {}
+    for acc, taxonomy in tip_taxonomy.items():
+        genus = extract_genus(taxonomy)
+        if genus is None or genus == "g__" or acc not in tip_embeddings:
+            continue
+        tip_genus_to_embeddings.setdefault(genus, []).append(tip_embeddings[acc])
+
+    genus_centroids = {
+        genus: np.mean(np.stack(vecs), axis=0) for genus, vecs in tip_genus_to_embeddings.items()
+    }
+
+    result_embeddings: dict[str, np.ndarray] = {}
+    matched_genus: dict[str, str] = {}
+    for _, row in non_tip_rows.iterrows():
+        genus = extract_genus(row.get("gtdb_taxonomy"))
+        if genus is not None and genus in genus_centroids:
+            result_embeddings[row["accession"]] = genus_centroids[genus]
+            matched_genus[row["accession"]] = genus
+
+    return result_embeddings, pd.Series(matched_genus, name="matched_genus")
 
 
 def build_gtdb_distance_embeddings(

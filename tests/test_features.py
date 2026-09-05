@@ -1,5 +1,6 @@
 import dendropy
 import numpy as np
+import pandas as pd
 import pytest
 
 from gem_worldmodel.features import cub, genome_traits, phylogeny, rrna16s, temperature
@@ -66,6 +67,32 @@ def test_landmark_distance_embedding_matches_known_tree_distances():
     # (distance to itself) among its 3 entries
     for vec in emb.values():
         assert np.isclose(vec.min(), 0.0)
+
+
+def test_genus_centroid_embeddings_averages_same_genus_tips():
+    tip_embeddings = {
+        "tipA1": np.array([0.0, 0.0]),
+        "tipA2": np.array([2.0, 0.0]),
+        "tipB1": np.array([10.0, 10.0]),
+    }
+    tip_taxonomy = {
+        "tipA1": "d__Bacteria;p__X;c__X;o__X;f__X;g__Foo;s__Foo alpha",
+        "tipA2": "d__Bacteria;p__X;c__X;o__X;f__X;g__Foo;s__Foo beta",
+        "tipB1": "d__Bacteria;p__X;c__X;o__X;f__X;g__Bar;s__Bar alpha",
+    }
+    non_tip_rows = pd.DataFrame(
+        [
+            {"accession": "new1", "gtdb_taxonomy": "d__Bacteria;p__X;c__X;o__X;f__X;g__Foo;s__Foo gamma"},
+            {"accession": "new2", "gtdb_taxonomy": "d__Bacteria;p__X;c__X;o__X;f__X;g__Baz;s__Baz alpha"},
+        ]
+    )
+    embeddings, matched_genus = phylogeny.genus_centroid_embeddings(non_tip_rows, tip_embeddings, tip_taxonomy)
+    # new1 is genus Foo, matches tipA1+tipA2 -> centroid (1.0, 0.0)
+    assert np.allclose(embeddings["new1"], [1.0, 0.0])
+    assert matched_genus["new1"] == "g__Foo"
+    # new2 is genus Baz, no tip has that genus -> no entry, not silently dropped-to-zero
+    assert "new2" not in embeddings
+    assert "new2" not in matched_genus.index
 
 
 def test_classical_mds_embedding_shape():

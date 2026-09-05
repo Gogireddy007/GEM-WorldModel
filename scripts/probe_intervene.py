@@ -50,6 +50,10 @@ def main():
         "--seed", type=int, default=None,
         help="override configs/train.yaml's seed for the probe CV folds (e.g. for a robustness check across seeds)",
     )
+    parser.add_argument(
+        "--features-file", type=str, default="features_sample.csv",
+        help="which processed feature table to probe, e.g. features_sample_expanded.csv.",
+    )
     args = parser.parse_args()
 
     data_cfg = load_config("data")
@@ -60,7 +64,7 @@ def main():
     processed_dir = resolve_path(data_cfg["paths"]["processed_dir"])
     ckpt_dir = resolve_path(train_cfg["pretrain"]["checkpoint_dir"])
 
-    df = pd.read_csv(processed_dir / "features_sample.csv")
+    df = pd.read_csv(processed_dir / args.features_file)
     tensors, _ = build_branch_tensors(df, model_cfg)
 
     jepa = load_checkpoint(model_cfg, ckpt_dir / args.checkpoint)
