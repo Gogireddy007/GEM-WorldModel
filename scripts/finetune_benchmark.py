@@ -14,6 +14,7 @@ so there's no leakage between folds.
 """
 
 import argparse
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -54,6 +55,11 @@ def main():
         help="override configs/train.yaml's seed for the CV fold splits (e.g. for a robustness check "
         "across seeds). Also changes the output CSV filename to include the seed.",
     )
+    parser.add_argument(
+        "--features-file", type=str, default="features_sample.csv",
+        help="which processed feature table to benchmark on, e.g. features_sample_expanded.csv "
+        "for the 304-species corpus. Using a non-default file tags the output CSV filename.",
+    )
     args = parser.parse_args()
 
     data_cfg = load_config("data")
@@ -64,7 +70,7 @@ def main():
     processed_dir = resolve_path(data_cfg["paths"]["processed_dir"])
     ckpt_dir = resolve_path(train_cfg["pretrain"]["checkpoint_dir"])
 
-    df = pd.read_csv(processed_dir / "features_sample.csv")
+    df = pd.read_csv(processed_dir / args.features_file)
     tensors, _ = build_branch_tensors(df, model_cfg)
     target_log = torch.tensor(np.log(df["doubling_time_hours_ref"].to_numpy()), dtype=torch.float32)
 
@@ -94,7 +100,9 @@ def main():
     )
     print(table.to_string(index=False))
 
-    out_name = "benchmark_results.csv" if args.seed is None else f"benchmark_results_seed{args.seed}.csv"
+    is_default = args.features_file == "features_sample.csv"
+    tag = "" if is_default else f"_{Path(args.features_file).stem.removeprefix('features_sample_')}"
+    out_name = f"benchmark_results{tag}.csv" if args.seed is None else f"benchmark_results{tag}_seed{args.seed}.csv"
     out_path = processed_dir / out_name
     table.to_csv(out_path, index=False)
     logger.info(f"wrote {out_path}")

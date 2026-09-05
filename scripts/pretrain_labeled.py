@@ -8,6 +8,7 @@ features built for the unlabeled GEM MAG corpus too
 
 import argparse
 import pickle
+from pathlib import Path
 
 import pandas as pd
 
@@ -27,6 +28,13 @@ def main():
         "Also changes the output checkpoint filename to jepa_pretrained_seed{N}.pt so it "
         "doesn't overwrite the default-seed checkpoint.",
     )
+    parser.add_argument(
+        "--features-file", type=str, default="features_sample.csv",
+        help="which processed feature table to pretrain on, e.g. features_sample_expanded.csv "
+        "for the 304-species corpus with genus-centroid-approximated phylogeny. Using a "
+        "non-default file tags the output checkpoint filename so it never overwrites the "
+        "default corpus's checkpoint.",
+    )
     args = parser.parse_args()
 
     data_cfg = load_config("data")
@@ -36,17 +44,20 @@ def main():
         train_cfg = {**train_cfg, "seed": args.seed}
     processed_dir = resolve_path(data_cfg["paths"]["processed_dir"])
 
-    df = pd.read_csv(processed_dir / "features_sample.csv")
-    logger.info(f"pretraining on {len(df)} real genomes (seed={train_cfg['seed']})")
+    df = pd.read_csv(processed_dir / args.features_file)
+    logger.info(f"pretraining on {len(df)} real genomes from {args.features_file} (seed={train_cfg['seed']})")
 
     tensors, standardizers = build_branch_tensors(df, model_cfg)
     result = pretrain(tensors, model_cfg, train_cfg)
 
+    is_default = args.features_file == "features_sample.csv"
+    tag = "" if is_default else f"_{Path(args.features_file).stem.removeprefix('features_sample_')}"
     ckpt_dir = resolve_path(train_cfg["pretrain"]["checkpoint_dir"])
-    ckpt_name = "jepa_pretrained.pt" if args.seed is None else f"jepa_pretrained_seed{args.seed}.pt"
+    ckpt_name = f"jepa_pretrained{tag}.pt" if args.seed is None else f"jepa_pretrained{tag}_seed{args.seed}.pt"
     save_checkpoint(result["model"], ckpt_dir / ckpt_name)
     if args.seed is None:
-        with open(ckpt_dir / "standardizers.pkl", "wb") as f:
+        standardizers_name = "standardizers.pkl" if is_default else f"standardizers{tag}.pkl"
+        with open(ckpt_dir / standardizers_name, "wb") as f:
             pickle.dump(standardizers, f)
 
     logger.info(

@@ -12,6 +12,7 @@ scripts/gem_fast_features.py, and scripts/gem_slow_features.py first.
 
 import argparse
 from ast import literal_eval
+from pathlib import Path
 
 import pandas as pd
 
@@ -32,6 +33,12 @@ def main():
         help="override configs/train.yaml's seed. Also changes the output checkpoint filename "
         "to jepa_pretrained_full_seed{N}.pt so it doesn't overwrite the default-seed checkpoint.",
     )
+    parser.add_argument(
+        "--features-file", type=str, default="features_sample.csv",
+        help="which processed feature table to use for the labeled sub-corpus, e.g. "
+        "features_sample_expanded.csv for the 304-species corpus. Using a non-default file "
+        "tags the output checkpoint filename so it never overwrites the default corpus's checkpoint.",
+    )
     args = parser.parse_args()
 
     data_cfg = load_config("data")
@@ -44,7 +51,7 @@ def main():
 
     corpora = []
 
-    labeled_path = processed_dir / "features_sample.csv"
+    labeled_path = processed_dir / args.features_file
     if labeled_path.exists():
         labeled_df = pd.read_csv(labeled_path)
         labeled_tensors, _ = build_branch_tensors(labeled_df, model_cfg, branches=all_branches)
@@ -101,8 +108,12 @@ def main():
     logger.info(f"pretraining (seed={train_cfg['seed']})")
     result = pretrain_multi_corpus(corpora, model_cfg, train_cfg, epochs=args.epochs)
 
+    is_default = args.features_file == "features_sample.csv"
+    tag = "" if is_default else f"_{Path(args.features_file).stem.removeprefix('features_sample_')}"
     ckpt_dir = resolve_path(train_cfg["pretrain"]["checkpoint_dir"])
-    ckpt_name = "jepa_pretrained_full.pt" if args.seed is None else f"jepa_pretrained_full_seed{args.seed}.pt"
+    ckpt_name = (
+        f"jepa_pretrained_full{tag}.pt" if args.seed is None else f"jepa_pretrained_full{tag}_seed{args.seed}.pt"
+    )
     save_checkpoint(result["model"], ckpt_dir / ckpt_name)
     logger.info(
         f"final loss={result['history']['loss'][-1]:.4f} collapsed_at={result['collapsed_at']}"
