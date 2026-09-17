@@ -121,6 +121,11 @@ def main():
         help="output filename under data/processed/, use a distinct name to run concurrently "
         "with another gem_slow_features.py invocation without both processes fighting over one file",
     )
+    parser.add_argument(
+        "--genome-ids-file", type=str, default=None,
+        help="CSV with a genome_id column restricting the todo list to just these genomes, "
+        "e.g. to prioritize a specific quality-filtered subset over the full backlog",
+    )
     args = parser.parse_args()
 
     data_cfg = load_config("data")
@@ -155,7 +160,13 @@ def main():
         done = pd.DataFrame(columns=["genome_id", "gc_content", "genome_size_bp_verified"])
         already = set()
 
-    todo = base[~base["genome_id"].isin(already)]["genome_id"].tolist()
+    candidates = base
+    if args.genome_ids_file:
+        wanted = set(pd.read_csv(args.genome_ids_file)["genome_id"])
+        candidates = base[base["genome_id"].isin(wanted)]
+        logger.info(f"restricting to {len(wanted)} genome IDs from {args.genome_ids_file}")
+
+    todo = candidates[~candidates["genome_id"].isin(already)]["genome_id"].tolist()
     if args.limit:
         # Shuffle before truncating, genome_ids are grouped by metagenome_id
         # in file order, so taking the first N would bias toward a handful of
