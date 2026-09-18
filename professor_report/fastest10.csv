@@ -1,0 +1,11 @@
+genome_id,predicted_doubling_time_hours,genome_size_bp,gc_content,branches_used,ecosystem_category,habitat
+3300029771_7,0.07278257,2855187.0,0.3585807164294318,genomic_traits+gtdb_distance,Human,Human feces
+3300028983_3,0.075786546,3473647.0,0.4343604862555119,genomic_traits+gtdb_distance,Human,Human host-associated
+3300029132_4,0.076835155,5015246.0,0.3561643835616438,genomic_traits+gtdb_distance,Human,Host-associated
+3300014529_9,0.07706254,3191747.0,0.4311228302243254,genomic_traits+gtdb_distance,Human,Human host-associated
+3300014522_4,0.07842548,3794630.0,0.412107899847943,genomic_traits+gtdb_distance,Human,Human host-associated
+3300028969_5,0.07849965,2873617.0,0.4570508178368934,genomic_traits+gtdb_distance,Human,Human host-associated
+3300008089_5,0.07962621,3363098.0,0.3688560369040688,genomic_traits+gtdb_distance,Human,Human
+3300029855_11,0.08313667,2940759.0,0.4685844708797966,genomic_traits+gtdb_distance,Human,Human fecal
+3300014600_2,0.08473123,5803723.0,0.4421946050836678,genomic_traits+gtdb_distance,Built environment,city subway metal
+3300029360_24,0.0909806,2295010.0,0.4254661199733334,genomic_traits+gtdb_distance,Human,Human feces

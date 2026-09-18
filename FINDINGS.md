@@ -2,6 +2,8 @@
 
 What this project set out to answer: what controls microbial growth rate, and does the answer differ for fast-growing organisms (doubling time under 5 hours) versus slow-growing ones (5 hours or more). Everything below is from real runs on real data, cross-validated where the sample size demanded it, current as of 2026-09-02. Numbers this small a corpus produces are not the kind you'd put in a paper's abstract, they're honestly reported anyway because that's the actual state of the evidence right now.
 
+**Update, 2026-09-17, version 1.0 and after:** a stronger baseline changed the answer to one of this document's central questions. See "A stronger head changes the picture" below before reading the JEPA-versus-raw-features sections that follow as the final word, they were true for the setup they were tested under, but that setup used a weak growth-rate head on both sides of the comparison. With a proper head, the ordering flips.
+
 A real bug was found and fixed right before this version: nothing in the codebase ever called `.eval()` on the model, so its dropout layers were active during every inference call, including the target encoder during pretraining itself, where it should never have been active at all (see research_log.md, 2026-09-02). Every checkpoint and every number below was regenerated after the fix. The core finding held up, and in a couple of places got stronger, not weaker.
 
 A follow-up question then had to be asked directly: were those numbers real, or just a lucky seed? Every checkpoint and every evaluation below was rerun end to end across seven random seeds total (42, 1, 7, 13, 99, 123, 2024) to check. The answer is mixed, and it's reported honestly, with exact replication fractions, in "Seed robustness check" further down: some of what's claimed here holds up in the large majority of seeds, one of the headline comparisons is close to a coin flip.
@@ -123,6 +125,97 @@ Full-corpus pretraining beat labeled-only pretraining on both metrics at n=304 (
 
 Net read: the encoder-beats-raw-features finding and the 16S-branch-dominance finding both hold up, and in the 16S case, the margin actually widened. The full-corpus-beats-labeled-only comparison pointed the same direction again but wasn't re-checked for seed stability at this corpus size, so it isn't more trustworthy than before, just not contradicted. The genuinely new and slightly uncomfortable result is the Spearman regression alongside gRodon/Phydon's sharp improvement, a reminder that "more labeled data" via genus-centroid approximation isn't a free win, it changes what's in the corpus, and that composition shift mattered here as much as the extra count did.
 
+## A stronger head changes the picture
+
+Everything above compares models that all share one thing: a small neural network head, trained by gradient descent, sitting on top of whatever features feed it. That head was never checked against a real alternative until version 1.0. It should have been.
+
+Two things were tested together, on the 304-species corpus, same folds, same seven seeds already used everywhere in this document: swapping the small fine-tuned head for gradient-boosted trees, and checking whether the pretrained JEPA encoder still added anything once that swap was made.
+
+**Encoder plus gradient-boosted trees, versus the old encoder plus small fine-tuned head, at seed 42:** R2 went from -0.044 to 0.096, Spearman from 0.405 to 0.687. Checked across all seven seeds, R2 came out positive in six of seven, and Spearman held in a tight 0.60 to 0.69 band every single time, far steadier than the old head ever managed.
+
+That result did not survive its own control. **Raw features, no encoder at all, plus gradient-boosted trees, beat the encoder version in every one of the seven seeds**, on both R2 and Spearman. The gain was never coming from the encoder. It was the head all along.
+
+Run the full way, with the fast/slow regime breakdown and against both established tools, raw features plus gradient-boosted trees is the best result this project has produced:
+
+| model | R2 (all, seed 42) | Spearman (all, seed 42) | R2 beats gRodon | R2 beats Phydon |
+|---|---|---|---|---|
+| raw features, gradient-boosted trees | 0.132 | 0.760 | 7 / 7 seeds | 7 / 7 seeds |
+| gRodon reproduction | -0.032 | 0.613 | - | - |
+| Phydon reproduction | 0.100 | 0.775 | - | - |
+
+This is the first result anywhere in this project that beats gRodon outright, on both metrics, in every seed tested, and beats Phydon on R2 in every seed too, though Phydon still edges it slightly on Spearman more often than not (wins 5 of 7). Nothing about the JEPA architecture, the pretraining, or the branch masking was needed to get here, standardized raw genome features and a tree-based model got further than all of it.
+
+Two things this does not fix on its own, both followed up the same day. The fast-growth regime is still very poor, R2 around -26 in that regime, unchanged from every earlier version of this model. Looking at the actual mispredictions: 72% of fast growers get predicted slower than they really are, and it's a real, traceable cause, not noise. The whole corpus's median doubling time is 7 hours, but the fast regime's true median is 1.71 hours, and a model trained to minimize squared error over that whole skewed range naturally gets pulled toward the middle and compresses fast growers upward. This is a property of the training loss and the label distribution, not a mistake in the features, head, or encoder, and it needs a loss change or reweighting to fix, not more tuning of what's already here.
+
+The tree model's own feature importance (roughly 45% GTDB phylogeny, 28% each for 16S and genome traits across the whole corpus at seed 42) doesn't fully agree with the necessity/sufficiency finding elsewhere in this document that 16S carried the most weight for slow growers specifically. Splitting the importance calculation by regime instead of averaging over the whole corpus narrows the gap: within slow growers alone, rrna16s importance rises to 0.41, close behind gtdb_distance at 0.47, the same direction as the necessity/sufficiency result, just not the same ranking. Real, partial agreement between the two methods, not a full match, both numbers are kept here rather than picking the one that sounds more consistent.
+
+The honest updated recommendation: for anyone who wants the most accurate prediction this project can currently produce, use raw features with gradient-boosted trees, not the JEPA pipeline. The JEPA architecture and everything built around it remains useful for the interpretability questions, what matters and by how much, but as a predictor on its own it has been outperformed by something far simpler.
+
+## Does blending with gRodon and Phydon help further?
+
+Checked next, the same way, across all seven seeds, with blend weights fit honestly (never using a fold's own labels to pick the weights that score it, see research_log.md for exactly how). The answer is a real trade-off, not a clean win:
+
+| | overall R2 | overall Spearman | worst fast-regime R2 across all seven seeds |
+|---|---|---|---|
+| gradient-boosted trees alone | best in 7 / 7 seeds | never best | -109 |
+| Phydon alone | worst | mixed | -627 |
+| blend of all three | middle, every seed | best in 7 / 7 seeds | -28.6 |
+
+The blend never beats plain gradient-boosted trees on overall R2. But it wins overall Spearman in every seed tested, beating both individual models each time, and it substantially tempers the fast-growth regime's failure, the single worst and most persistent problem this project has had. Plain gradient-boosted trees and Phydon both have seeds where the fast regime's R2 falls into the hundreds of negative points, the blend's worst case across all seven seeds is a comparatively tame -28.6. Still a real weakness, not solved, but meaningfully less catastrophic every single time.
+
+Which one to use depends on the goal. For the single best overall R2, use gradient-boosted trees alone. For a model that ranks organisms more reliably and doesn't fall apart as badly on fast growers, the blend is the better choice. Both are kept here rather than declaring one the winner, because "better" depends on what the number is actually going to be used for.
+
+## Where exactly is the training data thin, and does patching it help?
+
+A finer scan of the 304-species corpus (eight bins each way instead of six) found ten regions where the labeled species are dominated by one genus or one narrow growth condition, not just the two spotted earlier by eye. Checked which of those ten actually matter by counting how many real GEM catalog genomes fall into each one. Two stood out:
+
+- The known high GC, small genome, thermophile-heavy region: 1,580 real genomes, 3.0% of the entire 52,515-genome catalog.
+- A medium-high GC, 4-5.7 million base pair region that's 50% Vibrio in the training set: 918 real genomes, 1.7% of the catalog, not identified before this check.
+
+Vibrio species are some of the fastest-growing bacteria known, the opposite concern from the thermophile region. Checked it directly against real predictions from the high-quality genome set: genomes landing in this region get a median predicted doubling time of 0.46 hours, against 0.60 hours for everything else. Real and measurable, in the expected direction.
+
+Went looking for a fix. Found 92 real, labeled species with a published growth rate that had never been added to the corpus, only because they lacked a genus-level tree match, the requirement the earlier expansion used. That requirement turned out to be stricter than necessary, only the phylogeny branch needs a tree placement at all. Built a family-level fallback for that branch and pulled real NCBI data for the 39 of those 92 species that were addable even with family-level matching (the other 53 have no match at genus or family level anywhere in the tree).
+
+Checked directly whether any of the 39 new species land in either known gap region before running anything further: none do, zero for zero. Ran the benchmark anyway, checked across four seeds, and the 343-species corpus came out flat or worse than the 304-species one in every seed, R2 worse in two of four, Spearman worse in all four, never better in any. A real, checked, negative result: adding real, legitimately labeled species that don't happen to land where the actual problem is does not fix the problem, and adds enough noise to make things slightly worse on average.
+
+The honest state of this at the time it was written: the two gaps are real, quantified, and named, but nothing reachable seemed to fill them. That turned out to be one search short of true, see below.
+
+### A real search found gap-filling species, and even they did not clearly help
+
+Checked three outside sources for real growth-rate data beyond gRodon and Madin. BacDive, the largest standardized bacterial phenotype database that exists, does not have a doubling-time field at all, checked directly against its own documentation. EGGO's 217,074 growth-rate values are gRodon's own predictions, not real measurements, using them would mean training this project's model to imitate gRodon rather than learn from data. A recent bioRxiv preprint with a promising-looking dataset could not be verified, the site blocked every access attempt.
+
+The real find came from a source already partly in this project: Madin et al. 2020's full published dataset (14,893 species, already cached locally for a different earlier use), which has 502 species with a real doubling time, genome size, and GC content already computed, far more than the roughly 389 species this project's existing pipeline pulls from a narrower subset. Checking those 502 directly against the two known gap regions found 11 real species landing exactly there, with genuinely mixed fast and slow growth rates, not more of the bias already in those regions. Ten resolved to real NCBI accessions, and all ten turned out to already be exact GTDB tree tips once matched against GTDB's own pinned representative genome versions, not an approximation at all. Pulled real data for all ten and rebuilt the corpus, 353 species total.
+
+Benchmarked the same way as everything else, four seeds, against the 304 and 343-species corpora:
+
+| seed | 304 R2 | 343 R2 | 353 (gap-filled) R2 | 304 Spearman | 343 Spearman | 353 Spearman |
+|---|---|---|---|---|---|---|
+| 42 | 0.132 | 0.135 | 0.094 | 0.760 | 0.740 | 0.668 |
+| 1 | 0.086 | 0.086 | 0.101 | 0.733 | 0.720 | 0.677 |
+| 7 | 0.126 | 0.077 | 0.130 | 0.760 | 0.696 | 0.686 |
+| 13 | 0.189 | 0.100 | 0.064 | 0.771 | 0.734 | 0.673 |
+
+Spearman is worse in all four seeds against both comparisons. R2 is mixed, never a clean win. Even a carefully targeted, real, well-motivated addition did not clearly help. The likely reason: ten species is a small addition, about 3% more data, and they were deliberately chosen to look different from their neighbors, which is exactly what makes a species hard to predict correctly when it lands in a held-out cross-validation fold with nothing like it in the training folds. That is the same small-sample-size ceiling this project runs into everywhere else, just showing up in a new place.
+
+Following through on the standard this check was held to, use it only if it helps: it did not clearly help, so `features_sample_gapfilled.csv` is not adopted as the corpus default. It stays available and documented, a real, honestly negative result from a real, well-targeted attempt, not hidden because the outcome wasn't the hoped-for one.
+
+## Is requiring an exact tree tip even the right rule anymore?
+
+This project has required an exact GTDB tree-tip placement as the default ever since the original 175-species corpus. With real evidence now in hand about how approximate placement performs, that assumption was checked directly rather than left standing: the same benchmark, same four seeds, run on the 175-species exact-only corpus, the 304-species corpus with genus-level approximation, and the 343-species corpus with family-level approximation added on top, side by side.
+
+| seed | 175, exact tip only | 304, + genus approximation | 343, + family approximation |
+|---|---|---|---|
+| 42 | 0.083 | 0.132 | 0.135 |
+| 1 | 0.040 | 0.086 | 0.086 |
+| 7 | 0.067 | 0.126 | 0.077 |
+| 13 | 0.154 | 0.189 | 0.100 |
+
+(R2, raw features plus gradient-boosted trees, the current best model)
+
+Genus-level approximation is a clean win, R2 improves in all four seeds with no exceptions, and Spearman improves in all four too. This reverses an earlier finding in this document: under the old, fine-tuned JEPA pipeline, this same expansion looked like it hurt Spearman. Under the model that actually matters now, it clearly helps. Family-level approximation is a net negative in three of the four seeds, confirming genus and family level placement are not equally trustworthy, family level is not just a weaker approximation, in this test it was worse than not adding those species at all.
+
+The updated, evidence-based answer: exact-tip-only should not be the default going forward. Genus-level relaxation should be the standard, it is a real, repeatedly confirmed improvement on the model that matters. Family-level relaxation should not be used by default without a stronger reason to trust a specific batch of family-matched species than availability alone.
+
 ## What this doesn't yet show
 
 - **R2 is negative almost everywhere.** The model is picking up real rank-order signal (Spearman 0.38-0.45, probing well above chance) but isn't yet a good absolute growth-rate predictor. Both gRodon and Phydon baselines still beat it on Spearman (0.582-0.626 vs. our 0.380-0.448). At 175 species, that gap could close, widen, or reverse with more real labeled data, this isn't a claim that our approach beats the established methods, it doesn't yet.
@@ -131,5 +224,7 @@ Net read: the encoder-beats-raw-features finding and the 16S-branch-dominance fi
 - **Most of the specific numbers in this document are seed-sensitive at this sample size.** The "Seed robustness check" section above, now run across 7 independent seeds rather than one or two, found a sign flip in the headline necessity/sufficiency R2 in 5 of 7 runs, and the "full-corpus beats labeled-only" benchmark ordering holding in only 3-4 of 7 seeds depending on the metric, a coin flip. Treat any single number here as an estimate with a wide, unquantified error bar, not a precise result, until there's a bigger labeled corpus to narrow it.
 
 ## Bottom line
+
+**Update, version 1.0:** the paragraph below was true for the JEPA pipeline as it stood through the seed robustness check. It is no longer the most accurate thing this project can produce, see "A stronger head changes the picture" above. Raw features plus gradient-boosted trees now beats gRodon outright and matches or beats Phydon, something nothing in this paragraph could yet claim. The paragraph is kept as written because it was an honest account of that stage of the work, not because it is still the final answer.
 
 For slow-growing organisms, the 16S phylogeny branch carries more predictive weight than either GTDB phylogeny or genome composition in this model, and that ranking held up not just under cross-validation and a full retraining after a reproducibility bug fix, but in 6 of 7 independent random seeds, with the one exception a near-tie rather than a reversal, even though the exact R2 numbers attached to it swing a lot between seeds. That's the most trustworthy result in this document. Pretraining the encoder at all, rather than feeding raw features straight to the growth-rate head, also held up in essentially every seed tested (7/7 on R2). Whether pretraining on the larger unlabeled GEM corpus specifically beats pretraining on the small labeled set alone did not hold up: it won in 4 of 7 seeds on R2 and 3 of 7 on Spearman, indistinguishable from chance, so it's reported here as an open question, not a finding, and there's no reason to expect more seeds would resolve it one way, the 175-species sample size is the actual limit, not bad luck. For fast-growing organisms, no regime-specific claim can be made yet under any seed tested, the sample is too small and the model's fit too poor and too seed-unstable there. What hasn't changed is that the whole stack still trails gRodon and Phydon on absolute predictive accuracy. The clearest path to a stronger answer is more labeled species (see README's "Known limitations" for exactly where the current 175-species ceiling comes from and what it would take to raise it), not more pipeline engineering or more seeds, the pipeline itself is real, reproducible, and now honestly checked across seven independent random draws for the kind of seed-luck that a small corpus is prone to.

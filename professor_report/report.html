@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Growth Rate Predictions for the High Quality GEM Genomes</title>
+<style>
+  body { font-family: "Times New Roman", Times, serif; max-width: 700px; margin: 0 auto; padding: 48px 24px 100px; color: #000; line-height: 1.5; font-size: 17px; }
+  h1 { font-size: 22px; margin-bottom: 2px; }
+  .subtitle { font-size: 14px; margin-bottom: 30px; font-style: italic; }
+  h2 { font-size: 18px; margin-top: 36px; }
+  p { margin: 12px 0; text-align: justify; }
+  ul, ol { margin: 10px 0; padding-left: 28px; }
+  li { margin: 4px 0; }
+  img { max-width: 100%; margin: 14px 0; display: block; }
+  .caption { font-size: 13px; margin-top: -6px; margin-bottom: 20px; font-style: italic; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 15px; }
+  th, td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid #ccc; }
+  code { font-family: monospace; font-size: 14px; }
+  hr { border: none; border-top: 1px solid #ccc; margin: 36px 0; }
+</style>
+</head>
+<body>
+
+<h1>Growth Rate Predictions for the High Quality GEM Genomes</h1>
+<div class="subtitle">GEM-WorldModel project, September 2026</div>
+
+<p>You asked for predicted growth rates on the high quality GEM genomes, about 9,000 of them, genomes that
+have never had a growth rate measured in a lab. This report covers that work: how we picked the genomes, how
+the prediction works, what came out of it, and where it is still weak.</p>
+
+<h2>How many genomes, and where they came from</h2>
+
+<p>The GEM catalog grades every genome it holds using a standard called MIMAG, which sorts genomes into
+high quality, medium quality, or lower, based on how complete and clean the assembly is. We filtered the
+whole catalog down to the genomes marked high quality. That gave us 9,143 genomes, close to the "about
+9,000 to 10,000" you asked about, so this should be the right set.</p>
+
+<p>Of those 9,143 genomes, we were able to produce a prediction for 9,134 of them. That is 99.9 percent.</p>
+
+<h2>How the prediction works</h2>
+
+<p>For each genome, three things are pulled straight from its DNA sequence:</p>
+
+<ol>
+<li>Genome size, GC content, and how the organism uses its DNA "words," known as codon usage. Past work has
+shown this tracks with growth rate.</li>
+<li>Where the organism sits on the tree of life, compared to other organisms whose growth rate is already
+known.</li>
+<li>The organism's 16S gene, which gives a second, independent way of placing it on the tree of life.</li>
+</ol>
+
+<p>A model was trained on 304 real species that already have a published, measured growth rate. That trained
+model was then run on every genome in the high quality GEM set, one at a time, and it produces one number per
+genome: the predicted doubling time in hours, meaning how long it would take that organism to double in
+population.</p>
+
+<p>Not every genome had all three pieces of information. 7,873 genomes had a usable 16S gene and got the
+full prediction. 1,261 genomes did not have a usable 16S gene in their assembly, which happens with real
+genomes pulled from the environment and is not something we did wrong, so those were predicted using just
+the genome traits and the tree of life position instead. Only 9 genomes out of the whole set could not be
+scored at all.</p>
+
+<img src="charts/01_coverage.png" alt="coverage chart">
+<p class="caption">How many of the 9,143 genomes fell into each group.</p>
+
+<h2>The result worth paying attention to</h2>
+
+<p>The model was never told what environment any genome came from. It only ever looks at DNA sequence. When
+the 9,134 predictions are grouped by where each genome was actually collected, human and animal associated
+genomes come out predicted as the fastest growers, and soil and plant associated genomes come out predicted
+as the slowest. That is the correct pattern. It matches what is already known about these organisms, and the
+model arrived at it on its own, from sequence alone.</p>
+
+<img src="charts/03_by_ecosystem.png" alt="predicted growth rate by where the genome was collected">
+<p class="caption">Median predicted doubling time by where the genome was collected. Fastest at the bottom,
+slowest at the top.</p>
+
+<h2>What the predictions look like overall</h2>
+
+<img src="charts/02_distribution.png" alt="spread of predicted doubling times">
+<p class="caption">Most genomes are predicted to double in under an hour, with a smaller number predicted
+much slower. This is the shape you would expect from a real, mixed environmental sample rather than a hand
+picked lab collection.</p>
+
+<p>The five fastest predicted genomes:</p>
+<table>
+<tr><th>Genome ID</th><th>Predicted doubling time</th><th>Where it was collected</th></tr>
+<tr><td>3300029771_7</td><td>0.07 hours</td><td>Human feces</td></tr>
+<tr><td>3300028983_3</td><td>0.08 hours</td><td>Human host associated</td></tr>
+<tr><td>3300029132_4</td><td>0.08 hours</td><td>Host associated</td></tr>
+<tr><td>3300014529_9</td><td>0.08 hours</td><td>Human host associated</td></tr>
+<tr><td>3300014522_4</td><td>0.08 hours</td><td>Human host associated</td></tr>
+</table>
+
+<p>The five slowest predicted genomes:</p>
+<table>
+<tr><th>Genome ID</th><th>Predicted doubling time</th><th>Where it was collected</th></tr>
+<tr><td>3300029610_25</td><td>39.3 hours</td><td>Human fecal</td></tr>
+<tr><td>3300011602_6</td><td>30.4 hours</td><td>City subway, metal or plastic surface</td></tr>
+<tr><td>3300029656_20</td><td>24.0 hours</td><td>Human fecal</td></tr>
+<tr><td>3300029754_19</td><td>23.7 hours</td><td>Human feces</td></tr>
+<tr><td>3300029374_18</td><td>22.5 hours</td><td>Human feces</td></tr>
+</table>
+
+<p>The full lists of the ten fastest and ten slowest are included as separate files, fastest10.csv and
+slowest10.csv, alongside this report.</p>
+
+<h2>GC content and predicted growth rate</h2>
+
+<img src="charts/04_gc_vs_growth.png" alt="GC content vs predicted growth rate">
+<p class="caption">Genomes with higher GC content tend to get a slower prediction. This lines up with what
+other studies have found, so it is not something the model invented on its own.</p>
+
+<h2>Where this is still weak</h2>
+
+<p>Two honest problems, stated plainly rather than left out.</p>
+
+<p><b>The exact numbers are not very accurate yet.</b> When the model is tested carefully on species where we
+already know the real answer, it often does no better than simply guessing the average growth rate for
+everything. It is better at roughly ranking organisms from fast to slow than at getting one exact number
+right for any single genome. The predictions here should be read as a rough ordering, not as a lab
+measurement.</p>
+
+<p><b>The model can be confidently wrong on genomes unlike anything it learned from.</b> A small group of
+genomes with high GC content and a smallish genome got predicted as very slow growers, even though most of
+them came from the human gut, where fast growth is normal. We looked into why. Every one of the 304 training
+species that looks similar on paper, high GC and a small genome, happens to be a heat loving organism,
+because those are the ones that have been measured and published. The model has never seen an ordinary fast
+growing high GC organism, so it falls back on the only similar examples it has, which are heat lovers. This
+is a real gap in the training data, not a mistake in the code, and it will not be fixed by more computer
+time. It needs more real, measured species to train on.</p>
+
+<h2>What we are doing next</h2>
+
+<p>The project is moving into a phase focused specifically on closing the accuracy gap described above,
+rather than expanding coverage further. That work is being tracked separately and will be reported on once
+there is something real to show, not before.</p>
+
+<hr>
+
+<p>Full predictions for all 9,134 genomes are in unlabeled_predictions_hq.csv in this same folder, one row
+per genome. The branches_used column tells you whether that genome got the full prediction, using real 16S
+data, or the fallback version without it.</p>
+
+</body>
+</html>
