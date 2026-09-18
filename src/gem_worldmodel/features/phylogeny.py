@@ -169,6 +169,58 @@ def genus_centroid_embeddings(
     return result_embeddings, pd.Series(matched_genus, name="matched_genus")
 
 
+def taxonomic_centroid_embeddings(
+    non_tip_rows: pd.DataFrame,
+    tip_embeddings: dict[str, np.ndarray],
+    tip_taxonomy: dict[str, str],
+    ranks: tuple[str, ...] = ("g__", "f__"),
+) -> tuple[dict[str, np.ndarray], pd.Series]:
+    """Same idea as genus_centroid_embeddings, but tries each rank in `ranks`
+    in order and falls back to the next, coarser one when a genus has no
+    embedded tip at all. Family-level is a worse approximation than genus,
+    it groups more distantly related organisms together, but it's still a
+    real, disclosed phylogenetic relationship, not a guess, and it's the
+    only way to place a species whose genus simply isn't in the tree.
+
+    Returns (embeddings, rank_series) where rank_series records exactly
+    which rank each accession was actually matched on (e.g. "g__Bacillus"
+    or "f__Bacillaceae"), so a genus-level and a family-level approximation
+    are never silently treated as the same quality of evidence.
+    """
+
+    def extract_rank(taxonomy: str, prefix: str) -> str | None:
+        m = re.search(rf"{prefix}[^;]*", taxonomy or "")
+        token = m.group(0) if m else None
+        return token if token and token != prefix else None
+
+    rank_centroids: dict[str, dict[str, np.ndarray]] = {}
+    for prefix in ranks:
+        grouped: dict[str, list[np.ndarray]] = {}
+        for acc, taxonomy in tip_taxonomy.items():
+            if acc not in tip_embeddings:
+                continue
+            token = extract_rank(taxonomy, prefix)
+            if token is None:
+                continue
+            grouped.setdefault(token, []).append(tip_embeddings[acc])
+        rank_centroids[prefix] = {
+            token: np.mean(np.stack(vecs), axis=0) for token, vecs in grouped.items()
+        }
+
+    result_embeddings: dict[str, np.ndarray] = {}
+    matched_rank: dict[str, str] = {}
+    for _, row in non_tip_rows.iterrows():
+        taxonomy = row.get("gtdb_taxonomy")
+        for prefix in ranks:
+            token = extract_rank(taxonomy, prefix)
+            if token is not None and token in rank_centroids[prefix]:
+                result_embeddings[row["accession"]] = rank_centroids[prefix][token]
+                matched_rank[row["accession"]] = token
+                break
+
+    return result_embeddings, pd.Series(matched_rank, name="matched_rank")
+
+
 def build_gtdb_distance_embeddings(
     tree: dendropy.Tree,
     cfg: dict | None = None,

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gem-worldmodel"
-version = "0.1.0"
+version = "1.4.0"
 description = "Latent World Models for Genotype-to-Phenotype Prediction: a Joint-Embedding Predictive Architecture (JEPA) for microbial growth dynamics"
 readme = "README.md"
 license = "Apache-2.0"

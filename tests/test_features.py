@@ -95,6 +95,35 @@ def test_genus_centroid_embeddings_averages_same_genus_tips():
     assert "new2" not in matched_genus.index
 
 
+def test_taxonomic_centroid_embeddings_falls_back_to_family_when_genus_missing():
+    tip_embeddings = {
+        "tipA1": np.array([0.0, 0.0]),
+        "tipA2": np.array([2.0, 0.0]),
+        "tipB1": np.array([10.0, 10.0]),
+    }
+    tip_taxonomy = {
+        "tipA1": "d__Bacteria;p__X;c__X;o__X;f__Fooidae;g__Foo;s__Foo alpha",
+        "tipA2": "d__Bacteria;p__X;c__X;o__X;f__Fooidae;g__Foo;s__Foo beta",
+        "tipB1": "d__Bacteria;p__X;c__X;o__X;f__Baridae;g__Bar;s__Bar alpha",
+    }
+    non_tip_rows = pd.DataFrame(
+        [
+            # exact genus match still wins over the family fallback
+            {"accession": "new1", "gtdb_taxonomy": "d__Bacteria;p__X;c__X;o__X;f__Fooidae;g__Foo;s__Foo gamma"},
+            # no genus Baz anywhere, but its family Fooidae matches tipA1+tipA2
+            {"accession": "new2", "gtdb_taxonomy": "d__Bacteria;p__X;c__X;o__X;f__Fooidae;g__Baz;s__Baz alpha"},
+            # neither genus nor family has any embedded tip -> no entry at all
+            {"accession": "new3", "gtdb_taxonomy": "d__Bacteria;p__X;c__X;o__X;f__Nowhere;g__Nada;s__Nada alpha"},
+        ]
+    )
+    embeddings, matched_rank = phylogeny.taxonomic_centroid_embeddings(non_tip_rows, tip_embeddings, tip_taxonomy)
+    assert np.allclose(embeddings["new1"], [1.0, 0.0])
+    assert matched_rank["new1"] == "g__Foo"
+    assert np.allclose(embeddings["new2"], [1.0, 0.0])
+    assert matched_rank["new2"] == "f__Fooidae"
+    assert "new3" not in embeddings
+
+
 def test_classical_mds_embedding_shape():
     n = 6
     rng = np.random.default_rng(0)

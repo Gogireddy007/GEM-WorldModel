@@ -1,5 +1,306 @@
 # Research Log
 
+## 2026-09-17, version 1.0, and the start of the accuracy improvement phase
+
+Marked this point as version 1.0 in CHANGELOG.md and pyproject.toml. Everything up to here stays as it is. From
+here the project has one focus: raise the model's actual predictive accuracy, on any genome it is given, not
+add more coverage or corpus size. Tracked as a checklist in the new ACCURACY_PLAN.md file.
+
+First task on that list: check whether our codon usage feature is as strong as gRodon's own version of it. Did
+not need a new experiment, the answer was already sitting in numbers this project collected weeks ago.
+`GRodonBaseline` (in `training/baselines.py`) uses the exact same `cub` column our own genomic_traits branch
+uses, both come from `features/cub.py:compute_cub`, so there is no separate, better calculation gRodon is using
+that we are missing. But a plain linear regression on that one number gets R2 of -0.032 on the 175-species test
+(seed 42), while our own model, using the whole genomic_traits branch (CUB plus genome size, GC, rRNA and tRNA
+counts, strictly more information than gRodon uses) gets R2 of -0.467, from the necessity/sufficiency table
+already in FINDINGS.md.
+
+That is a real, striking gap, and it points the finger somewhere specific: the feature is fine, the problem is
+that our encoder and head are doing considerably worse with that branch than a one-line linear regression does
+with the same underlying number. Something about pooling genomic_traits together with the other two branches,
+or the nonlinear head sitting on top of it, is losing signal that a plain linear fit on CUB alone keeps. Next
+step on this is Phase 0's third item, trying a simpler regression head on top of the same standardized features,
+to see how much of that gap closes without touching the encoder at all.
+
+Second task, done the same day: scanned the training corpus for other narrow regions besides the high GC, small
+genome one already known. Binned genome size against GC content into a grid and checked which cells were
+dominated by one genus or one narrow growth condition. Found a second one: genomes with medium GC and a large
+genome, 5.2 to 7.5 million base pairs, are 83 percent Bacillus in the training set. Any real genome landing
+there that is not Bacillus-like is going to get a Bacillus-shaped prediction. Also confirmed the earlier
+thermophile finding is broader than the genus Thermus specifically, 82 percent of genomes in that same high GC,
+small genome region grow at extreme temperatures generally, not just that one genus.
+
+Third task, and the biggest result in this project since the eval-mode bug fix: built `scripts/probe_stronger_head.py`
+to test whether the growth-rate head itself was the weak point, separate from the encoder. Took the same frozen,
+pretrained encoder representation this whole project has been using, and instead of fine-tuning a small MLP head
+end to end (which is what `training/finetune.py` does everywhere else), fit gradient-boosted trees on the frozen
+representation instead, same folds, same seed, nothing else changed.
+
+At seed 42, on the 304-species corpus: the existing fine-tuned model gets R2 -0.044 and Spearman 0.405. Freezing
+the encoder and using gradient-boosted trees instead gets R2 +0.096 and Spearman 0.687. That alone would be
+worth a closer look, but it is not a single lucky number, checked across all seven seeds already established in
+this project (42, 1, 7, 13, 99, 123, 2024), R2 comes out positive in six of the seven, and Spearman sits in a
+tight 0.60 to 0.69 band in every single one. The old fine-tuned model's Spearman swung from -0.322 to 0.448
+depending on seed, it was never stable. This new approach is both more accurate on average and far more
+consistent.
+
+The likely reason: 304 species is not enough data for gradient descent to fine-tune a neural network head well,
+but it is enough for a gradient-boosted tree model, which handles small, tabular-style data more gracefully.
+The encoder itself was never the problem, the pretrained representation is good, what was actually hurting this
+project's numbers the whole time was how the head on top of it was being trained.
+
+Also ran the genomic_traits branch alone through the same frozen-encoder-plus-gradient-boosted-head setup, to
+follow up directly on the first finding above. Spearman comes out remarkably tight across all seven seeds, 0.609
+to 0.627, right around gRodon's own range, confirming again that the branch's information is fine, it was the
+fine-tuned head that was losing it.
+
+Ran that last control right away, same day, same seven seeds, before writing any of this up as a win. Fed the
+same raw, standardized branch features straight into gradient-boosted trees, no encoder, no pretraining, at all.
+Result: raw features beat the pretrained-encoder version in every single one of the seven seeds, on both R2 and
+Spearman, not close either. At seed 42, encoder plus gradient-boosted trees got R2 0.096, raw features plus the
+same kind of head got R2 0.132. At seed 13, encoder got 0.129, raw got 0.189. Same pattern in all seven.
+
+This changes the honest conclusion. The improvement found above is not coming from the encoder, it is coming
+entirely from the head. Gradient-boosted trees just handles this amount of data, 304 species, far better than a
+small fine-tuned neural network does, whether or not there is a pretrained encoder underneath it. Once a strong
+enough head is used, the whole encoder and pretraining setup is a net loss compared to just using the raw genome
+measurements directly.
+
+This also means an earlier result in this project, that pretraining beats raw features on 7 of 7 seeds, only
+held because that comparison used a weak head on both sides. With a proper head, raw features win outright. That
+earlier finding is not being deleted from FINDINGS.md, since it was true and honestly reported for the setup it
+was tested under, but it needs an update noting that the ordering flips once the head is not the weak point
+anymore.
+
+The real, load bearing conclusion from today: the fastest path to a better model right now is not more work on
+the JEPA encoder or more pretraining, it is replacing the growth rate head with gradient-boosted trees on the
+raw standardized features, and treating the whole encoder side as optional going forward, something to keep
+using only if it earns its place against this new, stronger baseline, not something to assume adds value by
+default anymore.
+
+Followed up the same day on the two loose ends this left. First, the feature importance disagreement with the
+necessity and sufficiency finding. Refit gradient-boosted trees separately on just the slow-growth species and
+just the fast-growth species, instead of the whole corpus at once. Within slow growers specifically, rrna16s
+importance rises from 0.24 (whole corpus) to 0.41, close behind gtdb_distance at 0.47. That is the same direction
+as the necessity and sufficiency finding, 16S matters more for slow growers, it just does not come out as the
+single clear leader the way the encoder-based method found, gtdb_distance narrowly edges it out here. Real,
+partial agreement between the two methods, not a full match, and both numbers stay in this document rather than
+picking the one that sounds better.
+
+Second, why the fast-growth regime is still so poor under the new best model. Looked at the ten worst
+mispredictions in that regime directly. Every single one is a real fast grower predicted as much slower than it
+actually is, not a mix of errors in both directions. Checked this across the whole fast regime, not just the ten
+worst cases: 72 percent of fast growers get predicted slower than they really are. The cause is not subtle once
+you look at the actual numbers. The whole corpus's median doubling time is 7 hours, but the fast regime's median
+is 1.71 hours, a real skew, with some slow-growing species out past 200 hours. A model trained to minimize
+squared error over that whole range gets pulled toward the middle of the distribution, and systematically
+compresses the fast growers upward toward everyone else's pace. This is a real property of the training loss and
+the shape of the label distribution, not a mistake in the features, the head, or the encoder. A fix here would
+need to change what the model is optimized against for fast growers specifically, for example weighting them
+more heavily in training or using a loss that does not let the long slow tail dominate, not further tinkering
+with the current setup.
+
+## 2026-09-17, a real search for gap-filling data, and a real, honest negative result even when it worked
+
+The user asked to search online for real growth-rate data that could specifically help, with a clear standard
+attached: use it only if it actually helps, not just because it exists. Checked three real candidates before
+finding anything usable.
+
+BacDive, the largest standardized bacterial phenotype database that exists, was checked directly against its own
+field documentation: it does not have a doubling-time or growth-rate field at all, only things like optimal
+temperature, pH, and oxygen requirements. Not usable for this project's purpose, despite being a real, well
+known resource for other purposes. EGGO, a 217,074-genome compilation of growth-rate estimates, turned out to be
+predictions from gRodon itself, not real measurements, using it would mean training this project's model to
+imitate gRodon's own guesses, not learn from real data, so it was ruled out too. A promising-looking September
+2025 bioRxiv preprint with two growth-rate datasets (367 and 180 species) could not be verified at all, bioRxiv
+blocked every access attempt, both the normal fetch and a direct request, with a rate-limit error every time.
+
+The real lead came from a source already partly in this project: Madin et al. 2020's full published dataset
+(`condensed_species_NCBI.csv`, already cached locally from an earlier, different use, the trophic-label work),
+which turned out to have 14,893 species total, 917 with a real doubling time value, and 502 of those with
+genome size and GC content already computed. Checking those 502 against the two known gap regions directly,
+without downloading anything, found 11 real, previously-unused species landing exactly in the thermophile-heavy
+or Vibrio-heavy regions, with real doubling times spanning both fast and slow, not just more of the same bias
+those regions already have.
+
+Resolved each species to a real NCBI accession, then checked GTDB's own taxonomy table by species name rather
+than trusting the first accession NCBI's search returned, and found something better than expected: all ten
+resolvable species (one, Desulfobacterium autotrophicum, had no real NCBI match at all) turned out to already be
+exact GTDB tree tips, just under a different, GTDB-pinned assembly version than NCBI's "current best" pick.
+Pulled real genome, CDS, and 16S data for all ten, and recomputed the phylogeny embedding jointly with the
+existing 175 exact-tip species, the same way the original corpus was built, since adding tips changes the
+embedding space for everyone already in it. All ten came back with complete real data. Wrote
+`features_sample_gapfilled.csv`, 353 species total, `scripts/add_gap_filling_species.py`.
+
+Benchmarked it the same way as everything else, four seeds, against both the 304-species and 343-species
+corpora. It did not help. Spearman came out worse in every one of the four seeds against both comparisons. R2
+was mixed, better in two seeds, worse in two, never a clean win either way.
+
+|seed|304 R2|343 R2|353 (gap-filled) R2|304 Spearman|343 Spearman|353 Spearman|
+|---|---|---|---|---|---|---|
+|42|0.132|0.135|0.094|0.760|0.740|0.668|
+|1|0.086|0.086|0.101|0.733|0.720|0.677|
+|7|0.126|0.077|0.130|0.760|0.696|0.686|
+|13|0.189|0.100|0.064|0.771|0.734|0.673|
+
+The likely reason: ten species is a very small addition on top of 343, about 3 percent more data, and these ten
+were deliberately chosen to be different from their neighbors in feature space, which is exactly what makes them
+hard for a model to fit well in cross-validation, when one lands in a held-out test fold, nothing in the
+training folds resembles it, by design. That same property that makes them valuable for fixing a systematic bias
+also makes them look like noise in a small four or five-fold benchmark. This does not mean the underlying idea
+is wrong, it means ten real examples is not enough to move a benchmark this small and this noisy, the same
+sample-size ceiling this project keeps running into everywhere else.
+
+Following the user's own stated rule directly: use it only if it helps. It did not clearly help, so this corpus
+is not adopted as the new default. It stays available (`features_sample_gapfilled.csv`) and documented, a real,
+honestly negative result, not deleted or hidden because the hoped-for outcome did not happen.
+
+## 2026-09-17, is requiring an exact tree tip even the right rule anymore
+
+Phase 4 asks whether the exact-GTDB-tree-tip requirement is still the right default, now that there is real
+evidence about how approximate placement affects results. Ran the one clean comparison that had never actually
+been done: the same raw-features-plus-gradient-boosted-trees benchmark, same four seeds, on all three versions of
+the corpus side by side, the original 175 exact-tip-only species, the 304-species version with genus-level
+approximation added, and the 343-species version with family-level approximation added on top of that.
+
+Genus-level approximation is a clean win. Going from 175 to 304 species improved R2 in all four seeds tested
+(0.083 to 0.132 at seed 42, 0.040 to 0.086 at seed 1, 0.067 to 0.126 at seed 7, 0.154 to 0.189 at seed 13) and
+improved Spearman in all four too. No exceptions. This actually reverses something reported earlier in this
+project: back when this same expansion was tested against the old, fine-tuned JEPA pipeline, it looked like it
+hurt Spearman. With the new best model, it clearly helps. That earlier finding was true for the pipeline it was
+tested under, and is now superseded rather than deleted, same as everything else this project has walked back
+when the evidence changed.
+
+Family-level approximation, tested the same way today, is a net negative in three of the four seeds, already
+written up above. So genus and family level approximation are not equally trustworthy, and the earlier
+docstring's caution that family level is "a real, but weaker approximation" undersold it a little, in this
+specific test it was not just weaker, it was actively worse than not adding those species at all.
+
+The honest, evidence-based answer: the exact-tip requirement should not be the default going forward, genus-level
+relaxation should be, it is a clean, four-for-four win on the model that now matters. Family-level relaxation
+should not be used by default the way it was tried today, not without a better reason to trust a specific batch
+of family-matched species than "they were available."
+
+## 2026-09-17, trying to patch the known gaps with real data, and it did not work
+
+Following straight on from the gap-mapping below: found 92 real, labeled species with a published growth rate
+that were never added to the corpus, not because the data does not exist, but because none of them had a genus
+level match to an actual tree tip, the requirement the earlier expansion used. Realized that requirement was
+stricter than it needed to be, genome size, GC content, codon usage, and 16S do not need any tree placement at
+all, only the phylogeny branch does. Built `features/phylogeny.py:taxonomic_centroid_embeddings`, which tries
+genus first and falls back to family level when genus has no match anywhere in the tree, with every added row
+tagged by exactly which rank it was actually matched on, genus and family approximations are never mixed
+together as if they were the same quality of evidence. Added a test confirming the fallback logic and that
+genus, when available, always wins over family.
+
+Of the 92 missing species, only 39 turned out to be addable even with the family fallback, the other 53 have no
+match at either level anywhere in the reference tree. Pulled real genome, CDS, and 16S data from NCBI for all 39,
+two failed the download after repeated retries (a known, disclosed, non-fatal limitation, same as every earlier
+batch), 37 came back complete. Wrote `features_sample_full.csv`, 343 species total.
+
+Checked directly, before running any benchmark, whether any of the 39 new species actually land in the two known
+problem regions found the same day, the thermophile-heavy high GC small genome region, or the Vibrio-heavy
+region. None of them do. Zero for zero. This batch of real data, while genuine and correctly built, does not
+address either diagnosed gap.
+
+Ran the benchmark anyway, since more real data could still help in general even without hitting the specific
+gaps. It did not. Checked across four seeds (42, 1, 7, 13): overall R2 on the 343-species corpus came out flat
+or worse than the 304-species corpus in every one, never better, and clearly worse in two of the four. Spearman
+was worse in all four. This is a real, negative, checked result, not a guess, adding species that do not land in
+the region a problem is coming from does not fix the problem, and can add enough noise to make things slightly
+worse. The honest lesson: the next real attempt at closing these gaps needs species that specifically land in
+the thermophile-heavy or Vibrio-heavy regions, not just any additional real species, no matter how legitimately
+labeled they are. None of the currently reachable data (gRodon, Madin, and now these 92) contains any.
+
+## 2026-09-17, mapping every thin spot in the training data, not just the two already known
+
+Phase 3 of the accuracy plan starts with knowing exactly where the training corpus is thin or skewed, not
+guessing. Redid the earlier grid scan with a finer grid, eight bins each way instead of six, and a lower bar for
+reporting a cell (three species instead of four). Found ten thin or skewed regions total, not the two spotted
+earlier by eye.
+
+The important next step was checking which of those ten actually matter, since a thin region with almost no real
+GEM genomes in it is a curiosity, not a problem. Counted how many real catalog genomes land in each one:
+
+- The known high GC, small genome, thermophile-heavy region: 1,580 real genomes, 3.0 percent of the whole
+  52,515-genome catalog. Easily the biggest, confirms this was the right one to have found first.
+- A medium-high GC, 4 to 5.7 million base pair region that is 50 percent Vibrio in the training set: 918 real
+  genomes, 1.7 percent of the catalog. Not looked at before today.
+- A handful of smaller ones, Pseudomonas-heavy, Clostridium-heavy, each affecting well under 1 percent of the
+  catalog.
+
+Checked the Vibrio-heavy region directly against real predictions, since Vibrio species (V. natriegens, V.
+cholerae among them) are some of the fastest-growing bacteria known, the opposite direction of concern from the
+thermophile case. Genomes from the high quality genome set that land in this region get a median predicted
+doubling time of 0.46 hours, against 0.60 hours for everything else in that set. Real, measurable, and in the
+predicted direction, genomes that merely share two crude numbers with fast-growing Vibrio get pulled toward
+Vibrio-fast predictions whether or not they are actually anything like Vibrio.
+
+So there are now two known, quantified, opposite-direction biases from the same underlying cause, training
+species clustering by genus or growth condition in ways that do not reflect the real diversity of organisms that
+share their genome size and GC content. The thermophile region pushes ordinary organisms toward predictions that
+are too slow. The Vibrio region pushes them toward predictions that are too fast. Both come from the same fix:
+real, ordinary growth-rate measurements for organisms in these specific regions that are not thermophiles and
+are not Vibrio, not more data at random.
+
+## 2026-09-17, a confidence flag that looked like it worked, and did not
+
+Phase 2 of the accuracy plan: build a simple score for how far a new genome sits from anything in the training
+data, so a prediction can be flagged when nothing like it was seen during training. Built
+`eval/confidence.py:confidence_flags`, nearest-neighbor Euclidean distance in the same standardized raw feature
+space the deployed model uses, with the flagging threshold set from the training corpus's own internal spread
+(the 90th percentile of how far each of the 304 training species sits from its nearest other training species),
+not a number picked by eye.
+
+First test looked like a clean win. Ran it against the ten known problem genomes from the high quality genome
+report, the high GC, small genome, human gut cluster that got mispredicted as extreme slow growers because every
+similar-looking training species happens to be a thermophile. All ten got flagged, with distances of 36 to 50
+against a threshold of 5.1, seven to ten times over the line. Looked decisive.
+
+It was not. Ran the same flag across all 7,873 genomes in the high quality set that have full data, to see the
+overall flag rate, and every single one came back flagged, 100 percent. The threshold set from the training
+corpus's own internal spread turns out to be so tight that basically any real environmental genome clears it,
+whether or not it resembles the known thermophile-bias problem. Checked directly: of the ten known problem
+genomes, nine sit BELOW the median distance for the whole 7,873-genome deployment set. They are not unusual by
+this measure, they are typical. The apparent win in the first test was comparing against the wrong baseline, the
+training set's own tight internal spread, not against what a normal, ordinary new genome actually looks like.
+
+The likely real cause is a known problem with distance in many dimensions at once, not a mistake in the code.
+With 39 raw features, Euclidean distances between points tend to stop discriminating once you are working with a
+training set as small as 304 species compared against a deployment set of thousands, most points end up roughly
+equally far from a small reference set regardless of whether they are genuinely unusual or perfectly ordinary.
+
+This gets reported as what it is: a real attempt that did not work, not something to quietly drop and pretend
+was never tried. The task list is being updated to reflect this honestly, and a real next attempt would need a
+different approach, for example distance within a much lower-dimensional reduction of the feature space, or
+comparing each branch separately instead of one concatenated vector, or a density-based method instead of plain
+nearest-neighbor distance. None of that has been tried yet.
+
+## 2026-09-17, blending the new best model with gRodon and Phydon
+
+Phase 1 of the accuracy plan: does blending raw features plus gradient-boosted trees with gRodon and Phydon beat
+any of the three alone? Built `scripts/blend_gbm_baselines.py`. Blend weights are fit honestly, for each of the
+five outer folds, the weights come from a small non-negative least squares fit over the other four folds' held
+out predictions only, never using the fold's own true labels to pick the weights that score that same fold.
+Blending happens in log space, matching how everything else in this project handles a skewed, multiplicative
+quantity like doubling time.
+
+Checked across all seven seeds, and the result is a real, consistent trade-off, not a clean win in every column.
+The blend never beats plain gradient-boosted trees on overall R2, it comes out in between gradient-boosted trees
+and Phydon in every one of the seven seeds. But the blend wins overall Spearman in all seven seeds, beating both
+individual models every time. And it does something more valuable than either of those two things: it
+substantially tempers the fast-growth regime's failure, the worst problem this project has had since the
+necessity and sufficiency analysis was first built. Plain gradient-boosted trees gets R2 as bad as -109 in that
+regime depending on seed, Phydon gets as bad as -627 in one seed. The blend's worst case across all seven seeds
+is -28.6. Still a real weakness, not fixed, but the blend is the least bad of the three in the fast regime in
+every single seed checked.
+
+The honest recommendation from this: if the only thing that matters is overall R2, use gradient-boosted trees on
+raw features alone, nothing beats it there. If rank ordering and not falling apart on fast growers matters too,
+the blend is the better choice, since it wins Spearman everywhere and is dramatically more robust in the one
+regime every version of this model has struggled with. Both numbers are kept in FINDINGS.md rather than picking
+one winner, because which one is "better" depends on what the prediction is actually going to be used for.
+
 ## 2026-09-17, a real deployment run: predicting growth rate for genomes with no label at all
 
 A collaborator asked for something different from a benchmark number: actual predicted growth rates for a real set of genomes, the DOE GEM catalog's high-quality (MIMAG HQ) MAGs, roughly 9,000 of them, with a random ~1,000 offered as a fallback if the full set wasn't practical.
