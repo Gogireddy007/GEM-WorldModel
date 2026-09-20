@@ -45,7 +45,7 @@ ax.set_ylabel("Genomes")
 ax.set_title("Coverage of the 9,143 high-quality GEM genomes", fontsize=13, color=INK, pad=14)
 ax.set_ylim(0, 9143 * 1.12)
 fig.tight_layout()
-fig.savefig("professor_report/charts/01_coverage.png", dpi=180)
+fig.savefig("HQ Genomes/charts/01_coverage.png", dpi=180)
 plt.close(fig)
 
 # 2. Distribution of predicted doubling times
@@ -62,7 +62,7 @@ median = pred["predicted_doubling_time_hours"].median()
 ax.axvline(np.log10(median), color=AMBER, linestyle="--", linewidth=1.5)
 ax.text(np.log10(median), ax.get_ylim()[1] * 0.92, f"  median = {median:.2f}h", color=AMBER, fontsize=10, fontweight="bold")
 fig.tight_layout()
-fig.savefig("professor_report/charts/02_distribution.png", dpi=180)
+fig.savefig("HQ Genomes/charts/02_distribution.png", dpi=180)
 plt.close(fig)
 
 # 3. Predicted growth rate by ecosystem, the real sanity check
@@ -78,7 +78,7 @@ for i, (name, v) in enumerate(eco_medians.items()):
 ax.set_xlabel("Median predicted doubling time (hours)")
 ax.set_title("Predicted growth rate by habitat\n(model was never told the ecosystem)", fontsize=13, color=INK, pad=14)
 fig.tight_layout()
-fig.savefig("professor_report/charts/03_by_ecosystem.png", dpi=180)
+fig.savefig("HQ Genomes/charts/03_by_ecosystem.png", dpi=180)
 plt.close(fig)
 
 # 4. GC content vs predicted doubling time
@@ -91,8 +91,8 @@ ax.set_xlabel("GC content")
 ax.set_ylabel("Predicted doubling time (hours, log scale)")
 ax.set_title("GC content vs. predicted growth rate", fontsize=13, color=INK, pad=14)
 fig.tight_layout()
-fig.savefig("professor_report/charts/04_gc_vs_growth.png", dpi=180)
+fig.savefig("HQ Genomes/charts/04_gc_vs_growth.png", dpi=180)
 plt.close(fig)
 
-print("wrote 4 charts to professor_report/charts/")
+print("wrote 4 charts to HQ Genomes/charts/")
 print(coverage.to_string())
