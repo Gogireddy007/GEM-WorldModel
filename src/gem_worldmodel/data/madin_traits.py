@@ -1,4 +1,4 @@
-"""Pull the real, independently-curated bacterial/archaeal phenotype trait
+"""This pulls the real, independently-curated bacterial/archaeal phenotype trait
 database from Madin et al. 2020 ("A synthesis of bacterial and archaeal
 phenotypic trait data", Scientific Data), via its companion GitHub repo
 (bacteria-archaea-traits/bacteria-archaea-traits).

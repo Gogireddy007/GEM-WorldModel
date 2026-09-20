@@ -1,5 +1,6 @@
-"""Generate the chart set for the HQ-genome prediction report. Standalone,
-reads only from data/processed and data/raw, writes PNGs into charts/.
+"""This makes the chart set for the HQ-genome prediction report. It's
+standalone, only reading from data/processed and data/raw, and writes the
+PNGs into charts/.
 """
 
 import matplotlib

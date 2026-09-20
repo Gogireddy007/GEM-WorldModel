@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Add the remaining real, labeled species that still aren't in the corpus
+"""This adds the remaining real, labeled species that still aren't in the corpus
 after the genus-level expansion, the ones whose genus has no tree tip at
 all, using a family-level fallback for the phylogeny branch instead of just
 skipping them.

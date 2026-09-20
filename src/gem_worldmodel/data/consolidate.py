@@ -1,4 +1,4 @@
-"""Cross-reference genome + growth-rate + GTDB placement.
+"""This cross-references genome, growth-rate, and GTDB placement.
 
 Produces two tables under data/processed/:
   - labeled_corpus.csv:   accessions with a growth-rate label AND a GTDB tree

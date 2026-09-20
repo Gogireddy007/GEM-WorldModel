@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""Streaming per-genome pass over the GEM MAG corpus: download each genome's
-.fna.gz, compute real GC content (and, optionally, real 16S sequence
-extraction via barrnap), then delete the downloaded file immediately, genomes are never accumulated on disk (52,515 genomes uncompressed would be
+"""This is a streaming per-genome pass over the GEM MAG corpus: it downloads each genome's
+.fna.gz, computes real GC content (and, optionally, real 16S sequence
+extraction via barrnap), then deletes the downloaded file immediately, so genomes are never accumulated on disk (52,515 genomes uncompressed would be
 ~130GB, far more than available disk space here).
 
 Resumable: re-running skips genome_ids already present in the output CSV, so

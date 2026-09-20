@@ -1,4 +1,4 @@
-"""Turn a labeled-corpus row set into the full feature
+"""This turns a labeled-corpus row set into the full feature
 table (genomic traits, CUB, GTDB-distance embedding, 16S baseline embedding,
 Arrhenius-corrected target).
 

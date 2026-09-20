@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-"""Full stratified benchmark for the raw-features-plus-gradient-boosted-trees
-approach found in scripts/probe_stronger_head.py, run the same way every
+"""This runs the full stratified benchmark for the raw-features-plus-gradient-boosted-trees
+approach found in scripts/probe_stronger_head.py, the same way every
 other benchmark in this project is run, so it can sit in the same table as
 gRodon, Phydon, and the JEPA-based model.
 

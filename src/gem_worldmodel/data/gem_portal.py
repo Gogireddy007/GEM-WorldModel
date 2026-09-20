@@ -1,4 +1,4 @@
-"""Pull the DOE NERSC GEM (Genomes from Earth's Microbiomes) MAG catalogue.
+"""This pulls the DOE NERSC GEM (Genomes from Earth's Microbiomes) MAG catalogue.
 
 portal.nersc.gov/GEM serves 52,515 metagenome-assembled genomes (MAGs) with a
 ~12MB genome_metadata.tsv and per-genome .fna.gz files under genomes/fna/.

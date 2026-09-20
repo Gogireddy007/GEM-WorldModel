@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Fast pass over ALL 52,515 GEM MAGs: genomic traits directly from GEM's own
+"""A fast pass over all 52,515 GEM MAGs: genomic traits come directly from GEM's own
 metadata (genome_length, real rRNA/tRNA counts from their pipeline, no
 barrnap needed, they already ran it) + phylogenetic landmark embedding from
 GEM's own tree (matched via otu_id, since GEM's JGI genome_ids don't match

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""Build the feature table for a stratified sample of the labeled
-corpus (real genomes/sequences from NCBI + GTDB), bounded sample size for a
-tractable smoke run; increase `--n-per-class` to scale up.
+"""This builds the feature table for a stratified sample of the labeled
+corpus (real genomes/sequences from NCBI + GTDB). The sample size is bounded
+for a tractable smoke run; increase `--n-per-class` to scale up.
 """
 
 import argparse

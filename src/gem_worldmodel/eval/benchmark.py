@@ -1,4 +1,4 @@
-"""Benchmark our model vs. gRodon & Phydon, stratified above/below the
+"""This benchmarks our model against gRodon and Phydon, stratified above/below the
 5h doubling-time split. Metrics: RMSE, R^2, Spearman correlation.
 """
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-"""Self-supervised masked-branch pretraining at real scale, across the
+"""This is self-supervised masked-branch pretraining at real scale, across the
 labeled corpus (gRodon/Madin, 3 real branches) and the GEM MAG corpus, split
 into two sub-corpora by what each genome actually has real data for:
 genomes with a real barrnap-extracted 16S sequence get all 3 branches,
 everyone else gets genomic_traits + gtdb_distance only. Pretraining doesn't
 need growth-rate labels, so species without one still contribute here.
 
-Run scripts/pull_data.py, scripts/build_features.py,
-scripts/gem_fast_features.py, and scripts/gem_slow_features.py first.
+Needs scripts/pull_data.py, scripts/build_features.py,
+scripts/gem_fast_features.py, and scripts/gem_slow_features.py to have run first.
 """
 
 import argparse

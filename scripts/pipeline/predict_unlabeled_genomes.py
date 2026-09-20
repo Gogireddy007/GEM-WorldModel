@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-"""Proof-of-concept end-to-end deployment: fine-tune one final growth-rate
+"""This is a proof-of-concept end-to-end deployment. It fine-tunes one final growth-rate
 head on the entire labeled corpus (no held-out fold, this is not a benchmark
-run), then run it on a real sample of GEM MAG genomes that were never
-labeled with a measured growth rate, to produce actual predicted doubling
+run), then runs it on a real sample of GEM MAG genomes that were never
+labeled with a measured growth rate, producing actual predicted doubling
 times for genomes outside the training set.
 
 This is deliberately NOT a new evaluation of model quality, the honest R2/

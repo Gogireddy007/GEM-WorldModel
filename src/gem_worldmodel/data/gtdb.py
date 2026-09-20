@@ -1,9 +1,9 @@
-"""Pull the GTDB reference tree + taxonomy for phylogenetic placement.
+"""This pulls the GTDB reference tree and taxonomy for phylogenetic placement.
 
 GTDB serves per-release static files at data.gtdb.ecogenomic.org/releases/latest/.
-We fetch the bac120 (bacterial) tree and taxonomy table; the full metadata
+This fetches the bac120 (bacterial) tree and taxonomy table; the full metadata
 table (~289MB compressed) is only fetched if explicitly requested since
-taxonomy + tree are sufficient for the GTDB-distance embedding branch.
+taxonomy and tree are sufficient for the GTDB-distance embedding branch.
 """
 
 import gzip

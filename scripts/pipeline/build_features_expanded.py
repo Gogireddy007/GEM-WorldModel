@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Expand the labeled corpus past the 175 exact-GTDB-tree-tip species by
+"""This expands the labeled corpus past the 175 exact-GTDB-tree-tip species by
 adding species that have real gRodon/Madin growth-rate data and real GTDB
 taxonomy, but aren't themselves a tip in the reference tree.
 

@@ -1,5 +1,5 @@
-"""Attach the growth-rate head on top of the pretrained context
-encoder's joint representation (all branches, unmasked) and fine-tune on the
+"""This attaches the growth-rate head on top of the pretrained context
+encoder's joint representation (all branches, unmasked) and fine-tunes it on the
 labeled subset.
 
 At 175 species, a single 70/15/15 train/val/test split leaves a 27-sample

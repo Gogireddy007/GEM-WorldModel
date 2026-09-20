@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""Phase 1 of the accuracy improvement plan: does blending the new best
-model (raw features, gradient-boosted trees) with gRodon and Phydon beat any
-of the three alone?
+"""Phase 1 of the accuracy improvement plan, checking whether blending the new
+best model (raw features, gradient-boosted trees) with gRodon and Phydon beats
+any of the three alone.
 
 Blend weights are chosen honestly, not fit on the same fold they are scored
 on. For each of the five outer folds, the weights come from a small linear

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-"""Self-supervised masked-branch pretraining on the feature table built by
-build_features.py (real data). This runs on the labeled sample only. Pretraining
+"""This is self-supervised masked-branch pretraining on the feature table built by
+build_features.py (real data), running on the labeled sample only. Pretraining
 on the "full corpus including species without a labeled growth rate" needs
 features built for the unlabeled GEM MAG corpus too
 (data/processed/unlabeled_corpus.csv), see pretrain_full.py for that.

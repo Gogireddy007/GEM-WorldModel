@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """Phase 0 check: is the growth-rate head itself leaving accuracy on the
-table, separate from the encoder? Takes the same frozen, pretrained encoder
+table, separate from the encoder? This takes the same frozen, pretrained encoder
 representation used everywhere else in this project and swaps only the
 regression head, gradient-boosted trees instead of the small fine-tuned MLP,
 using the identical k-fold split every other benchmark in this project uses,

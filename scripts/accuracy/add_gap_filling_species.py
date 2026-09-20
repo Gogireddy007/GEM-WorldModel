@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Add a small, deliberately targeted set of real species to the corpus,
+"""This adds a small, deliberately targeted set of real species to the corpus,
 chosen for one reason only: they land inside the two training-data gaps
 found and quantified in FINDINGS.md (the thermophile-heavy and Vibrio-heavy
 regions), and their growth rates are real, published measurements from

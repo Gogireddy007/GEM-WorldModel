@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-"""Pull gRodon/Madin growth-rate data + GTDB tree/taxonomy, cross-reference
-them, and print the validation report (species count, growth-rate coverage,
+"""This pulls gRodon/Madin growth-rate data plus GTDB tree/taxonomy, cross-references
+them, and prints the validation report (species count, growth-rate coverage,
 doubling-time distribution above/below the 5h split).
 """
 

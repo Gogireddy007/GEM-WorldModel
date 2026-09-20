@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-"""Fine-tune the growth-rate head on the pretrained context encoder,
-reproduce gRodon/Phydon baselines on the same folds, and run the stratified
+"""This fine-tunes the growth-rate head on the pretrained context encoder,
+reproduces gRodon/Phydon baselines on the same folds, and runs the stratified
 (<5h / >=5h) benchmark.
 
 Uses k-fold cross-validation rather than one fixed train/val/test split: at

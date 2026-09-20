@@ -1,7 +1,7 @@
-"""Fetch NCBI RefSeq/GenBank genome assemblies (full genomic FASTA + annotated
+"""This fetches NCBI RefSeq/GenBank genome assemblies (full genomic FASTA plus annotated
 CDS FASTA) by accession, for feature extraction.
 
-Uses NCBI Entrez esearch/esummary (db=assembly) to resolve an accession to its
+It uses NCBI Entrez esearch/esummary (db=assembly) to resolve an accession to its
 FTP directory, then downloads the standard `_genomic.fna.gz` (used for
 genome size/GC/rRNA-tRNA/gene-calling fallback) and `_cds_from_genomic.fna.gz`
 (annotated CDS, used for CUB) files from that directory.

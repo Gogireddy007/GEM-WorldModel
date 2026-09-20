@@ -1,9 +1,9 @@
-"""Pull the gRodon/Madin labeled growth-rate corpus + lab-added species.
+"""This pulls the gRodon/Madin labeled growth-rate corpus plus lab-added species.
 
 gRodon2's published training data (Madin et al. 2020, "A synthesis of
-bacterial and archaeal genomes...") ships as R .rda files, not CSV. We fetch
-the raw .rda files from GitHub and parse them with pyreadr (no R runtime
-needed).
+bacterial and archaeal genomes...") ships as R .rda files, not CSV, so this
+fetches the raw .rda files from GitHub and parses them with pyreadr (no R
+runtime needed).
 """
 
 from pathlib import Path

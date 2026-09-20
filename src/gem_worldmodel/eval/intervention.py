@@ -1,5 +1,5 @@
-"""Activation intervention: perturb the latent dimension identified
-by probing.py as most predictive of oligotroph/copiotroph status, and check
+"""Activation intervention: this perturbs the latent dimension identified
+by probing.py as most predictive of oligotroph/copiotroph status, and checks
 whether the fine-tuned growth-rate head's prediction actually shifts.
 
 This is the corroborating half of the probing step: a probe finding correlation isn't
