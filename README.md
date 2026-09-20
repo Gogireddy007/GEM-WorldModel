@@ -31,8 +31,12 @@ make finetune-benchmark      # benchmark against gRodon and Phydon
 Predicting on new genomes that don't have a growth-rate label:
 
 ```bash
-python scripts/predict_unlabeled_genomes.py --genome-ids-file <your list>
+python scripts/pipeline/predict_unlabeled_genomes.py --genome-ids-file <your list>
 ```
+
+Scripts are split into two folders: `scripts/pipeline/` is the main build-train-evaluate flow above,
+`scripts/accuracy/` holds the scripts from the accuracy-improvement work described in ACCURACY_PLAN.md, things
+like testing a different model head or trying to patch a specific gap in the training data.
 
 ## What's real and what's approximate
 

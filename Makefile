@@ -43,38 +43,38 @@ lint:
 	.venv/bin/ruff check src/ tests/ scripts/
 
 pull-data:
-	$(PYTHON) scripts/pull_data.py
+	$(PYTHON) scripts/pipeline/pull_data.py
 
 build-features:
-	$(PYTHON) scripts/build_features.py --n-per-class $(N_PER_CLASS)
+	$(PYTHON) scripts/pipeline/build_features.py --n-per-class $(N_PER_CLASS)
 
 sanity-check:
-	$(PYTHON) scripts/pretrain_sanity_check.py
+	$(PYTHON) scripts/pipeline/pretrain_sanity_check.py
 
 pretrain:
-	$(PYTHON) scripts/pretrain_labeled.py
+	$(PYTHON) scripts/pipeline/pretrain_labeled.py
 
 pretrain-full:
-	$(PYTHON) scripts/pretrain_full.py
+	$(PYTHON) scripts/pipeline/pretrain_full.py
 
 gem-fast:
-	$(PYTHON) scripts/gem_fast_features.py
+	$(PYTHON) scripts/pipeline/gem_fast_features.py
 
 gem-slow:
-	$(PYTHON) scripts/gem_slow_features.py --workers 10
+	$(PYTHON) scripts/pipeline/gem_slow_features.py --workers 10
 
 gem-16s:
-	$(PYTHON) scripts/gem_slow_features.py --with-16s --workers 8 --limit 5000 \
+	$(PYTHON) scripts/pipeline/gem_slow_features.py --with-16s --workers 8 --limit 5000 \
 		--output-name unlabeled_corpus_features_16s.csv
 
 finetune-benchmark:
-	$(PYTHON) scripts/finetune_benchmark.py
+	$(PYTHON) scripts/pipeline/finetune_benchmark.py
 
 probe:
-	$(PYTHON) scripts/probe_intervene.py
+	$(PYTHON) scripts/pipeline/probe_intervene.py
 
 necessity-sufficiency:
-	$(PYTHON) scripts/run_necessity_sufficiency.py
+	$(PYTHON) scripts/pipeline/run_necessity_sufficiency.py
 
 pipeline: pull-data build-features sanity-check pretrain finetune-benchmark probe necessity-sufficiency
 
