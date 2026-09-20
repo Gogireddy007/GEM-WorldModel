@@ -1,105 +1,58 @@
 # GEM-WorldModel
 
-Latent World Models for Genotype-to-Phenotype Prediction: a Joint-Embedding Predictive Architecture (JEPA) for microbial growth dynamics.
+This project tries to predict how fast a microbe grows just from its genome, no lab measurement needed.
 
-This is a cross-species genomic world model. It predicts a masked genomic or phylogenetic branch's latent representation from the others, self-supervised, no growth-rate labels required, then fine-tunes a growth-rate prediction head and runs explainability analysis to answer the main research question: what controls microbial growth rate, and does the answer differ for fast (<5h doubling time) organisms versus slow (≥5h) ones. See [FINDINGS.md](FINDINGS.md) for the actual answer, current as of the last real run.
+The idea: take a genome, pull out three things from it (basic traits like GC content and codon usage, where it
+sits on the tree of life, and its 16S gene), train a model on real species that already have a measured growth
+rate, and use that model to predict growth rate for genomes that don't. The real research question behind it is
+what actually controls microbial growth rate, and whether the answer is different for fast growers versus slow
+ones. See [FINDINGS.md](FINDINGS.md) for the honest answer, including what turned out not to work.
 
-It's a masked-branch, snapshot-level architecture. No temporal rollout, per the project's scope after the pivot away from the Keio single-taxon track.
-
-## Architecture
-
-```
-Genome + growth-rate corpus (gRodon/Madin + GTDB + GEM MAGs)
-         │
-         ├── Genomic traits (CUB, rRNA/tRNA, size, GC, reg. genes) ──┐
-         ├── GTDB-distance embedding (primary phylogeny signal) ─────┼── Branch masking
-         └── 16S rRNA embedding (baseline, for comparison) ──────────┘        │
-                                                                    ┌──────────┴──────────┐
-                                                              Context encoder      Target encoder
-                                                                  E_θ                E_ξ (EMA)
-                                                                    │                    │
-                                                              Predictor P_φ  ──►  Latent loss D(ŝ, s)
-                                                                    │
-                                                        (joint repr., all branches unmasked)
-                                                                    │
-                                                    ┌───────────────┼───────────────┐
-                                              Growth-rate head   Probing +      Necessity/
-                                             (fine-tuned)      intervention    sufficiency
-                                                    │           (oligotroph/     masking
-                                              Benchmark vs.     copiotroph)    (regime-split)
-                                             gRodon & Phydon
-```
-
-Exact branch/encoder/predictor dimensions live in `configs/model.yaml`.
-
-## Data sources
-
-The gRodon2/Madin (2020) growth-rate corpus is pulled live from `jlw-ecoevo/gRodon2`'s GitHub `.rda` files and parsed with `pyreadr`, so no R runtime is needed.
-
-GTDB (`data.gtdb.ecogenomic.org`) supplies the bac120 reference tree and taxonomy for the GTDB-distance phylogeny branch. Note that the taxonomy table and the tree are not the same thing: the taxonomy table lists every genome GTDB has ever classified, but the tree only has representative genomes as tips. A genome can have GTDB taxonomy without being placeable on the tree.
-
-NCBI provides genome assemblies and annotated CDS per accession, plus 16S rRNA sequences via Entrez, for feature extraction.
-
-The DOE NERSC GEM portal (`portal.nersc.gov/GEM`) has 52,515 MAGs, used as the large unlabeled corpus for self-supervised pretraining, since most of them have no measured growth rate. GEM ships its own phylogenetic tree too (`multi_marker.rooted.tree`, 43,979 OTUs), which is what these genomes actually get placed on, since their JGI-style IDs don't match NCBI/GTDB accessions. A Dropbox folder of the same genomes is wired up as an alternative source in `data/gem_portal.py`.
-
-None of this data is checked into the repo (see `.gitignore`). `data/raw/` and `data/processed/` get populated by running the scripts below.
+The project moved past its first architecture (a custom self-supervised encoder, JEPA) once testing showed a
+much simpler approach, raw genome features fed into gradient-boosted trees, actually predicts better. Both are
+still in the codebase; FINDINGS.md explains why the simpler one won.
 
 ## Setup
 
 ```bash
-make install   # creates .venv (Python 3.11 - torch doesn't have wheels for 3.14 yet)
-make test      # pytest, no network calls
+make install   # creates a virtual environment and installs everything
+make test      # runs the test suite, no network needed
 ```
 
-## Running the pipeline
-
-Each script covers one stage and can be run standalone or chained with `make pipeline`:
+## Running it
 
 ```bash
-make pull-data                          # pull + cross-reference gRodon/GTDB/GEM data
-make build-features N_PER_CLASS=122     # build the feature table for the labeled corpus
-make sanity-check                       # JEPA sanity check (no collapse, no grad leakage to target encoder)
-make pretrain                           # self-supervised masked-branch pretraining
-make finetune-benchmark                 # fine-tune growth-rate head + gRodon/Phydon benchmark
-make probe                              # probing + activation intervention
-make necessity-sufficiency              # necessity/sufficiency masking, split by doubling-time regime
+make pull-data              # pull the growth-rate and taxonomy data
+make build-features         # build the feature table for the labeled species
+make pretrain                # train the encoder (see FINDINGS.md for whether this is worth using)
+make finetune-benchmark      # benchmark against gRodon and Phydon
 ```
 
-For the GEM MAG corpus specifically:
+Predicting on new genomes that don't have a growth-rate label:
 
 ```bash
-make gem-fast    # genome traits + phylogeny for all 52,515 genomes, no downloads needed, ~1 min
-make gem-slow    # real GC content, streaming download, several hours at full scale
-make gem-16s     # real 16S extraction via barrnap on a genome subset, CPU-bound, slow
+python scripts/predict_unlabeled_genomes.py --genome-ids-file <your list>
 ```
 
-A note on scale: the actual usable labeled corpus turned out to be much smaller than it first looked. Of the roughly 87,000 gRodon/Madin accessions, 93% have GTDB taxonomy, but only about 0.3% (271 accessions, 175 species) are real tips on the GTDB reference tree. That 175-species number is the true ceiling for anything using the phylogeny branch, and `build_features.py`'s stratified sample now reflects that.
+## What's real and what's approximate
 
-## Known limitations
+The labeled corpus of species with a measured growth rate is small, a few hundred species. Some of them are
+placed exactly on the reference tree of life; others don't have an exact spot, so their position is approximated
+from a close relative instead. Every row in the data says which kind it is, so nothing gets treated as more
+certain than it actually is.
 
-rRNA and tRNA gene counts need `barrnap`/`tRNAscan-SE` on the PATH. If they're not installed, `features/genome_traits.py` returns NaN for those columns instead of guessing. Install the tools and the same code starts producing real counts.
+## Where the results are
 
-CUB (codon usage bias) is a from-scratch reimplementation of the MILC statistic in `features/cub.py`, not a call into gRodon's actual R package, so expect values that are close but not bitwise identical to the original.
+- `FINDINGS.md` has the actual research findings, written up honestly including the things that didn't pan out.
+- `ACCURACY_PLAN.md` tracks the ongoing work to improve the model's accuracy.
+- `research_log.md` is a day-by-day log of what was tried and what happened.
+- `Test on HQ genomes/` has a real prediction run on the DOE GEM catalog's high-quality genomes, written up as a
+  plain report with the actual numbers and charts.
 
-The gRodon and Phydon baselines in `training/baselines.py` are reimplementations of each method's feature set and model class, refit on our own train split. They're not the original papers' published coefficients, which aren't available outside their R packages anyway and wouldn't be a fair same-split comparison even if they were.
+## A few honest limitations
 
-16S sequences come from NCBI by organism name (one representative record per species) rather than being extracted directly from genome assemblies for the labeled corpus. For the GEM MAG corpus, real 16S extraction via barrnap is genuinely slow (well under 1 genome/second even with several workers), so `gem_slow_features.py --with-16s` runs against a bounded subset rather than the full 52,515. A 5,000-genome run completed with 4,652 genomes successfully processed and 1,883 real 16S sequences recovered, the rest had zero copies detected, which is a real result for fragmented MAG assemblies, not a failed extraction.
-
-The oligotroph/copiotroph label used in probing is now real: `features/ecological_traits.py:real_trophic_label` is built from Madin et al. 2020's curated isolation_source data (`data/madin_traits.py`), genome-independent, not derived from CUB or anything else computed off the sequence. Covers 124/175 labeled species (71%); the rest have no isolation_source record in Madin or fall into a genuinely ambiguous source category (soil, sediment) left unlabeled on purpose rather than guessed. The earlier genome-derived heuristic (`eval/probing.py:heuristic_trophic_label`) is kept only as a documented `--use-heuristic` fallback, checked empirically against the real label and only agrees 58.9% of the time, so it isn't a reliable stand-in and its old circularity caveat (oligotrophs show weak CUB by definition, so a probe "discovering" CUB-correlated structure predicting the heuristic risks being circular) still applies to it specifically.
-
-## Layout
-
-```
-configs/            data.yaml, features.yaml, model.yaml, train.yaml
-src/gem_worldmodel/
-  data/              acquisition: grodon.py, gtdb.py, gem_tree.py, gem_portal.py, ncbi_genomes.py,
-                     consolidate.py, validate.py
-  features/          cub.py, genome_traits.py, phylogeny.py, rrna16s.py, temperature.py, build.py
-  models/            encoders.py, masking.py, predictor.py, losses.py, heads.py, jepa.py
-  training/          dataset.py, pretrain.py, finetune.py, baselines.py
-  eval/              benchmark.py, probing.py, intervention.py, necessity_sufficiency.py
-scripts/             pull_data.py, build_features.py, pretrain_sanity_check.py, pretrain_labeled.py,
-                     pretrain_full.py, finetune_benchmark.py, probe_intervene.py,
-                     run_necessity_sufficiency.py, gem_fast_features.py, gem_slow_features.py
-tests/               unit + smoke tests, no network calls
-```
+The rRNA/tRNA gene counts need `barrnap` and `tRNAscan-SE` installed to work, otherwise those columns come back
+empty rather than guessed. The codon usage calculation is a from-scratch version of the standard method, close
+to but not identical to gRodon's own numbers. The gRodon and Phydon comparisons in this project are
+reimplementations refit on the same data split, not the original published models. Real 16S extraction from raw
+genome sequences is slow, so it only covers part of the large unlabeled genome catalog, not all of it.
