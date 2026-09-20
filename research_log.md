@@ -21,7 +21,7 @@ exactly, and all 7,873 genomes on the full three-branch path matched exactly too
 1.000000 between the original and the rerun, average difference of zero.
 
 So the answer holds up under an actual, independent check, not just a claim: the predictions in
-HQ Genomes/unlabeled_predictions_hq.csv are real, deterministic output from the trained model, rerunning
+Test on HQ genomes/unlabeled_predictions_hq.csv are real, deterministic output from the trained model, rerunning
 the whole thing from scratch gives back the identical numbers, every single one.
 
 ## 2026-09-17, version 1.0, and the start of the accuracy improvement phase
