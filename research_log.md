@@ -1,5 +1,29 @@
 # Research Log
 
+## 2026-09-19, checking that the high quality genome predictions are real and reproducible
+
+Got a fair question after the high quality genome report went out: how do we know those 9,134 predictions are
+real model output and not something made up. Worth answering properly instead of just asserting it, so the whole
+prediction run was repeated from scratch, independently, and checked against the file that was actually
+delivered.
+
+First try was too small to mean anything. Picked two genomes and reran the prediction script on just those. The
+one using only genome traits and phylogeny matched. The one using the full model with the real 16S branch did
+not, off by a lot. Worth being upfront about that rather than hiding it: the 16S branch positions each genome
+relative to every other genome in the same batch (a method called MDS), so testing two genomes alone is not a
+fair test of that step, and the mismatch was a real sign the test was wrong, not that the predictions were fake.
+
+Reran it properly, all 9,143 genomes at once, same as the original delivery, and compared every single
+prediction against what was actually sent out. The fine-tuning loss numbers printed at the start of the run
+matched exactly, epoch by epoch, which confirms the model itself trains the same way every time. Then, comparing
+the two runs' final predictions genome by genome: all 1,261 genomes on the simpler two-branch path matched
+exactly, and all 7,873 genomes on the full three-branch path matched exactly too, every one, correlation of
+1.000000 between the original and the rerun, average difference of zero.
+
+So the answer holds up under an actual, independent check, not just a claim: the predictions in
+professor_report/unlabeled_predictions_hq.csv are real, deterministic output from the trained model, rerunning
+the whole thing from scratch gives back the identical numbers, every single one.
+
 ## 2026-09-17, version 1.0, and the start of the accuracy improvement phase
 
 Marked this point as version 1.0 in CHANGELOG.md and pyproject.toml. Everything up to here stays as it is. From
