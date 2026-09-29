@@ -1,6 +1,92 @@
 # Research Log
 
-## 2026-09-19, checking that the high quality genome predictions are real and reproducible
+## 2026-09-28, a proper second look at BacDive, and a real (partial) result from GTDB isolate screening
+
+Professor's feedback pointed back at BacDive specifically, plus a second path: search GTDB for real
+cultured isolates whose genome traits match the two known gap regions, then look up their growth rate
+in the literature, matched to the exact strain, not just the species, since strain-level growth rate
+variation is real and can be large.
+
+Rechecked BacDive properly this time, not just from its field documentation. Queried the live API
+directly (two real strain records, BacDive IDs 1 and 4) and ran a full-text search across the whole
+database for "doubling time": zero hits. BacDive's own record structure has a "Culture and growth
+conditions" section, but it only covers culture temperature and growth medium, no doubling time or
+generation time field anywhere. This confirms the earlier finding, now with direct evidence instead of
+documentation alone. BacDive is still useful for one specific purpose: its genome-sequence and
+culture-collection-number fields tie a strain record to an exact deposited genome, which is the kind of
+strain-exact link the professor was pointing at, it just doesn't carry the growth number itself.
+
+The real progress came from the second path. Downloaded GTDB's full metadata table (bac120_metadata.tsv,
+~289MB, not fetched before now since the pipeline only used the tree and taxonomy table) for its
+`ncbi_genome_category`, `genome_size`, and `gc_percentage` columns, none of which the tree or taxonomy
+files carry. Filtered to genomes with `ncbi_genome_category == "none"` (real isolate submissions, not
+metagenome-derived) landing in the two known gap regions (GC >= 0.64 and genome size <= 2.5 Mbp for the
+thermophile-heavy region, approximately reproducing the earlier 1,580-genome catalog count at 1,740;
+GC in [0.44, 0.50) and genome size in [4.0, 5.7] Mbp for the Vibrio-heavy region, reproducing the earlier
+918-genome count almost exactly at 908).
+
+This surfaced something the earlier, coarser check missed: the thermophile-trait region's real isolate
+pool is not actually dominated by Thermus, it's dominated by Corynebacterium, Micrococcus, and related
+high-GC, small-genome organisms that are ordinary mesophiles, mostly skin- and gut-associated, nothing
+like a thermophile biologically. Same story for the Vibrio-trait region: alongside real Vibrio, the
+isolate pool has large numbers of Yersinia, Bacillus, Bacteroides, Escherichia, and Shewanella, all
+well-studied, non-Vibrio organisms.
+
+Cross-referenced this new, more precisely-targeted candidate pool against Madin et al.'s full dataset
+(already used once before, but against cruder gap boundaries) and found 7 species with real, published
+doubling times whose species-level accession looked like it landed in the gap regions and had not been
+tried in the earlier gap-filling round: Calditerricola satsumensis, Guyparkeria hydrothermalis,
+Tepidiphilus margaritifer, and Thermus igniterrae in the high-GC/small-genome region; Acetobacterium
+wieringae, Bacteroides fragilis, and Shewanella profunda in the mid-GC/large-genome region. Also checked
+Madin's fuller, non-aggregated table (928 species versus the 917 used in the earlier round) against the
+same candidate pool: no additional species turned up, that source is now exhausted for these two regions.
+
+Built real features for all seven and benchmarked raw features plus gradient-boosted trees across all
+seven established seeds. First pass looked like a real but mixed result (R2 better in 5 of 7 seeds, mean
+0.073 to 0.102; Spearman better in only 3 of 7, mean 0.679 to 0.662).
+
+Caught a real bug in this result while independently re-verifying today's work before reporting it as
+done. The accession chosen for each species was picked by filtering to real isolate genomes and sorting
+for a RefSeq-preferred representative, but the choice of accession was never re-checked against the GC/
+genome-size window it was supposed to land in, only the species name was checked against the filtered
+region earlier in the pipeline. Two of the seven, it turned out, don't actually belong: Acetobacterium
+wieringae's genome is 3.90 Mbp, just under the 4.0 Mbp floor of the mid-GC/large-genome region, and
+Bacteroides fragilis's GC content is 43.1%, just under the 44% floor. Checked every other genome assembly
+on record for both species for one that both qualifies and is an exact GTDB tree tip: none exists for
+either species, so there is no valid substitute, both had to be dropped rather than patched.
+
+Rebuilt the corpus with the remaining 5 species (358 total) and reran the full seven-seed benchmark
+properly:
+
+| seed | R2 before | R2 after | Spearman before | Spearman after |
+|---|---|---|---|---|
+| 42 | 0.076 | 0.090 | 0.680 | 0.710 |
+| 1 | 0.048 | 0.107 | 0.668 | 0.681 |
+| 7 | 0.057 | 0.090 | 0.674 | 0.680 |
+| 13 | 0.105 | 0.119 | 0.668 | 0.695 |
+| 2024 | 0.033 | 0.069 | 0.689 | 0.677 |
+| 123 | 0.078 | 0.112 | 0.678 | 0.688 |
+| 99 | 0.111 | 0.079 | 0.693 | 0.668 |
+
+The corrected result is meaningfully better than the flawed one, not worse: mean R2 goes from 0.073 to
+0.095, better in 6 of the 7 seeds now instead of 5. Mean Spearman goes from 0.679 to 0.686, better in 5 of
+7 now instead of 3. Removing the two species that didn't actually belong made the result cleaner, not
+weaker, exactly what should happen if the underlying idea (fixing skewed trait regions with real,
+correctly-targeted data) is actually right. Still not a seven-for-seven sweep the way genus approximation
+was, and the fast-growth regime's R2 is still deeply negative in both the before and after runs here, this
+addition does not touch that separate, already-diagnosed problem. Kept as
+`features_sample_gapfilled_round2.csv` (358 species), not written over the existing 353-species default;
+not yet adopted as the new default corpus, that decision belongs with Phase 5's full re-validation, not a
+same-day benchmark check alone.
+
+One caveat still worth being explicit about, raised directly by the professor's feedback: Madin's
+doubling-time values are species-level, aggregated across whatever strains were measured in the underlying
+studies, not verified strain-exact matches to the specific genome accession used here. That's the same
+limitation the project's earlier Madin-sourced additions carried, not a new one, but it means this result
+should be read as "real published growth data for the right species landing in the right place," not as a
+fully strain-verified match. Fully closing that gap would mean tracing each of these five species back to
+the original measurement paper and confirming the same strain was sequenced, which is real, valuable
+followup work, not done today.
 
 Got a fair question after the high quality genome report went out: how do we know those 9,134 predictions are
 real model output and not something made up. Worth answering properly instead of just asserting it, so the whole

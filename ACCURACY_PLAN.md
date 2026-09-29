@@ -183,6 +183,33 @@ stays true here.
       conclusion: exact-tip-only should not be the default anymore, genus
       relaxation should be, family relaxation should not be used without a
       better reason than availability.
+- [x] Follow up on the professor's feedback: recheck BacDive directly rather
+      than from documentation alone, and try automating the GTDB
+      isolate-search path (find real cultured isolates whose genome traits
+      match a known gap region, then check for a real published growth
+      rate). Done 2026-09-28, see research_log.md. BacDive confirmed, via
+      the live API and a full-text search returning zero hits, to have no
+      doubling-time field anywhere. Built a real, automated screen using
+      GTDB's full metadata table (genome size, GC%, and isolate-vs-MAG flag,
+      none of which the tree or taxonomy files carry) to find real cultured
+      isolates landing in the two gap regions. Found 7 real species with
+      published Madin doubling times that looked like they landed in the gap
+      regions. Independently re-verified this before reporting it as done
+      and caught a real bug: 2 of the 7 accessions were never re-checked
+      against the actual GC/genome-size window after being selected, and
+      turned out to sit just outside it (checked every alternative genome on
+      record for both species, none both qualifies and is an exact tree
+      tip, so both were dropped rather than patched). With the corrected
+      5-species batch, benchmarked across all seven established seeds: mean
+      R2 improved from 0.073 to 0.095 (better in 6 of 7 seeds), mean
+      Spearman from 0.679 to 0.686 (better in 5 of 7). A real, meaningfully
+      positive result, the best-performing gap-filling attempt this project
+      has run, though still not a clean seven-for-seven win the way genus
+      approximation was, so not adopted as the default corpus on this alone.
+      Kept as `features_sample_gapfilled_round2.csv` (358 species) for
+      further testing. Caveat carried over from the professor's own point:
+      Madin's doubling times are species-level aggregates, not confirmed
+      strain-exact matches to the specific accession used here.
 
 ## Phase 5, re-check everything before trusting it
 
