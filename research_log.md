@@ -1,5 +1,101 @@
 # Research Log
 
+## 2026-09-30, the two remaining fast-growth ideas: a real trade-off, and a genuine, clean win
+
+Followed up on both ideas left open from the Huber-loss result earlier today.
+
+First, the two-stage model: classify fast versus slow first, then a regime-specific Huber regressor for
+each (`scripts/accuracy/benchmark_two_stage.py`), classifier and both regressors trained only on the
+fold's own training split so a test genome's true regime is never known ahead of time, exactly like
+every other benchmark here. Tested hard routing (use whichever regressor the classifier picked) and soft
+routing (blend both regressors' predictions by the classifier's predicted probability) against the plain
+Huber baseline, all three on identical folds. Real, honest, mixed result, not a fix: soft routing
+improves overall Spearman in 6 of 7 seeds, but costs overall R2 in 5 of 7 seeds, and fast-regime R2 is
+inconsistent, better in some seeds, much worse in others (seed 7: -31.8 under plain Huber to -114.8 under
+soft routing). Hard routing is worse than plain Huber on fast-regime R2 in 5 of 7 seeds. Neither routing
+choice is a clean improvement; not adopted.
+
+Second, quantile (median, alpha=0.5) loss in place of Huber (`scripts/accuracy/benchmark_gbm_quantile.py`).
+This is a clean, complete result, checked across all seven seeds, verified with the standalone script
+producing identical numbers to the inline check that found it:
+
+| seed | fast R2 Huber | fast R2 quantile | fast Spearman Huber | fast Spearman quantile | overall R2 Huber | overall R2 quantile |
+|---|---|---|---|---|---|---|
+| 42 | -74.8 | -27.8 | 0.347 | 0.433 | 0.085 | 0.041 |
+| 1 | -148.3 | -21.8 | 0.313 | 0.382 | 0.058 | 0.032 |
+| 7 | -31.8 | -18.4 | 0.267 | 0.345 | 0.076 | 0.017 |
+| 13 | -104.6 | -40.9 | 0.255 | 0.363 | 0.081 | 0.053 |
+| 2024 | -41.2 | -15.8 | 0.257 | 0.357 | 0.084 | 0.041 |
+| 123 | -42.2 | -26.9 | 0.323 | 0.381 | 0.093 | 0.031 |
+| 99 | -33.7 | -23.2 | 0.249 | 0.337 | 0.120 | 0.021 |
+
+Quantile loss improves fast-regime R2 in all 7 of 7 seeds (mean -68.1 to -25.0, still deeply negative,
+the fast regime is nowhere near a usable predictor, but the size of the failure roughly tripled in the
+right direction) and fast-regime Spearman in all 7 of 7 seeds too (mean 0.287 to 0.371, meaningfully
+better ranking ability, not just a smaller squared-error failure). This is the cleanest, most consistent
+result anywhere in this whole fast-growth effort.
+
+The honest other half: overall R2 gets worse in all 7 of 7 seeds under quantile loss (mean 0.085 to
+0.034), a real, consistent cost, not noise. Quantile loss trades overall predictive accuracy for
+specifically better fast-regime behavior, an L1-type loss is less pulled by the slow regime's wide
+dynamic range, which is exactly why it helps the narrow, compressed fast regime and exactly why it gives
+up accuracy where that wide range is actually informative.
+
+Conclusion, not a single fix but a real choice depending on the goal: Huber loss (already adopted
+earlier today) is the better default for overall accuracy. Quantile-median loss is the better choice
+specifically when fast-regime behavior matters more than overall R2, for example if the deployment use
+case cares particularly about not mispredicting fast growers. Both are real, verified, reproducible
+results, kept side by side rather than picking one to declare "the" answer, the same way this project has
+already handled the GBM-vs-blend choice. The fast regime remains far from solved under either loss, this
+is real, meaningful progress, not a finished fix.
+
+## 2026-09-30, trying to fix the fast-growth compression, first attempt does not work
+
+Started on the highest-priority open item: the fast-growth regime's R2 is catastrophically negative
+(-30 to -125 across seeds) for every model tried so far, and the calibration plot made the cause visible
+directly, fast growers get predicted slower than they really are, because plain squared error on a
+corpus whose overall median (6.7h) sits well above the fast regime's own median (1.7h) pulls those
+predictions toward the middle.
+
+First, most obvious fix to try: reweight training samples so the fast and slow regimes contribute equal
+total weight to the loss, instead of slow growers (200 of 353 species) dominating simply by being more
+numerous. Built `scripts/accuracy/benchmark_gbm_reweighted.py`, same k-fold CV as every other benchmark
+here, plain versus regime-weighted, same model otherwise.
+
+Checked across all seven established seeds. Overall R2 improved slightly on average (mean 0.073 to
+0.080, better in 5 of 7 seeds), but the actual target, fast-regime R2, got worse on average (mean -71.9
+to -79.6, better in only 3 of 7 seeds). A real, checked, negative result on the specific problem this was
+meant to fix. Likely explanation: fast-regime R2 is already extremely unstable, since the true values
+span a narrow absolute range near zero, small prediction errors there blow up the percentage-of-variance
+metric. Pushing the model to fit that narrow range harder increases prediction variance there, which can
+make R2 worse even when the average error direction (the compression bias) genuinely improves, R2
+penalizes variance and bias together, so a fix for one can still net negative on the metric.
+
+Simple regime-balanced reweighting does not fix this problem.
+
+Second attempt: Huber loss in place of plain squared error (same model, same features, same k-fold CV,
+`scripts/accuracy/benchmark_gbm_huber.py`), reasoning that Huber's linear-beyond-threshold behavior
+should cap how much a single overshot prediction can blow up the fast regime's already-unstable R2.
+Checked across all seven seeds:
+
+| seed | overall R2 plain | overall R2 Huber | fast R2 plain | fast R2 Huber | Spearman plain | Spearman Huber |
+|---|---|---|---|---|---|---|
+| 42 | 0.076 | 0.085 | -95.0 | -74.8 | 0.680 | 0.678 |
+| 1 | 0.048 | 0.058 | -97.3 | -148.3 | 0.668 | 0.677 |
+| 7 | 0.057 | 0.076 | -41.0 | -31.8 | 0.674 | 0.687 |
+| 13 | 0.105 | 0.081 | -121.2 | -104.6 | 0.668 | 0.685 |
+| 2024 | 0.033 | 0.084 | -67.8 | -41.3 | 0.689 | 0.668 |
+| 123 | 0.078 | 0.093 | -32.6 | -42.2 | 0.678 | 0.687 |
+| 99 | 0.111 | 0.120 | -48.3 | -33.7 | 0.693 | 0.694 |
+
+A real, broad improvement, not a full fix: mean overall R2 goes from 0.073 to 0.085 (better in 6 of 7
+seeds), mean fast-regime R2 from -71.9 to -68.1 (better in 5 of 7, worse badly in seed 1), mean Spearman
+from 0.679 to 0.682 (better in 5 of 7). The fast regime is still catastrophically negative under Huber
+loss, this has not solved the problem, but it is a genuine improvement on every metric checked, and
+unlike regime-weighting it doesn't trade the target metric away to get there. Worth adopting as the
+default loss for this model going forward; still open: the fast regime remains far from usable, a
+two-stage classify-then-regress approach or a rank-based loss are the next things worth trying.
+
 ## 2026-09-28, a proper second look at BacDive, and a real (partial) result from GTDB isolate screening
 
 Professor's feedback pointed back at BacDive specifically, plus a second path: search GTDB for real

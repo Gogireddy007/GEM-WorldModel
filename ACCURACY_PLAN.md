@@ -220,6 +220,45 @@ stays true here.
 - [ ] Update FINDINGS.md with whatever actually happened, including if
       something here does not work out.
 
+## Phase 6, fix the fast-growth compression
+
+Made visible directly by the calibration plot (2026-09-29): fast growers get predicted slower than they
+really are, a training-loss and label-distribution problem, not a feature or data problem.
+
+- [x] Try regime-balanced sample weighting (equal total weight for fast and
+      slow species regardless of how many are in each). Done 2026-09-30, see
+      research_log.md. Does not work: fast-regime R2 got worse on average
+      (5 of 7 seeds), a real, checked negative result.
+- [x] Try Huber loss in place of squared error. Done 2026-09-30, see
+      research_log.md and `scripts/accuracy/benchmark_gbm_huber.py`. A real,
+      broad improvement on every metric checked (overall R2 better in 6 of
+      7 seeds, fast-regime R2 better in 5 of 7, Spearman better in 5 of 7),
+      not a full fix, the fast regime is still deeply negative, but a
+      genuine step forward worth adopting as the default loss.
+- [x] Try a two-stage model: classify fast versus slow first, then a
+      regime-specific regressor for each. Done 2026-09-30, see
+      research_log.md and `scripts/accuracy/benchmark_two_stage.py`. Real,
+      honest, mixed result, not adopted: soft routing helps overall
+      Spearman in 6 of 7 seeds but costs overall R2 in 5 of 7 and is
+      inconsistent on fast-regime R2 (much worse than plain Huber in some
+      seeds). Hard routing is worse than plain Huber on fast-regime R2 in
+      5 of 7 seeds. Neither beats plain Huber cleanly.
+- [x] Try quantile (rank-robust) loss, since Spearman already behaves far
+      better than R2 in the fast regime, the problem may be more about R2's
+      own sensitivity to a narrow absolute range than about the model's
+      ranking ability. Done 2026-09-30, see research_log.md and
+      `scripts/accuracy/benchmark_gbm_quantile.py`. A clean, complete
+      result: quantile-median loss improves fast-regime R2 in 7 of 7 seeds
+      (mean -68.1 to -25.0) and fast-regime Spearman in 7 of 7 seeds (mean
+      0.287 to 0.371), the most consistent result in this whole effort, but
+      costs overall R2 in 7 of 7 seeds (mean 0.085 to 0.034), a real,
+      consistent trade-off, not a free improvement. Recommendation: Huber
+      stays the default for overall accuracy; quantile-median is the better
+      choice specifically when fast-regime behavior matters more than
+      overall R2. Both kept, neither declared "the" answer, following this
+      project's established practice with the GBM-vs-blend choice. The
+      fast regime is still far from a usable predictor under either loss.
+
 ## Notes
 
 Phases 0 and 1 are the ones worth doing first. They are cheap and could show
