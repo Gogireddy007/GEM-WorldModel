@@ -1,5 +1,153 @@
 # Research Log
 
+## 2026-10-04 (later), the delivered GEM predictions were not valid, and the honest accuracy numbers
+
+Working out how to regenerate the 9,134 high-quality GEM predictions with the better model turned up three
+problems that matter more than anything else done this week.
+
+**1. The delivered predictions used inputs the model was never trained on.** For the labeled species, the
+phylogeny inputs are classical-MDS coordinates (centered at 0, standard deviation about 0.2). For GEM genomes
+they were raw distances to landmark tips on GEM's own tree (centered near 2, standard deviation 0.4 to 0.6), a
+gap of 8 to 12 labeled standard deviations on every dimension. The 16S inputs were an MDS computed relative to
+whichever batch was being predicted, so they were also in a different coordinate system, and
+`regulatory_gene_count` does not exist for GEM genomes at all. The output shows it: median predicted doubling
+time 0.59 hours against 7.0 for the labeled species, none of the 9,134 slower than 24 hours (25.7% of the
+labeled corpus is), 9.5% predicted faster than the fastest labeled species, 0.9% under 10 minutes, a gut
+*Lachnospira* at 4.4 minutes, and every habitat group between 0.55 and 0.79 hours. The earlier "verification"
+only showed the run was deterministic, not that it was meaningful. Those predictions, the charts and the PDF are
+superseded (see `Test on HQ genomes/NOTE.md`).
+
+**2. The labeled corpus is 216 species, not 304.** 88 species appear as more than one genome with an identical
+growth rate (176 rows, label spread exactly zero). In a random split a twin can sit in training while its pair is
+tested, which inflates every random-split number in this log. Holding whole species out (5 seeds, mean):
+
+| model | R2 (hours) | R2 (log) | Spearman | typical fold error |
+|---|---|---|---|---|
+| ours, all three branches (old MDS features) | 0.092 | 0.455 | 0.699 | 2.14x |
+| ours, traits + GTDB landmark phylogeny | 0.034 | 0.406 | 0.678 | 2.19x |
+| Phydon (reimplementation) | 0.001 | 0.355 | 0.651 | 2.40x |
+| gRodon (reimplementation) | -0.032 | 0.325 | 0.610 | 2.46x |
+
+We are still ahead of both published tools on every metric, but by less than the random-split numbers
+suggested (R2 in hours 0.148 against 0.073 for Phydon becomes 0.092 against 0.001). R2 in hours is dominated by
+a few species with doubling times over 100 hours; in log space the same model explains 41 to 46% of the
+variance with a typical error under a factor of 2.2. Inside each growth regime it is much weaker (fast growers
+log R2 -1.26, slow growers 0.01 on the random split, ranking within a regime Spearman 0.35 and 0.50).
+
+**3. Most GEM genomes are far from the training species, and accuracy drops with distance.** Holding whole
+lineages out with the deployment feature set (genome size, GC, tRNA count, GTDB landmark phylogeny, 16S landmark
+distances), mean of 5 seeds:
+
+| held out | R2 (log) | Spearman | typical fold error |
+|---|---|---|---|
+| species | 0.435 | 0.670 | 2.13x |
+| genus | 0.360 | 0.605 | 2.21x |
+| family | 0.208 | 0.510 | 2.54x |
+| order | 0.202 | 0.495 | 2.51x |
+
+Phylogeny alone collapses for new orders (log R2 -0.2 to -0.4), because a position on the tree says nothing
+about an unsampled clade; 16S and genome traits hold up better. By name, about 5% of the HQ genomes share a
+genus with a labeled species, 17% a family, 18% an order, and 60% have no labeled relative at order level. GEM
+uses an older GTDB naming scheme (Firmicutes_A where the labeled set says Bacillota_A), so renamed taxa look
+more novel than they are and these shares are worst cases.
+
+What was built to fix it: `scripts/accuracy/build_gtdb_landmark_features.py` (distance from every GTDB tip to 16
+fixed landmark tips, averaged over a species, genus, family or order, one rule for training and deployment),
+`features/taxon_vectors.py` with a test, `scripts/accuracy/fetch_labeled_16s.py` (the labeled 16S sequences had
+never been cached; 213 of 216 species have one), a 16S feature defined as cosine distance to 16 fixed reference
+sequences, and `scripts/pipeline/predict_gem_genomes_gbm.py`, which uses whichever of four models (traits;
+traits + phylogeny; traits + 16S; all three) the genome's available features support and records the nearest
+labeled relative and the typical error at that level of novelty. Training with a mix of species, genus, family
+and order precision costs nothing (log R2 0.426 to 0.431 against 0.435), so placing most GEM genomes only at
+genus or family level is not a problem.
+
+Check on real MAGs (`scripts/accuracy/validate_on_gem_mags.py`): GEM genomes whose species matches a labeled
+species, predicted with that species held out. Only 15 species qualify at completeness >= 90 and contamination
+<= 5, so this is indicative only. Typical error 2.66x for the MAG against 2.35x for the isolate genome of the same
+species, Spearman 0.47 against 0.71, log R2 0.14 against 0.28. MAG artifacts (collapsed rRNA operons, incomplete
+tRNA sets) cost some accuracy.
+
+The new GEM predictions (`hq_genome_predictions_v2.csv`, 9,139 genomes): median 15.6 hours, 35% slower than 24
+hours, none under 10 minutes. Slower than the labeled median is expected, since cultured isolates are biased
+toward fast growers and most GEM genomes are uncultured. Direction checks pass: Enterobacteriaceae (4.3 h),
+Moraxellaceae, Neisseriaceae and marine Alteromonadaceae are among the fastest, methanogens (58 h), sulfate
+reducers, Thermotogaceae and ammonia-oxidizing Nitrosopumilaceae among the slowest. Habitats now differ (human-associated 13.7
+h, built environment 7.1 h, wastewater 25.5 h). Not checked: any absolute accuracy for uncultured lineages, there
+is no ground truth for them.
+
+Also measured today, for the questions raised about slow growers: strain-to-strain spread in Madin's repeat
+measurements (134 species) is small, a median factor of 1.25, so label noise caps log R2 near 0.93 and is not
+what limits us (optimistic, since well-studied species with repeats are probably the most consistent). Genome
+size alone correlates only -0.30 with doubling time and is not monotonic (median 10 h for the smallest fifth, 17.6
+h for the middle fifth, 2.5 h for the largest). In the labeled set 86% of anaerobes are slow growers (n=80)
+against 36% of facultative organisms (n=69) and 43% of aerobes (n=117); thermophiles look 92% slow (n=26), but the
+correction to a common temperature probably inflates that. These are associations, each confounded with lineage.
+
+Withdrawn or narrowed: "beats Phydon on R2 in 7 of 7 seeds" holds only for random splits; the tree-model
+feature-importance statements about 16S were never tested under lineage hold-outs; the earlier recommendation
+that dropping 16S improves the model came from a random split and reversed under species-held-out splits.
+
+## 2026-10-04, found a bug that contaminated the gap-filling results, and re-ran them
+
+While putting together a full status overview, I noticed that on the 353-species corpus our best model was
+well behind its own earlier numbers (R2 around 0.07 instead of 0.15, and Phydon ahead of it in 6 of 7 seeds,
+when the 304-species corpus had us ahead in 7 of 7). That gap was not explained by anything written down, so
+I checked it.
+
+The cause was a real bug in `scripts/accuracy/add_gap_filling_species.py`. Classical MDS coordinates only mean
+something relative to the set of tips they were computed from. When the script added species it recomputed the
+embeddings of the exact-tip rows (a new coordinate system), but left the genus and family approximated rows
+as they were (the old one). Measured directly: the 129 approximated rows did not change at all, while the 175
+exact-tip rows moved by 0.25 on average, and the approximated rows ended up 0.735 away from their nearest
+exact tip in the new space against 0.008 in the old one. So in every corpus built that way
+(`features_sample_gapfilled.csv`, 353 species, and `features_sample_gapfilled_round2.csv`, 358 species) the
+phylogeny branch was inconsistent between rows.
+
+Fixed it: `phylogeny.recompute_centroid_rows` rebuilds every approximated row from the current exact-tip
+embeddings using the rank it was originally matched on, with a unit test that fails if the stale values
+survive, and `add_gap_filling_species.py` now calls it. `scripts/accuracy/evaluate_corpus_variants.py` repairs
+the existing 358-species file and re-benchmarks every variant over the same seven seeds (mean over seeds):
+
+| corpus | n | R2 (squared error) | Spearman | R2 wins vs Phydon |
+|---|---|---|---|---|
+| 304, original file | 304 | 0.148 | 0.755 | 7 / 7 |
+| 304, control in the repaired space | 304 | 0.155 | 0.751 | 6 / 7 |
+| + 10 round-1 gap species | 314 | 0.185 | 0.737 | 7 / 7 |
+| + 5 round-2 gap species | 309 | 0.191 | 0.726 | 7 / 7 |
+| + both rounds | 319 | 0.185 | 0.739 | 7 / 7 |
+| + 39 family-approximated | 343 | 0.150 | 0.746 | 7 / 7 |
+| everything | 358 | 0.153 | 0.727 | 7 / 7 |
+
+Phydon averages R2 0.073 to 0.094 across these, gRodon is negative everywhere.
+
+What changes:
+
+1. The best clean configuration is the 304-species corpus with raw features and gradient-boosted trees, R2 0.148
+   and Spearman 0.755 averaged over seven seeds, ahead of Phydon on R2 in 7 of 7 seeds and essentially tied
+   with it on Spearman (0.757). All the work from 2026-09-28 to 2026-09-30 was benchmarked on the corrupted
+   353-species file, which is why those numbers (R2 about 0.07) looked so much weaker.
+2. The gap-filling species do help R2 once the bug is out of the way (0.155 to about 0.19), but they cost
+   Spearman (0.751 to 0.73 to 0.74), and the fast-regime R2 gets worse. So it is the same mixed, honest trade-off
+   as before, not a clean win, now measured properly. The earlier statement that the 5 round-2 species were a
+   "genuine, verified improvement" was measured on the corrupted file and should not be relied on.
+3. Huber loss does NOT replicate. On the clean 304 corpus it is worse than squared error on overall R2 (0.129
+   against 0.148, better in only 4 of 7 seeds) and does nothing for the fast regime (-56 against -52). The
+   2026-09-30 recommendation to adopt Huber as the default is withdrawn.
+4. Quantile (median) loss DOES replicate, and cleanly: fast-regime R2 -20.4 against -51.9 and fast-regime
+   Spearman 0.403 against 0.322 (better in 7 of 7 seeds on both), overall Spearman is the best of the three
+   (0.766), at the cost of overall R2 (0.104 against 0.148, worse in 7 of 7). Still a trade-off, still not a fix
+   for the fast regime, but the trade-off is real.
+5. The calibration plot pushed on 2026-09-29 was made from the corrupted corpus. Regenerated on the clean 304
+   corpus (seed 42 gives R2 0.132 and Spearman 0.760, matching FINDINGS.md); the points sit visibly closer to the
+   diagonal.
+6. Separate from the bug: the 9,134 high-quality GEM genome predictions that were delivered come from
+   `scripts/pipeline/predict_unlabeled_genomes.py`, which fine-tunes the JEPA encoder with the small neural head.
+   That is the older, weaker model: at seed 42 on the 304-species corpus it scores Spearman 0.405 and R2 -0.044,
+   against 0.760 and 0.132 for the gradient-boosted model on the same corpus and seed. The delivered predictions
+   were not made with the model that is now the best one. Regenerating them with the better model is
+   the most valuable next step, and is not trivial because the GEM genomes get their phylogeny coordinates from
+   GEM's own tree rather than GTDB's.
+
 ## 2026-09-30, the two remaining fast-growth ideas: a real trade-off, and a genuine, clean win
 
 Followed up on both ideas left open from the Huber-loss result earlier today.

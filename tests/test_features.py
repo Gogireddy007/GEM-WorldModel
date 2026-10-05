@@ -124,6 +124,23 @@ def test_taxonomic_centroid_embeddings_falls_back_to_family_when_genus_missing()
     assert "new3" not in embeddings
 
 
+def test_recompute_centroid_rows_follows_new_tip_embeddings():
+    tip_taxonomy = {
+        "tipA1": "d__B;p__X;c__X;o__X;f__Fooidae;g__Foo;s__Foo alpha",
+        "tipA2": "d__B;p__X;c__X;o__X;f__Fooidae;g__Foo;s__Foo beta",
+        "tipB1": "d__B;p__X;c__X;o__X;f__Baridae;g__Bar;s__Bar alpha",
+    }
+    rows = pd.DataFrame(
+        {"matched_rank": ["g__Foo", "f__Baridae"], "e0": [99.0, 99.0], "e1": [99.0, 99.0]},
+        index=["r1", "r2"],
+    )
+    # the tips moved to a new coordinate system, the stale values must not survive
+    new_tips = {"tipA1": np.array([4.0, 4.0]), "tipA2": np.array([6.0, 4.0]), "tipB1": np.array([-3.0, 7.0])}
+    out = phylogeny.recompute_centroid_rows(rows, new_tips, tip_taxonomy, ["e0", "e1"])
+    assert np.allclose(out.loc["r1", ["e0", "e1"]].astype(float), [5.0, 4.0])
+    assert np.allclose(out.loc["r2", ["e0", "e1"]].astype(float), [-3.0, 7.0])
+
+
 def test_classical_mds_embedding_shape():
     n = 6
     rng = np.random.default_rng(0)
@@ -164,3 +181,21 @@ def test_16s_embeddings_from_profiles_shape():
     assert set(embeddings.keys()) == {"a", "b", "c"}
     for vec in embeddings.values():
         assert vec.shape == (5,)
+
+
+def test_taxon_vector_lookup_prefers_most_specific_rank():
+    from gem_worldmodel.features import taxon_vectors as tv
+
+    table = {
+        ("species", "s__Foo alpha"): np.full(16, 1.0),
+        ("genus", "g__Foo"): np.full(16, 2.0),
+        ("family", "f__Fooidae"): np.full(16, 3.0),
+    }
+    v, rank = tv.lookup("d__B;f__Fooidae;g__Foo;s__Foo alpha", table)
+    assert rank == "species" and v[0] == 1.0
+    v, rank = tv.lookup("d__B;f__Fooidae;g__Foo;s__Foo beta", table)
+    assert rank == "genus" and v[0] == 2.0
+    v, rank = tv.lookup("d__B;f__Fooidae;g__Bar;s__Bar x", table)
+    assert rank == "family" and v[0] == 3.0
+    v, rank = tv.lookup("d__B;f__Nowhere;g__Nada;s__Nada x", table)
+    assert v is None and rank is None

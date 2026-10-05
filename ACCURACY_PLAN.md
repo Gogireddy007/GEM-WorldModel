@@ -222,6 +222,10 @@ stays true here.
 
 ## Phase 6, fix the fast-growth compression
 
+Correction, 2026-10-04: everything benchmarked between 2026-09-28 and 2026-09-30 used a corpus file whose
+phylogeny coordinates were inconsistent (a bug in the gap-filling script, now fixed, see research_log.md).
+Items below say which of their results survived being re-run on the clean corpus.
+
 Made visible directly by the calibration plot (2026-09-29): fast growers get predicted slower than they
 really are, a training-loss and label-distribution problem, not a feature or data problem.
 
@@ -230,11 +234,12 @@ really are, a training-loss and label-distribution problem, not a feature or dat
       research_log.md. Does not work: fast-regime R2 got worse on average
       (5 of 7 seeds), a real, checked negative result.
 - [x] Try Huber loss in place of squared error. Done 2026-09-30, see
-      research_log.md and `scripts/accuracy/benchmark_gbm_huber.py`. A real,
-      broad improvement on every metric checked (overall R2 better in 6 of
-      7 seeds, fast-regime R2 better in 5 of 7, Spearman better in 5 of 7),
-      not a full fix, the fast regime is still deeply negative, but a
-      genuine step forward worth adopting as the default loss.
+      research_log.md and `scripts/accuracy/benchmark_gbm_huber.py`. It looked
+      like a broad improvement on the 353-species corpus, but that corpus had
+      a phylogeny-embedding bug (see the 2026-10-04 entry in research_log.md).
+      Re-run on the clean 304-species corpus it does NOT hold: overall R2 is
+      worse than squared error (0.129 against 0.148, better in only 4 of 7
+      seeds) and the fast regime is unchanged. Withdrawn, not the default.
 - [x] Try a two-stage model: classify fast versus slow first, then a
       regime-specific regressor for each. Done 2026-09-30, see
       research_log.md and `scripts/accuracy/benchmark_two_stage.py`. Real,
@@ -252,12 +257,33 @@ really are, a training-loss and label-distribution problem, not a feature or dat
       (mean -68.1 to -25.0) and fast-regime Spearman in 7 of 7 seeds (mean
       0.287 to 0.371), the most consistent result in this whole effort, but
       costs overall R2 in 7 of 7 seeds (mean 0.085 to 0.034), a real,
-      consistent trade-off, not a free improvement. Recommendation: Huber
-      stays the default for overall accuracy; quantile-median is the better
-      choice specifically when fast-regime behavior matters more than
-      overall R2. Both kept, neither declared "the" answer, following this
+      consistent trade-off, not a free improvement. Replicated on the clean
+      304-species corpus on 2026-10-04 (fast R2 -20.4 against -51.9, fast
+      Spearman 0.403 against 0.322, both better in 7 of 7 seeds; overall R2
+      0.104 against 0.148, worse in 7 of 7; overall Spearman 0.766, the best
+      of the three losses). Recommendation: plain squared error stays the
+      default for overall R2; quantile-median is the better choice when
+      fast-regime behavior or rank ordering matters more than overall R2. Both kept, neither declared "the" answer, following this
       project's established practice with the GBM-vs-blend choice. The
       fast regime is still far from a usable predictor under either loss.
+
+## Phase 7, deployment validity and honest evaluation (2026-10-04)
+
+- [x] Check that GEM genomes reach the model in the same feature space as the labeled species. They did not
+      (phylogeny and 16S in different coordinate systems), so the delivered predictions were invalid. Rebuilt the
+      features and regenerated the predictions, see research_log.md.
+- [x] Re-measure accuracy with whole species held out, since 88 species repeat with identical labels. Done, still
+      ahead of Phydon and gRodon, by less.
+- [x] Measure how accuracy falls for new genera, families and orders. Done, about 2.1x typical error for new
+      species and 2.5x for new families and orders.
+- [x] Check the deployment pipeline on real MAGs. Done on 15 species, typical error 2.66x against 2.35x for
+      isolates. Too small to be more than indicative.
+- [ ] Regenerate the charts and the PDF report from the v2 predictions.
+- [ ] Add a confidence signal that reflects the lineage distance (the nearest-relative level is a first version).
+- [ ] Re-run the loss-function and gap-species comparisons (quantile, Huber, round 1 and 2) with species held out
+      and the consistent features.
+- [ ] Test richer gene-content features within slow growers, controlling for lineage.
+- [ ] Find strain-matched growth rates for the thin regions, the largest remaining lever.
 
 ## Notes
 

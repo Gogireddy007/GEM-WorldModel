@@ -31,16 +31,19 @@ make finetune-benchmark      # benchmark against gRodon and Phydon
 Predicting on new genomes that don't have a growth-rate label:
 
 ```bash
-python scripts/pipeline/predict_unlabeled_genomes.py --genome-ids-file <your list>
+python scripts/pipeline/predict_gem_genomes_gbm.py --genome-ids-file <your list>
 ```
 
 Scripts are split into two folders: `scripts/pipeline/` is the main build-train-evaluate flow above,
 `scripts/accuracy/` holds the scripts from the accuracy-improvement work described in ACCURACY_PLAN.md, things
 like testing a different model head or trying to patch a specific gap in the training data.
 
+The older script `scripts/pipeline/predict_unlabeled_genomes.py` is kept for reference but its output should not
+be used, see `Test on HQ genomes/NOTE.md` and the 2026-10-04 entries in `research_log.md`.
+
 ## What's real and what's approximate
 
-The labeled corpus of species with a measured growth rate is small, a few hundred species. Some of them are
+The labeled corpus of species with a measured growth rate is small, 304 genomes from 216 species. Some of them are
 placed exactly on the reference tree of life; others don't have an exact spot, so their position is approximated
 from a close relative instead. Every row in the data says which kind it is, so nothing gets treated as more
 certain than it actually is.

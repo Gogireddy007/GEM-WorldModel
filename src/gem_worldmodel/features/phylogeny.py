@@ -221,6 +221,37 @@ def taxonomic_centroid_embeddings(
     return result_embeddings, pd.Series(matched_rank, name="matched_rank")
 
 
+def recompute_centroid_rows(
+    approx_rows: pd.DataFrame,
+    tip_embeddings: dict[str, np.ndarray],
+    tip_taxonomy: dict[str, str],
+    embedding_cols: list[str],
+) -> pd.DataFrame:
+    """Re-derive centroid-approximated rows' embeddings from the current tip
+    embeddings, using the rank each row was originally matched on.
+
+    Classical MDS positions are only meaningful relative to the tip set they
+    were computed from, so whenever the exact-tip embeddings are recomputed
+    (a species added to the tree), every centroid row has to be rebuilt in the
+    same space or it ends up in a different coordinate system from the tips
+    it is supposed to sit next to.
+    """
+    out = approx_rows.copy()
+    for prefix in ("g__", "f__"):
+        grouped: dict[str, list[np.ndarray]] = {}
+        for acc, taxonomy in tip_taxonomy.items():
+            m = re.search(rf"{prefix}[^;]*", taxonomy or "")
+            if acc in tip_embeddings and m and m.group(0) != prefix:
+                grouped.setdefault(m.group(0), []).append(tip_embeddings[acc])
+        centroids = {token: np.mean(np.stack(v), axis=0) for token, v in grouped.items()}
+        for idx, token in out["matched_rank"].items():
+            if isinstance(token, str) and token.startswith(prefix):
+                if token not in centroids:
+                    raise ValueError(f"rank {token} has no exact tip left to build a centroid from")
+                out.loc[idx, embedding_cols] = centroids[token]
+    return out
+
+
 def build_gtdb_distance_embeddings(
     tree: dendropy.Tree,
     cfg: dict | None = None,

@@ -74,7 +74,16 @@ def main():
 
     base_exact = base[base["placement_type"] == "exact_tip"].copy()
     base_exact = apply_embeddings(base_exact)
-    base_rest = base[base["placement_type"] != "exact_tip"]
+    base_rest = base[base["placement_type"] != "exact_tip"].copy()
+
+    # MDS coordinates only mean something relative to the tip set they came
+    # from, so the centroid-approximated rows have to be rebuilt in the new
+    # space too, otherwise they sit in a different coordinate system from the
+    # exact tips they are supposed to be next to.
+    taxonomy = gtdb.fetch_bac_taxonomy(data_cfg)
+    tip_taxonomy = dict(zip(taxonomy["accession_bare"], taxonomy["gtdb_taxonomy"]))
+    tip_taxonomy = {acc: tip_taxonomy[acc] for acc in exact_tip_accessions if acc in tip_taxonomy}
+    base_rest = phylogeny.recompute_centroid_rows(base_rest, embeddings, tip_taxonomy, gtdb_cols)
 
     combined = pd.concat([base_exact, base_rest, new_features], ignore_index=True)
     out_path = processed_dir / "features_sample_gapfilled.csv"

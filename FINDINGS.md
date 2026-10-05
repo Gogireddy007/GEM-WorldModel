@@ -216,6 +216,35 @@ Genus-level approximation is a clean win, R2 improves in all four seeds with no 
 
 The updated, evidence-based answer: exact-tip-only should not be the default going forward. Genus-level relaxation should be the standard, it is a real, repeatedly confirmed improvement on the model that matters. Family-level relaxation should not be used by default without a stronger reason to trust a specific batch of family-matched species than availability alone.
 
+## Correction, 2026-10-04: what the honest numbers are, and what was wrong with the delivered predictions
+
+Three problems were found and fixed on 2026-10-04 (details and every number in research_log.md).
+
+1. A bug in the gap-filling script left the genus and family approximated rows in a different phylogeny
+   coordinate system from the exact-tip rows, so the 353 and 358 species corpora were inconsistent. Fixed and
+   tested. Re-run on repaired corpora the targeted gap species raise R2 but cost Spearman, so they are a
+   trade-off and not a clean win, and the family-approximated species still add nothing.
+2. The labeled corpus is 304 genomes but only 216 species, and the 88 repeated species have identical labels, so
+   random splits leak. With whole species held out (5 seeds), our model gets R2 0.092 in hours, 0.455 in log
+   space, Spearman 0.699 and a typical error of 2.14x; Phydon gets 0.001, 0.355, 0.651 and 2.40x; gRodon gets
+   -0.032, 0.325, 0.610 and 2.46x. Still ahead of both on every metric, by less than the random-split numbers
+   elsewhere in this document suggest, which should be read as optimistic. Within fast or slow growers alone the
+   model is much weaker.
+3. The 9,134 delivered GEM predictions came from an older script that gave the model phylogeny and 16S inputs in
+   a different coordinate system from its training data, and used the older JEPA model. They were not valid (median
+   0.6 hours against 7 for the training species, none slower than 24 hours). They are replaced by
+   `hq_genome_predictions_v2.csv`, made with inputs defined the same way for training and deployment.
+
+How far to trust a prediction depends on how close the genome is to a labeled species. With whole lineages held
+out, typical error and log R2 are 2.13x and 0.44 for new species, 2.21x and 0.36 for new genera, 2.54x and 0.21
+for new families, and 2.51x and 0.20 for new orders. About 60% of the HQ GEM genomes have no labeled relative at
+order level by name (a worst case, because GEM uses older GTDB names), so for most of them the right reading is a
+rough estimate within a factor of 2 to 3, better for ranking genomes than for exact values. A phylogeny-only
+model fails for new orders (log R2 below 0), so 16S and genome traits matter most there.
+
+Strain-to-strain noise in Madin's repeat measurements is small (a median factor of 1.25 across 134 species), so
+label noise is not what limits accuracy now, though that estimate is probably optimistic.
+
 ## What this doesn't yet show
 
 - **R2 is negative almost everywhere.** The model is picking up real rank-order signal (Spearman 0.38-0.45, probing well above chance) but isn't yet a good absolute growth-rate predictor. Both gRodon and Phydon baselines still beat it on Spearman (0.582-0.626 vs. our 0.380-0.448). At 175 species, that gap could close, widen, or reverse with more real labeled data, this isn't a claim that our approach beats the established methods, it doesn't yet.
