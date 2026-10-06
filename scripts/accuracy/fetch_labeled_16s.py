@@ -8,6 +8,8 @@ labeled species and for any new genome (distance to a fixed set of reference
 sequences), instead of an MDS that depends on whichever batch it was run on.
 """
 
+import argparse
+
 import pandas as pd
 
 from gem_worldmodel.features import rrna16s
@@ -18,11 +20,17 @@ logger = get_logger(__name__)
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--features-files", nargs="+", default=["features_sample_expanded.csv"])
+    args = parser.parse_args()
+
     data_cfg = load_config("data")
     processed = resolve_path(data_cfg["paths"]["processed_dir"])
     out_path = processed / "labeled_16s_sequences.csv"
-    labeled = pd.read_csv(processed / "features_sample_expanded.csv")
-    species = labeled["species"].dropna().unique().tolist()
+    species = []
+    for name in args.features_files:
+        species += pd.read_csv(processed / name)["species"].dropna().tolist()
+    species = list(dict.fromkeys(species))
 
     done = {}
     if out_path.exists():

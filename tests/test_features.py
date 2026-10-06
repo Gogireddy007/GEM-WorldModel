@@ -199,3 +199,11 @@ def test_taxon_vector_lookup_prefers_most_specific_rank():
     assert rank == "family" and v[0] == 3.0
     v, rank = tv.lookup("d__B;f__Nowhere;g__Nada;s__Nada x", table)
     assert v is None and rank is None
+
+
+def test_is_archaeon_flag():
+    from gem_worldmodel.features import taxon_vectors as tv
+
+    assert tv.is_archaeon("d__Archaea;p__Halobacteriota;c__Methanosarcinia") == 1.0
+    assert tv.is_archaeon("d__Bacteria;p__Bacillota;c__Bacilli") == 0.0
+    assert tv.is_archaeon(float("nan")) == 0.0

@@ -42,7 +42,7 @@ for seed in [42,1,7]:
     rng=np.random.default_rng(seed); ug=np.unique(species); perm=dict(zip(ug,rng.permutation(len(ug)))); g=np.array([perm[v] for v in species])
     iso=np.full(len(lab),np.nan); mag_pred=[]
     for tr,te in GroupKFold(5).split(Xl,yl,g):
-        m=GradientBoostingRegressor(random_state=seed,n_estimators=200,max_depth=3).fit(Xl[tr],yl[tr])
+        m=GradientBoostingRegressor(random_state=seed,n_estimators=200,max_depth=3,loss="quantile",alpha=0.5).fit(Xl[tr],yl[tr])
         iso[te]=m.predict(Xl[te])
         te_sp=set(species[te]); mask=gem.sp.isin(te_sp).to_numpy()
         for i in np.where(mask)[0]: mag_pred.append((i,m.predict(Xg[i:i+1])[0]))

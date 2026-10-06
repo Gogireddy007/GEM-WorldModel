@@ -31,6 +31,8 @@ gtdb:
   base_url: "https://data.gtdb.ecogenomic.org/releases/latest"
   bac_tree_file: "bac120.tree.gz"
   bac_taxonomy_file: "bac120_taxonomy.tsv.gz"
+  arc_tree_file: "ar53.tree.gz"
+  arc_taxonomy_file: "ar53_taxonomy.tsv.gz"
   bac_metadata_file: "bac120_metadata.tsv.gz"  # large (~289MB), fetched only if requested
   fetch_full_metadata: false
 

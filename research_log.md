@@ -1,5 +1,141 @@
 # Research Log
 
+## 2026-10-05 (evening), adding archaea
+
+The model had never seen an archaeon, and 183 of the 9,143 HQ GEM genomes (2%) are archaeal. Madin's table has 223
+archaeal species with a doubling time (102 with genome size, GC and tRNA count), none of them in the corpus.
+GTDB publishes a separate archaeal tree and taxonomy (10,122 tips), and bacteria and archaea have no joint tree,
+so `scripts/accuracy/build_gtdb_landmark_features.py` now builds 16 landmark tips for each tree and records the
+domain; the bacterial vectors came out identical to before, so nothing already validated moved. A flag for
+archaea (`taxon_vectors.is_archaeon`) goes into the model, since the same column means different things in the two
+domains. `build_madin_extension.py` places archaeal names too: the extension is now 293 species, 194 bacterial
+(unchanged) and 99 archaeal (83 placed by species name, 16 by genus), and only 5 Madin species with traits remain
+unplaced. All 99 have a 16S sequence. GTDB helpers for the archaeal tree were added to `data/gtdb.py` and the
+config.
+
+`scripts/accuracy/evaluate_archaea.py`, median loss, seven seeds. Scored on the 99 archaeal species with whole
+lineages held out: with no archaea in training (the model as it was) log R2 0.054, Spearman 0.627, typical error
+2.60x. With the other archaea in training: species held out 0.568 / 0.786 / 1.86x, genus 0.554 / 0.770 / 1.82x,
+family 0.533 / 0.762 / 1.82x, order 0.466 / 0.726 / 1.99x, better in 7 of 7 seeds at every level. Accuracy on
+bacterial species is unchanged by adding archaea (log R2 0.576 either way, typical error 1.89x against 1.92x).
+
+Two reasons not to over-read the archaeal numbers. Madin's archaea are mostly hyperthermophiles and methanogens
+from a few lineages (Halobacteriota, Thermoproteota, Methanobacteriota), and the reference-temperature correction
+turns a hyperthermophile's short doubling time into a very long one, so much of what the model learns is
+"grows hot, therefore long reference doubling time". That is partly a property of the target, not biology.
+And the labeled archaea cover few lineages: ammonia-oxidizing Nitrosopumilaceae, Micrarchaeota and others in GEM
+have no labeled archaeal relative, so for them the 1.8x to 2.0x does not apply.
+
+The deployment model now trains on 597 rows (304 original, 194 bacterial extension, 99 archaeal) with the flag
+in every sub-model. Of the 183 archaeal HQ genomes 125 get the full model, 27 traits plus phylogeny, 28 traits plus
+16S and 3 traits only (the rest could not be placed under current GTDB names). Archaeal predictions have a median
+of 34 h against 17 h for bacteria. Direction is sensible (methanogens 19 to 31 h, Nitrosopumilaceae 70 h) but
+Sulfolobaceae at 234 h and Thermococcaceae at 115 h are the temperature-correction artifact and should not be read
+as biology. Across all 9,139 genomes the median is 17.1 h, 35% are slower than 24 h and none are faster than 10
+minutes. The report table was regenerated.
+
+## 2026-10-05 (later), bringing back the Madin species that were dropped, the first real data gain
+
+The lead noted above worked. The labeled corpus only held species that matched the pruned corpus tree, but the
+landmark phylogeny only needs a GTDB taxonomy string. Of the 928 species in Madin's growth-rate table, 714 were
+not in the corpus; 298 of those have genome size, GC and tRNA count in Madin's own table, which agrees closely
+with the values computed from genomes for the species in both (correlations 0.99, 0.997 and 0.90; GC is stored as
+a percentage). `scripts/accuracy/build_madin_extension.py` places each by species name, else genus, else family in
+the GTDB taxonomy, corrects doubling times to the reference temperature the same way as before, and keeps 194
+species (140 placed by species, 50 by genus, 4 by family). The other 104 are mostly archaea or names that do not
+match, and cannot be placed with the bacterial tree alone. The extension is more thermophilic than the original
+corpus (35% grow at 45 C or above against 21%, median reference doubling time 27 h against 7 h) and adds phyla
+that were thin or absent (Cyanobacteriota, Spirochaetota, more Desulfobacterota). The 16S sequences for all but
+one were fetched (`fetch_labeled_16s.py`, now takes several files). Values are species-level, not matched to any
+specific genome, the same caveat as the original corpus.
+
+`scripts/accuracy/evaluate_madin_extension.py`, median-loss model, deployment features, seven seeds.
+
+As an independent test, training on the original corpus only and predicting the 194 species it had never seen:
+log R2 0.496, Spearman 0.728, typical error 1.98x. That matches the cross-validation estimate for new species
+(0.486, 0.688, 2.01x), so those estimates were not flattering. By how close the nearest relative in training is:
+same genus 0.62 and 1.63x (n=26), same family 0.35 and 1.88x (n=56), same order 0.69 and 1.84x (n=47), no relative
+at order level 0.12 and 2.23x (n=65, Spearman still 0.64).
+
+As extra training data, scored on the original species only, with whole lineages held out and the extension species
+that share a held-out lineage removed from that fold (log R2 / Spearman, none against all 194 added; seeds better
+out of 7 in brackets): species held out 0.486 / 0.688 against 0.517 (7/7) / 0.708 (7/7); genus 0.452 / 0.646
+against 0.490 (7/7) / 0.687 (7/7); family 0.319 / 0.588 against 0.401 (7/7) / 0.655 (7/7); order 0.325 / 0.588
+against 0.379 (7/7) / 0.652 (7/7). Typical error improves for species, genus and family (2.01x to 1.93x, 2.11x to
+1.96x, 2.21x to 2.10x) and is flat for orders (2.24x to 2.27x). Restricting to the 140 species-level placements
+helps less than using all 194, so the genus-placed rows are not hurting.
+
+The deployment model is now trained on the 498 rows (304 original plus 194), the GEM predictions and the report
+table were regenerated, and the typical-error labels were updated (1.9x same genus, 2.0x new genus, 2.1x new
+family, 2.3x new order). Because the labeled set now covers more lineages, the share of HQ genomes with no labeled
+relative at order level, by name, falls from 60% to 42%, and 10% share a genus. Predictions keep the same
+direction as before (rank correlation 0.72 with the previous version): Enterobacteriaceae 2.6 h, Moraxellaceae 3.2
+h, Pseudomonadaceae 4.1 h, against methanogens 32 h, ammonia-oxidizing Nitrosopumilaceae 30 h, Desulfovibrionaceae
+19 h. Thermotogaceae comes out at 123 h, which is the temperature correction inflating thermophile doubling times
+and should not be read as biology. Median over the 9,139 genomes is 15.8 h, 31% slower than 24 h, none faster than
+10 minutes.
+
+Open: archaea cannot be placed with the bacterial GTDB tree (the archaeal tree is published alongside it and would
+cover most of the 104 dropped species and the archaeal GEM genomes); the 5 species still lacking size, GC or
+tRNA in Madin could be filled from genomes; and an independent check that thermophile targets are not distorted by
+the temperature correction.
+
+## 2026-10-05, settling the model choices with whole species held out, and switching to median loss
+
+The loss-function, repeated-species and gap-species questions had all been answered earlier on a corrupted
+corpus or with leaky splits, so they were re-run properly (`scripts/accuracy/compare_model_choices.py`): the
+deployment feature set (genome size, GC, tRNA count, GTDB landmark phylogeny, 16S landmark distances), whole
+species held out, the same seven seeds. For the 54 extra species the 16S sequences were fetched first (all 54
+found). Mean over seeds, with the number of seeds out of 7 in which a variant beat squared error:
+
+| loss | R2 (log) | Spearman | typical error | fast-grower Spearman |
+|---|---|---|---|---|
+| squared error | 0.437 | 0.671 | 2.11x | 0.247 |
+| Huber | 0.429 (2/7) | 0.666 (2/7) | 2.15x (1/7) | 0.247 (3/7) |
+| median (quantile) | 0.486 (7/7) | 0.689 (5/7) | 2.02x (6/7) | 0.216 (1/7) |
+
+Median loss is clearly the best overall and Huber is no better than squared error (the earlier Huber
+recommendation stays withdrawn). Its one cost is a slightly lower ranking among fast growers. It also holds up
+when whole lineages are held out, which is the situation for most GEM genomes (log R2 / typical error, squared
+error against median loss): genus 0.384 / 2.22x against 0.452 / 2.11x, family 0.185 / 2.52x against 0.319 /
+2.21x, order 0.213 / 2.51x against 0.325 / 2.24x, better on log R2 in 6 or 7 of 7 seeds at every level. The
+earlier finding that median loss trades overall R2 for fast-grower R2 came from R2 in raw hours; in log space,
+which is the scale that reflects typical error, it is better overall.
+
+Repeated species (88 species with several genomes and the same label): weighting each species once, or keeping
+one genome per species, changes nothing (log R2 0.433 and 0.433 against 0.437), so training is left as it is.
+
+The extra species do not help once the leak is gone. Added to training only and scored on the original species:
+
+| extra training species | R2 (log) | Spearman | typical error |
+|---|---|---|---|
+| none | 0.437 | 0.671 | 2.11x |
+| + 10 round-1 gap species | 0.429 | 0.667 | 2.19x |
+| + 5 round-2 gap species | 0.415 | 0.646 | 2.18x |
+| + both rounds (15) | 0.390 | 0.641 | 2.27x |
+| + 39 family-approximated | 0.445 | 0.669 | 2.06x |
+| + all 54 | 0.412 | 0.640 | 2.21x |
+
+The 15 targeted species slightly hurt overall and do not improve the error inside the two gap regions (2.42x
+against 2.09x). The 39 family-approximated species are slightly positive (typical error 1.79x against 2.09x
+inside the gap regions, 6 of 7 seeds), but only 18 original rows fall in those regions, so that is a hint and
+not a result. The earlier claim that the round-2 species gave a verified improvement is withdrawn: it came from
+the corrupted file and leaky splits.
+
+Changes made: the deployment model now uses median loss, the prediction script was regenerated (median 13.6 h,
+24% slower than 24 h against 25.7% of the labeled corpus, none under 10 minutes, maximum 381 h), the typical
+error attached to each genome was updated from the median-loss lineage results (2.0x same genus, 2.1x new genus,
+2.2x new family, 2.2x new order), and the table in `Test on HQ genomes` was regenerated with
+`scripts/pipeline/export_hq_table.py`. The real-MAG check was re-run with the same loss (15 species): typical
+error 1.89x for MAGs against 2.19x for the isolate genomes of the same species, Spearman 0.57 against 0.72, log
+R2 0.31 against 0.37. Too few species to say more than that it is not obviously worse.
+
+One observation worth following up: the older corpus construction needed an exact or near tree match for every
+labeled species. The landmark phylogeny only needs a GTDB taxonomy string, so many of the 700 or so Madin
+species with a doubling time that were dropped for lack of a tree match could now be used, provided their genome
+size, GC and tRNA counts can be obtained. That is the cheapest route to more labeled species and has not been
+tried.
+
 ## 2026-10-04 (later), the delivered GEM predictions were not valid, and the honest accuracy numbers
 
 Working out how to regenerate the 9,134 high-quality GEM predictions with the better model turned up three

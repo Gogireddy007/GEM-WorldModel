@@ -280,10 +280,19 @@ really are, a training-loss and label-distribution problem, not a feature or dat
       isolates. Too small to be more than indicative.
 - [ ] Regenerate the charts and the PDF report from the v2 predictions.
 - [ ] Add a confidence signal that reflects the lineage distance (the nearest-relative level is a first version).
-- [ ] Re-run the loss-function and gap-species comparisons (quantile, Huber, round 1 and 2) with species held out
-      and the consistent features.
+- [x] Re-run the loss-function and gap-species comparisons (quantile, Huber, round 1 and 2) with species held out
+      and the consistent features. Done 2026-10-05: median loss is the best and is now the default, Huber and
+      weighting repeated species do not matter, the 15 gap species do not help.
 - [ ] Test richer gene-content features within slow growers, controlling for lineage.
 - [ ] Find strain-matched growth rates for the thin regions, the largest remaining lever.
+- [x] Use the landmark phylogeny to bring back the Madin species that were dropped for lack of a tree match.
+      Done 2026-10-05: 194 species added, log R2 and Spearman better in 7 of 7 seeds at every novelty level,
+      independent test on those species log R2 0.496 and typical error 1.98x.
+- [x] Place archaea with GTDB's archaeal tree. Done 2026-10-05: 99 archaeal species added, archaeal log R2 0.47 to
+      0.57 with lineages held out, no change for bacteria. Caveat: mostly hyperthermophiles and methanogens, so
+      partly the temperature correction.
+- [ ] Check that the reference-temperature correction is not distorting thermophile targets (Thermotogaceae
+      predicted at 123 h).
 
 ## Notes
 

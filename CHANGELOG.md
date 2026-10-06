@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.8.0, 2026-10-05
+
+Added archaea. GTDB's archaeal tree gets its own landmark tips (`gtdb_taxon_vectors.csv` now records the domain, bacterial vectors unchanged), the Madin extension now includes 99 archaeal species (293 in total, only 5 unplaced), and the deployment model takes a domain flag. Scored on archaeal species with whole lineages held out, log R2 goes from 0.054 to 0.47 to 0.57 and typical error from 2.60x to 1.8x to 2.0x, with no change for bacteria; the labeled archaea are mostly hyperthermophiles and methanogens, so this is partly the temperature correction. The deployment model trains on 597 rows and the GEM predictions and report table were regenerated. Added `scripts/accuracy/evaluate_archaea.py`, GTDB archaeal helpers, and a test for the domain flag.
+
+## 1.7.0, 2026-10-05
+
+Added 194 labeled species from Madin's table that had been dropped for lack of a tree match (`scripts/accuracy/build_madin_extension.py`), usable now that the phylogeny feature only needs a GTDB taxonomy string. On 194 never-seen species the model scores log R2 0.496, Spearman 0.728, typical error 1.98x, and as extra training data they improve log R2 and Spearman in 7 of 7 seeds at every level of lineage novelty. The deployment model and GEM predictions now use them, the share of HQ genomes with no labeled relative at order level falls from 60% to 42% by name, and the per-genome typical-error labels were updated. Added `scripts/accuracy/evaluate_madin_extension.py`.
+
+## 1.6.1, 2026-10-05
+
+Re-ran the loss, repeated-species and gap-species comparisons with whole species held out and the consistent deployment features (`scripts/accuracy/compare_model_choices.py`). Median (quantile) loss is better than squared error at every level of lineage novelty and is now the default for the GEM predictions, which were regenerated; Huber loss and down-weighting repeated species make no difference; the targeted gap species do not help. Typical-error labels per genome were updated and the table in the HQ report folder was regenerated with `scripts/pipeline/export_hq_table.py`.
+
 ## 1.6.0, 2026-10-04
 
 Found that the delivered GEM predictions were not valid: the phylogeny and 16S inputs for GEM genomes were in a different coordinate system from the training data, so the predicted doubling times were compressed toward fast values (median 0.6 hours against 7 for the training species). Rebuilt the deployment features so they are defined identically for training and GEM genomes (GTDB landmark phylogeny, 16S landmark distances, size, GC, tRNA count), added `scripts/pipeline/predict_gem_genomes_gbm.py`, and produced `hq_genome_predictions_v2.csv` with the nearest labeled relative and typical error for each genome. Found that the labeled corpus is 216 species, not 304, and that random splits leak across repeated species; re-measured accuracy with whole species and whole lineages held out. Our model is still ahead of Phydon and gRodon with species held out, by smaller margins. Validated on real MAGs (small, 15 species). Measured the label noise ceiling and the log-scale error.

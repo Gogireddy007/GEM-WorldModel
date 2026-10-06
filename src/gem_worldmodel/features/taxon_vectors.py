@@ -38,3 +38,13 @@ def lookup(taxonomy: str, table: dict, max_rank: str = "family"):
         if token is not None and (rank, token) in table:
             return table[(rank, token)], rank
     return None, None
+
+
+def is_archaeon(taxonomy) -> float:
+    """1.0 for an archaeal GTDB taxonomy string, else 0.0.
+
+    Bacteria and archaea have separate landmark vectors from separate trees, so
+    the same column means different things for the two. The model needs this
+    flag to tell them apart.
+    """
+    return 1.0 if str(taxonomy).startswith("d__Archaea") else 0.0

@@ -235,6 +235,29 @@ Three problems were found and fixed on 2026-10-04 (details and every number in r
    0.6 hours against 7 for the training species, none slower than 24 hours). They are replaced by
    `hq_genome_predictions_v2.csv`, made with inputs defined the same way for training and deployment.
 
+Update, 2026-10-05: with whole species held out and the deployment features, median (quantile) loss beats squared
+error (log R2 0.486 against 0.437, typical error 2.02x against 2.11x, better in 7 of 7 seeds on log R2) and keeps
+its advantage when genera, families or orders are held out (log R2 0.452, 0.319 and 0.325 against 0.384, 0.185 and
+0.213). It is now the default for the GEM predictions. Huber loss and down-weighting repeated species make no
+difference. Adding the 15 targeted gap species to training does not help the original species (log R2 0.390 against
+0.437) and does not improve the error inside the two gap regions, so the earlier statement that they gave a
+verified improvement no longer stands.
+
+Update, 2026-10-05 (later): adding 194 more labeled species from Madin's table (the ones previously dropped for lack
+of a tree match, now usable because the landmark phylogeny only needs a taxonomy string) is the first data gain
+that holds up under honest evaluation. On 194 species the model had never seen, accuracy is log R2 0.496,
+Spearman 0.728 and typical error 1.98x, in line with the cross-validation estimates. Used as extra training data
+they improve log R2 and Spearman in 7 of 7 seeds at every level of lineage novelty (for new families log R2 goes
+from 0.319 to 0.401). The deployment model and the GEM predictions now use them. They are species-level values, not
+strain-matched, and archaea are still not covered.
+
+Update, 2026-10-05 (evening): archaea are now covered. Using GTDB's archaeal tree and 99 archaeal species from
+Madin's table, accuracy on archaeal species with whole lineages held out is log R2 0.47 to 0.57 and typical error
+1.8x to 2.0x, against 0.054 and 2.60x when the model had only seen bacteria, with no change for bacteria. Treat that
+cautiously: the labeled archaea are mostly hyperthermophiles and methanogens, the reference-temperature correction
+makes hyperthermophile targets very long, and archaeal groups with no labeled relative (such as Nitrosopumilaceae)
+are not covered by the measured accuracy.
+
 How far to trust a prediction depends on how close the genome is to a labeled species. With whole lineages held
 out, typical error and log R2 are 2.13x and 0.44 for new species, 2.21x and 0.36 for new genera, 2.54x and 0.21
 for new families, and 2.51x and 0.20 for new orders. About 60% of the HQ GEM genomes have no labeled relative at

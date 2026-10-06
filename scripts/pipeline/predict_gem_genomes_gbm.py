@@ -9,14 +9,19 @@ distances for GEM, MDS coordinates for the labeled set, and a 16S MDS that
 depended on the batch being predicted). This one uses:
 
   genome traits       genome size, GC content, tRNA count (the traits that
-                      exist for both isolate genomes and MAGs)
+                      exist for both isolate genomes and MAGs), plus a flag for
+                      archaea, which have their own landmarks on GTDB's
+                      archaeal tree
   phylogeny           mean distance-to-landmark vector of the GTDB tree tips in
                       the genome's species, genus, family or order, from the
                       GTDB taxonomy string in the GEM metadata
   16S                 cosine distance of the 16S k-mer profile to 16 fixed
                       labeled-species reference sequences
 
-A genome gets whichever model its available features support. Each row also
+The models use median (quantile) loss, which held up better than squared
+error at every level of lineage novelty, and are trained on the original
+corpus plus the extra Madin species from build_madin_extension.py. A genome gets whichever model its
+available features support. Each row also
 records how close its nearest labeled relative is (by name) and the typical
 error measured for that level of novelty when whole lineages were held out.
 GEM names come from an older GTDB release than the labeled set, so a renamed
@@ -38,8 +43,9 @@ from gem_worldmodel.utils.logging import get_logger
 logger = get_logger(__name__)
 
 TRAITS = ["genome_size_bp", "gc_content", "trna_count"]
-# typical fold error measured with whole lineages held out (see research_log.md, 2026-10-04)
-TYPICAL_ERROR = {"same genus": 2.1, "same family, new genus": 2.2, "same order, new family": 2.5, "new order": 2.5}
+# typical fold error with whole lineages held out, median-loss model trained with the Madin
+# extension species (research_log.md, 2026-10-05)
+TYPICAL_ERROR = {"same genus": 1.9, "same family, new genus": 2.0, "same order, new family": 2.1, "new order": 2.3}
 RANKS = ("species", "genus", "family", "order")
 
 
@@ -69,6 +75,7 @@ def main():
     parser.add_argument("--genome-ids-file", default="hq_genome_ids_all.csv")
     parser.add_argument("--out", default="hq_predictions_gbm.csv")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--no-extension", action="store_true", help="train on the original corpus only")
     args = parser.parse_args()
 
     data_cfg = load_config("data")
@@ -77,6 +84,11 @@ def main():
     table = tv.load_taxon_table(processed / "gtdb_taxon_vectors.csv")
 
     lab = pd.read_csv(processed / "features_sample_expanded.csv")
+    if not args.no_extension:
+        ext = pd.read_csv(processed / "madin_extension.csv")
+        keep = ["species", "gtdb_taxonomy", "doubling_time_hours_ref"] + TRAITS
+        lab = pd.concat([lab[keep], ext[keep]], ignore_index=True)
+        logger.info(f"training on {len(lab)} labeled rows, including {len(ext)} Madin extension species")
     seqs = pd.read_csv(processed / "labeled_16s_sequences.csv").fillna("")
     lab_profiles = {s: rrna16s.kmer_profile(q, k) for s, q in zip(seqs.species, seqs.sequence) if q}
     landmark_names = list(np.load(processed / "labeled_16s_landmark_names.npy"))
@@ -90,20 +102,23 @@ def main():
     S_med = np.nanmedian(S_lab, axis=0)
     S_lab = np.where(np.isnan(S_lab), S_med, S_lab)
     T_lab = lab[TRAITS].to_numpy(float)
+    D_lab = lab["gtdb_taxonomy"].map(tv.is_archaeon).to_numpy()[:, None]
     y = np.log(lab["doubling_time_hours_ref"].to_numpy())
 
     def lm_block(rank):
-        return np.vstack([tv.lookup(coarsen(t, rank), table, rank)[0] for t in lab.gtdb_taxonomy])
+        return np.vstack([tv.lookup(coarsen(t, rank), table, "order")[0] for t in lab.gtdb_taxonomy])
 
     lm_blocks = [lm_block(r) for r in RANKS]
 
     def fit(use_lm, use_s):
         blocks, targets = [], []
         for lm in (lm_blocks if use_lm else [None]):
-            cols = [T_lab] + ([lm] if use_lm else []) + ([S_lab] if use_s else [])
+            cols = [T_lab] + ([lm] if use_lm else []) + ([S_lab] if use_s else []) + [D_lab]
             blocks.append(np.hstack(cols))
             targets.append(y)
-        model = GradientBoostingRegressor(random_state=args.seed, n_estimators=200, max_depth=3)
+        model = GradientBoostingRegressor(
+            random_state=args.seed, n_estimators=200, max_depth=3, loss="quantile", alpha=0.5
+        )
         return model.fit(np.vstack(blocks), np.concatenate(targets))
 
     models = {(lm, s): fit(lm, s) for lm in (True, False) for s in (True, False)}
@@ -137,13 +152,14 @@ def main():
     has_s = ~np.isnan(S).any(axis=1)
 
     T = gem[TRAITS].to_numpy(float)
+    D = gem["gtdb_taxonomy"].map(tv.is_archaeon).to_numpy()[:, None]
     pred = np.full(len(gem), np.nan)
     used = np.empty(len(gem), dtype=object)
     for (use_lm, use_s), model in models.items():
         mask = (has_lm == use_lm) & (has_s == use_s)
         if not mask.any():
             continue
-        cols = [T[mask]] + ([LM[mask]] if use_lm else []) + ([S[mask]] if use_s else [])
+        cols = [T[mask]] + ([LM[mask]] if use_lm else []) + ([S[mask]] if use_s else []) + [D[mask]]
         pred[mask] = np.exp(model.predict(np.hstack(cols)))
         used[mask] = "+".join(["traits"] + (["phylogeny"] if use_lm else []) + (["16S"] if use_s else []))
 

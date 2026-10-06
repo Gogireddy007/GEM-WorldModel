@@ -9,8 +9,11 @@ unlike MDS coordinates. A genome that is not itself a tip gets the average
 vector of the tips in its species, genus, or family, in that order, using
 whichever rank first has a match, and the rank used is recorded.
 
-Writes gtdb_taxon_vectors.csv, one row per taxon (species, genus, family,
-order) with the mean landmark vector and how many tips it was built from.
+Bacteria and archaea each get their own landmarks on their own GTDB tree (there
+is no joint tree), so a vector means something only together with its domain,
+which is recorded in the domain column. Writes gtdb_taxon_vectors.csv, one row
+per taxon (species, genus, family, order) with the mean landmark vector and how
+many tips it was built from.
 """
 
 import re
@@ -67,36 +70,31 @@ def rank_token(taxonomy: str, prefix: str):
     return m.group(0) if m and m.group(0) != prefix else None
 
 
-def main():
-    data_cfg = load_config("data")
-    processed = resolve_path(data_cfg["paths"]["processed_dir"])
-    tree = gtdb.load_tree(data_cfg)
+def build_domain(domain, tree, taxonomy):
     parent, length, children, leaves, labels = tree_arrays(tree)
     leaves = [i for i in leaves if i in labels]
-    logger.info(f"{len(leaves)} tips, picking {N_LANDMARKS} landmarks by farthest-point sampling")
+    logger.info(f"{domain}: {len(leaves)} tips, picking {N_LANDMARKS} landmarks by farthest-point sampling")
 
     rng = np.random.default_rng(0)
     current = int(rng.choice(leaves))
     leaves_arr = np.array(leaves)
     min_dist = np.full(len(leaves), np.inf)
     columns = []
-    for k in range(N_LANDMARKS):
+    for _ in range(N_LANDMARKS):
         d = distances_from(current, parent, length, children)[leaves_arr]
         columns.append(d)
         min_dist = np.minimum(min_dist, d)
         current = int(leaves_arr[int(np.argmax(min_dist))])
-        logger.info(f"landmark {k + 1}/{N_LANDMARKS} done")
     matrix = np.stack(columns, axis=1)
     tip_labels = [labels[i] for i in leaves]
 
-    taxonomy = gtdb.fetch_bac_taxonomy(data_cfg)
     tax_of = dict(zip(taxonomy["accession"], taxonomy["gtdb_taxonomy"]))
     vec_cols = [f"lm_{i}" for i in range(N_LANDMARKS)]
     tips = pd.DataFrame(matrix, columns=vec_cols)
     tips["tip"] = tip_labels
     tips["taxonomy"] = tips["tip"].map(tax_of)
     tips = tips.dropna(subset=["taxonomy"])
-    logger.info(f"{len(tips)} tips have a GTDB taxonomy string")
+    logger.info(f"{domain}: {len(tips)} tips have a GTDB taxonomy string")
 
     rows = []
     for rank, prefix in (("species", "s__"), ("genus", "g__"), ("family", "f__"), ("order", "o__")):
@@ -105,13 +103,22 @@ def main():
         mean = grouped[vec_cols].mean()
         mean["n_tips"] = grouped.size()
         mean["rank"] = rank
-        mean = mean.reset_index().rename(columns={rank: "taxon"})
-        rows.append(mean)
-        logger.info(f"{rank}: {len(mean)} taxa")
-    out = pd.concat(rows, ignore_index=True)
+        mean["domain"] = domain
+        rows.append(mean.reset_index().rename(columns={rank: "taxon"}))
+    return pd.concat(rows, ignore_index=True)
+
+
+def main():
+    data_cfg = load_config("data")
+    processed = resolve_path(data_cfg["paths"]["processed_dir"])
+    bac = build_domain("bacteria", gtdb.load_tree(data_cfg), gtdb.fetch_bac_taxonomy(data_cfg))
+    arc = build_domain("archaea", gtdb.load_arc_tree(data_cfg), gtdb.fetch_arc_taxonomy(data_cfg))
+    shared = set(zip(bac["rank"], bac["taxon"])) & set(zip(arc["rank"], arc["taxon"]))
+    assert not shared, f"taxon names shared between domains: {sorted(shared)[:5]}"
+    out = pd.concat([bac, arc], ignore_index=True)
     out_path = processed / "gtdb_taxon_vectors.csv"
     out.to_csv(out_path, index=False)
-    logger.info(f"wrote {out_path}: {len(out)} taxa")
+    logger.info(f"wrote {out_path}: {len(out)} taxa ({len(bac)} bacterial, {len(arc)} archaeal)")
 
 
 if __name__ == "__main__":

@@ -83,6 +83,32 @@ def fetch_full_metadata(cfg: dict | None = None) -> pd.DataFrame:
     return pd.read_csv(gz_path, sep="\t", compression="gzip", low_memory=False)
 
 
+def fetch_arc_tree(cfg: dict | None = None) -> Path:
+    """Download (and decompress) the GTDB ar53 archaeal reference tree."""
+    cfg = cfg or load_config("data")
+    g = cfg["gtdb"]
+    raw_dir = resolve_path(cfg["paths"]["raw_dir"])
+    gz_path = _download(f"{g['base_url']}/{g['arc_tree_file']}", raw_dir / g["arc_tree_file"])
+    return _gunzip(gz_path, raw_dir / g["arc_tree_file"].removesuffix(".gz"))
+
+
+def fetch_arc_taxonomy(cfg: dict | None = None) -> pd.DataFrame:
+    """Download the GTDB ar53 taxonomy table, same columns as `fetch_bac_taxonomy`."""
+    cfg = cfg or load_config("data")
+    g = cfg["gtdb"]
+    raw_dir = resolve_path(cfg["paths"]["raw_dir"])
+    gz_path = _download(f"{g['base_url']}/{g['arc_taxonomy_file']}", raw_dir / g["arc_taxonomy_file"])
+    tsv_path = _gunzip(gz_path, raw_dir / g["arc_taxonomy_file"].removesuffix(".gz"))
+    df = pd.read_csv(tsv_path, sep="\t", header=None, names=["accession", "gtdb_taxonomy"])
+    df["accession_bare"] = df["accession"].str.replace(r"^(RS_|GB_)", "", regex=True)
+    return df
+
+
+def load_arc_tree(cfg: dict | None = None) -> dendropy.Tree:
+    """Load the GTDB ar53 archaeal tree into a dendropy Tree object."""
+    return dendropy.Tree.get(path=str(fetch_arc_tree(cfg)), schema="newick", preserve_underscores=True)
+
+
 def load_tree(cfg: dict | None = None) -> dendropy.Tree:
     """Load the GTDB bac120 tree into a dendropy Tree object."""
     tree_path = fetch_bac_tree(cfg)
