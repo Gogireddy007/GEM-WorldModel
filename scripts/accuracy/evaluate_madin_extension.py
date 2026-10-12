@@ -22,7 +22,8 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import r2_score
 from sklearn.model_selection import GroupKFold
 
-from gem_worldmodel.features import rrna16s, taxon_vectors as tv
+from gem_worldmodel.features import rrna16s
+from gem_worldmodel.features import taxon_vectors as tv
 from gem_worldmodel.utils.config import load_config, resolve_path
 from gem_worldmodel.utils.logging import get_logger
 

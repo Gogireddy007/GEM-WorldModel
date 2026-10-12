@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.9.0, 2026-10-12
+
+Added annotation-free gene features, codon usage bias from predicted ribosomal proteins (`features/cub_pipeline.py`, reproduces the annotation-based value with Pearson 0.993) and the IVYWREL amino acid fraction, computed for the labeled genomes, the Madin extension genomes and all 9,608 GEM genomes in the HQ and validation lists. Checked the 20 C temperature correction (it multiplies hot organisms' doubling times by up to about 140), so the model now predicts the doubling time at the organism's own temperature, the growth temperature and the 20 C value. Predictions come with a nearest-relative level, a typical error and an 80% range taken from `final_accuracy_by_tier.csv` (`evaluate_final_model.py`), and the run stops if its inputs drift from the training range. Regenerated the report and table (`build_report.py`, `make_report_charts.py`), archived the earlier versions, added Makefile targets for the whole workflow and a script that builds the ribosomal protein HMM file. Found and reported that predictions are compressed toward the middle.
+
 ## 1.8.0, 2026-10-05
 
 Added archaea. GTDB's archaeal tree gets its own landmark tips (`gtdb_taxon_vectors.csv` now records the domain, bacterial vectors unchanged), the Madin extension now includes 99 archaeal species (293 in total, only 5 unplaced), and the deployment model takes a domain flag. Scored on archaeal species with whole lineages held out, log R2 goes from 0.054 to 0.47 to 0.57 and typical error from 2.60x to 1.8x to 2.0x, with no change for bacteria; the labeled archaea are mostly hyperthermophiles and methanogens, so this is partly the temperature correction. The deployment model trains on 597 rows and the GEM predictions and report table were regenerated. Added `scripts/accuracy/evaluate_archaea.py`, GTDB archaeal helpers, and a test for the domain flag.

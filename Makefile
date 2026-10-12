@@ -1,4 +1,4 @@
-.PHONY: install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
+.PHONY: ribosomal-hmms landmarks fetch-16s madin-extension labeled-genes gem-genes accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
 
 PYTHON ?= .venv/bin/python
 PIP ?= .venv/bin/pip
@@ -29,6 +29,18 @@ help:
 	@echo "  make gem-fast           Genome traits + phylogeny for ALL 52,515 genomes (no downloads, ~1 min)"
 	@echo "  make gem-slow           Real GC content for all 52,515 genomes (streaming download, hours)"
 	@echo "  make gem-16s            Real 16S extraction via barrnap on a genome subset (CPU-bound, hours)"
+
+	@echo ""
+	@echo "Current prediction workflow (run in this order; see research_log.md 2026-10-12):"
+	@echo "  make landmarks          GTDB landmark phylogeny vectors for bacteria and archaea"
+	@echo "  make madin-extension    Extra labeled species from Madin's table placed in GTDB"
+	@echo "  make fetch-16s          Cache a 16S sequence for every labeled species"
+	@echo "  make ribosomal-hmms     Build the ribosomal protein HMM file from Pfam (downloads about 420 MB)"
+	@echo "  make labeled-genes      Codon usage and IVYWREL for labeled genomes (pyrodigal + HMMER)"
+	@echo "  make gem-genes          The same for the GEM HQ genomes (downloads each genome, hour-scale)"
+	@echo "  make accuracy-table     Held-out accuracy and ranges for every feature combination"
+	@echo "  make predict            Predict the GEM HQ genomes (stops if inputs drift from training)"
+	@echo "  make report             Charts, table and PDF report in 'Test on HQ genomes'"
 
 install:
 	python3.11 -m venv .venv
@@ -77,6 +89,37 @@ necessity-sufficiency:
 	$(PYTHON) scripts/pipeline/run_necessity_sufficiency.py
 
 pipeline: pull-data build-features sanity-check pretrain finetune-benchmark probe necessity-sufficiency
+
+landmarks:
+	$(PYTHON) scripts/accuracy/build_gtdb_landmark_features.py
+
+madin-extension:
+	$(PYTHON) scripts/accuracy/build_madin_extension.py
+
+fetch-16s:
+	$(PYTHON) scripts/accuracy/fetch_labeled_16s.py --features-files features_sample_expanded.csv madin_extension.csv
+
+ribosomal-hmms:
+	$(PYTHON) scripts/accuracy/build_ribosomal_hmms.py
+
+labeled-genes: ribosomal-hmms
+	$(PYTHON) scripts/accuracy/compute_cub_labeled.py
+	$(PYTHON) scripts/accuracy/compute_cub_extension.py
+
+gem-genes:
+	$(PYTHON) scripts/pipeline/compute_cub_gem.py --ids-file mag_validation_ids.csv hq_genome_ids_all.csv --workers 8
+
+accuracy-table:
+	$(PYTHON) scripts/accuracy/evaluate_final_model.py
+
+predict:
+	$(PYTHON) scripts/pipeline/predict_gem_genomes_gbm.py
+
+report:
+	$(PYTHON) scripts/pipeline/make_report_charts.py
+	$(PYTHON) scripts/pipeline/build_report.py
+
+predict-all: ribosomal-hmms landmarks madin-extension fetch-16s labeled-genes gem-genes accuracy-table predict report
 
 clean:
 	rm -rf checkpoints/ .pytest_cache/ .ruff_cache/

@@ -1,5 +1,102 @@
 # Research Log
 
+## 2026-10-12, gene-based features, the temperature question, and a rebuilt report
+
+This worked through the "do first" list: codon usage bias for the GEM genomes, a check of the temperature correction,
+and new charts and a report. Nothing was sent to anyone.
+
+**Codon usage bias without annotation.** The labeled genomes had it from NCBI annotations, GEM MAGs have none, and the
+deployment model had been running without it. `features/cub_pipeline.py` predicts genes with pyrodigal (trained on
+the genome itself), finds ribosomal proteins with HMMER against Pfam's prokaryotic ribosomal protein families at their
+curated gathering thresholds (`scripts/accuracy/build_ribosomal_hmms.py`, 75 families), and computes the MILC bias
+already used in `cub.py`. On the 304 original genomes it reproduces the annotation-based value almost exactly
+(Pearson 0.993, slope 0.998, median absolute difference 0.008 on a range of 0.12 to 0.83, at least 28 ribosomal proteins
+found in every genome), so the same number is now available for every genome. It was computed for the original genomes
+(`compute_cub_labeled.py`), for 280 of 282 extension species by downloading a genome for each
+(`compute_cub_extension.py`; NCBI rate-limits parallel lookups, so paths come from the FTP listing), and for all 9,608
+GEM genomes in the HQ and validation lists (`scripts/pipeline/compute_cub_gem.py`, about 3 genomes per second, no
+failures). GEM and labeled distributions agree (median 0.350 against 0.333), and completeness barely changes how
+many ribosomal proteins are found (48 below 90% complete, 52 above 98%).
+
+Does it help? Same rows with and without it, median loss, seven seeds (`evaluate_cub.py`). With species held out the
+20 C target goes from log R2 0.630 to 0.666 (7 of 7 seeds), Spearman 0.796 to 0.821, typical error 1.86x to 1.79x, and
+ranking among fast growers from 0.444 to 0.535 (7 of 7). For the raw target at the organism's own temperature, fast
+growers go from 0.464 to 0.550 (7 of 7) and log R2 from 0.330 to 0.346. Genus and family held out show the same pattern
+(for example raw target, genus held out, 0.231 to 0.275 and typical error 2.29x to 2.18x, 7 of 7). With whole orders held
+out the gain mostly disappears. It adds nothing for growth temperature, and on its own it correlates -0.61 with log
+doubling time for bacteria but only -0.17 for archaea.
+
+**The temperature correction.** Doubling times were scaled to 20 C with a universal activation energy of 65 kJ/mol
+(`evaluate_temperature_target.py`). The multiplier is large for anything that grows hot: median factors of 2.0 at
+20 to 30 C, 4.3 at 30 to 45 C, 16 at 45 to 60 C, 48 at 60 to 80 C and 143 above 80 C, so 66% of rows are multiplied by
+more than 3 and 30% by more than 10. After correction growth temperature correlates +0.57 with doubling time, whereas
+the raw doubling times correlate -0.25 (hot organisms really do double faster). Growth temperature is predicted well
+from the features (R2 0.82, mean error 6.2 C, AUC 0.96 for telling 45 C and above from the rest), so a model can score
+well on the corrected target partly by recognizing hot organisms: log R2 is 0.64 for the 20 C target against 0.35 for
+the raw doubling time at the organism's own temperature, although typical error is about the same (1.89x against
+2.02x). The convention also matters (activation energy 50, 65 and 80 kJ/mol give log R2 0.57, 0.64 and 0.69; a 37 C
+reference changes nothing). The ranking signal beyond temperature is real: within 30 to 45 C, where the correction is
+almost constant, Spearman is 0.70 for both targets. Predicting growth temperature and the raw doubling time separately
+and then correcting reproduces the direct 20 C prediction nearly as well (0.611 against 0.641). Decision: the
+predictions report the raw doubling time at the predicted growth temperature (the primary value), the predicted
+growth temperature, and the 20 C value as a relative score, and say that the 20 C value is an extrapolation for hot
+organisms.
+
+**IVYWREL.** Checking the growth temperature predictions against habitat (which the model never sees) showed 11% of
+human-associated genomes predicted at 45 C or above, which is wrong, while 68% of hot spring genomes were. The model was
+leaning on genome size and GC, and small high-GC mesophiles in the gut look like thermophiles. The share of the amino
+acids I, V, Y, W, R, E and L in a proteome tracks growth temperature across prokaryotes, it comes from the same
+gene-prediction pass, and unlike phylogeny it needs no close labeled relative. It correlates with growth temperature at
+Pearson 0.79 across the original genomes. Growth temperature accuracy goes from R2 0.810 to 0.847 and mean error from
+6.2 C to 5.6 C with species held out, and from 0.742 to 0.798 and 7.4 C to 6.6 C with orders held out; mesophiles
+called hot fall from 5.6% to 3.6% (`evaluate_ivywrel.py`). The GEM job was rerun with it. Result: 0.7% of
+human-associated genomes and 0.8% of gut genomes are now predicted hot, against 66% of genomes from hot spring and other
+thermal habitats (median predicted temperature 56 C), and the share of all genomes at 45 C or above fell from 15.4% to
+7.0%.
+
+**Final accuracy by novelty** (`evaluate_final_model.py`, every feature combination, three seeds, whole species,
+genera, families or orders held out). Full model, raw doubling time at the organism's own temperature: typical error
+1.91x, 2.11x, 2.20x and 2.38x for genomes whose nearest labeled relative is in the same genus, the same family, the same
+order, or none, Spearman 0.66, 0.59, 0.58 and 0.50, log R2 0.40, 0.33, 0.28 and 0.20. The 20 C value: 1.89x, 1.86x, 1.97x
+and 2.08x, Spearman 0.81, 0.80, 0.78 and 0.76. Growth temperature: mean error 5.6, 6.2, 6.3 and 6.6 C. The table also
+holds the 10th and 90th percentiles of the held-out errors, which the prediction script uses for a range around every
+prediction (for example x0.32 to x4.41 of the prediction for a same-genus genome, wide because the target is noisy), and
+the error labels in the output now come from this table and not from numbers typed into the script. On 188 bacterial
+species never seen in training (`evaluate_independent_species.py`) typical error is 2.29x at the organism's own
+temperature (Spearman 0.51) and 1.97x for the 20 C value (0.75).
+
+**Real MAGs, larger check** (`validate_on_gem_mags.py`, species with a measured growth rate and GEM genomes, each species
+held out). 718 MAGs from 48 species without the 16S input: for the raw doubling time the typical error is 2.54x from the
+MAGs against 1.88x from the isolate genomes of the same species, Spearman 0.74 against 0.80; for the 20 C value 1.81x
+against 1.76x. With all four inputs, 305 MAGs from 27 species: 2.42x against 1.79x. The two predictions for the same species
+agree closely (Spearman 0.96). So assembling genomes from the environment costs some accuracy, mainly for the raw
+doubling time, while ranking is mostly preserved.
+
+**A limit found on the way: the predictions are compressed.** Held out, the slope of log prediction on log measurement is
+about 0.4, only 1.7% of species are predicted above 24 hours although 7% are measured above it, and among species
+measured above 24 hours the median prediction is under 5 hours. The model can tell they are slower than most (area under
+the curve 0.79 for separating them) but not how slow, and within the slow species ranking is near zero. The final GEM
+predictions show it: median 3.1 hours, middle 90% from 0.7 to 9.6, 0.5% above 24 hours, against 2.2 hours and 0.3 to 32
+for the labeled species. Very slow growth is underestimated, which matters for the question of why slow growers are slow.
+
+**Guard against the first failure.** `deploy_features.drift_report` compares the deployment inputs with the training
+inputs and stops the prediction run if a phylogeny or 16S block has moved by more than 3 training standard deviations. For
+bacteria the largest shift is now 0.74 (it was 8 to 12 in the first version); for archaea the phylogeny block is at 2.06,
+under the limit but the closest to it, so archaeal predictions deserve extra caution. A test reproduces the original
+failure and checks the guard raises.
+
+**Final predictions.** 9,139 of 9,143 HQ genomes (four lack size, GC or tRNA counts). 7,297 get the full model, 1,219
+lack 16S, 578 lack a phylogeny placement and 45 have traits and gene features only; 623 genomes (6.8%) have no phylogeny
+rank. Of the nearest labeled relatives by name, 10% share a genus, 22% a family, 26% an order and 41% are in none, a
+worst case because of GEM's older names. The report folder was reorganized: the first two versions are in
+`Test on HQ genomes/superseded/` with a note, and the folder holds `hq_genome_predictions.csv`, the new charts, the
+report (HTML and PDF, regenerated by `scripts/pipeline/build_report.py` so every number comes from a data file),
+`fastest10.csv`, `slowest10.csv` and the held-out calibration data.
+
+Not done: the Phydon and gRodon comparison was not rerun on the final data; the 623 genomes without a phylogeny rank and the
+1,264 without 16S are predicted with weaker models; the hot flag still has some false positives; and the model still
+leans on a training set made of cultured organisms.
+
 ## 2026-10-05 (evening), adding archaea
 
 The model had never seen an archaeon, and 183 of the 9,143 HQ GEM genomes (2%) are archaeal. Madin's table has 223

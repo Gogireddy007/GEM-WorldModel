@@ -207,3 +207,36 @@ def test_is_archaeon_flag():
     assert tv.is_archaeon("d__Archaea;p__Halobacteriota;c__Methanosarcinia") == 1.0
     assert tv.is_archaeon("d__Bacteria;p__Bacillota;c__Bacilli") == 0.0
     assert tv.is_archaeon(float("nan")) == 0.0
+
+
+def test_coarsen_blanks_finer_ranks():
+    from gem_worldmodel.features.deploy_features import coarsen
+
+    t = "d__B;p__X;c__X;o__Ord;f__Fam;g__Gen;s__Gen sp"
+    assert "g__Gen" in coarsen(t, "genus") and "s__Gen sp" not in coarsen(t, "genus")
+    assert "g__Gen" not in coarsen(t, "family") and "f__Fam" in coarsen(t, "family")
+    assert "f__Fam" not in coarsen(t, "order") and "o__Ord" in coarsen(t, "order")
+
+
+def test_combo_label_matches_accuracy_table_names():
+    from gem_worldmodel.features.deploy_features import combo_label
+
+    assert combo_label(True, True, True) == "traits+phylogeny+16S+gene features"
+    assert combo_label(False, False, False) == "traits"
+    assert combo_label(True, False, True) == "traits+phylogeny+gene features"
+
+
+def test_drift_report_stops_inputs_from_a_different_coordinate_system():
+    import numpy as np
+    import pytest
+
+    from gem_worldmodel.features.deploy_features import drift_report
+
+    rng = np.random.default_rng(0)
+    train = {"phylogeny": rng.normal(0.0, 0.2, size=(200, 16)), "16S": rng.normal(0.5, 0.1, size=(200, 16))}
+    similar = {"phylogeny": rng.normal(0.02, 0.2, size=(300, 16)), "16S": rng.normal(0.5, 0.1, size=(300, 16))}
+    assert drift_report(train, similar)["phylogeny"] < 1.0
+    # the original failure: landmark distances centered near 2 where training coordinates were centered at 0
+    shifted = {"phylogeny": rng.normal(2.0, 0.4, size=(300, 16)), "16S": rng.normal(0.5, 0.1, size=(300, 16))}
+    with pytest.raises(RuntimeError):
+        drift_report(train, shifted)

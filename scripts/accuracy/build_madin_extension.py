@@ -18,7 +18,6 @@ Writes madin_extension.csv.
 
 import re
 
-import numpy as np
 import pandas as pd
 import pyreadr
 

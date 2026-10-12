@@ -258,6 +258,22 @@ cautiously: the labeled archaea are mostly hyperthermophiles and methanogens, th
 makes hyperthermophile targets very long, and archaeal groups with no labeled relative (such as Nitrosopumilaceae)
 are not covered by the measured accuracy.
 
+Update, 2026-10-12: the GEM predictions were rebuilt with annotation-free gene features (codon usage bias from
+predicted ribosomal proteins, and the IVYWREL amino acid fraction), which are computed identically for the labeled
+genomes and the GEM MAGs. Codon usage bias improves held-out accuracy in most seeds when species, genera or families are
+held out and sharpens ranking among fast growers (Spearman 0.44 to 0.54 with species held out); IVYWREL improves growth
+temperature prediction (R2 0.81 to 0.85) and removed most false hot calls for human-associated genomes (11% to 0.7%).
+The model now predicts three things: the doubling time at the organism's own growth temperature, the growth temperature,
+and the doubling time scaled to 20 C. The 20 C scaling multiplies hot organisms' doubling times by up to about 140, so
+scores on that target are partly temperature detection (log R2 0.64 against 0.35 for the raw doubling time, with a similar
+typical error of about 1.9x to 2.0x); the raw value at the organism's own temperature is now the primary one. With whole
+lineages held out the full model's typical error at the organism's own temperature is 1.9x, 2.1x, 2.2x and 2.4x when the
+nearest labeled relative is in the same genus, family, order or none. The predictions are compressed toward the middle:
+held out, only 1.7% of species are predicted above 24 hours against 7% measured, so the model separates slow species from the
+rest (area under the curve 0.79) but not how slow, and very slow growth is underestimated. On real GEM genomes of species
+with a measured growth rate (718 genomes, 48 species) the raw doubling time has a typical error of 2.5x from the MAGs
+against 1.9x from isolates, with ranking mostly preserved.
+
 How far to trust a prediction depends on how close the genome is to a labeled species. With whole lineages held
 out, typical error and log R2 are 2.13x and 0.44 for new species, 2.21x and 0.36 for new genera, 2.54x and 0.21
 for new families, and 2.51x and 0.20 for new orders. About 60% of the HQ GEM genomes have no labeled relative at

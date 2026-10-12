@@ -15,7 +15,6 @@ with both features files) and gtdb_taxon_vectors.csv.
 """
 
 import argparse
-import re
 
 import numpy as np
 import pandas as pd
@@ -25,7 +24,8 @@ from sklearn.metrics import r2_score
 from sklearn.model_selection import GroupKFold
 
 from gem_worldmodel.data import gtdb
-from gem_worldmodel.features import rrna16s, taxon_vectors as tv
+from gem_worldmodel.features import rrna16s
+from gem_worldmodel.features import taxon_vectors as tv
 from gem_worldmodel.utils.config import load_config, resolve_path
 from gem_worldmodel.utils.logging import get_logger
 

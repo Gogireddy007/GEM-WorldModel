@@ -278,8 +278,11 @@ really are, a training-loss and label-distribution problem, not a feature or dat
       species and 2.5x for new families and orders.
 - [x] Check the deployment pipeline on real MAGs. Done on 15 species, typical error 2.66x against 2.35x for
       isolates. Too small to be more than indicative.
-- [ ] Regenerate the charts and the PDF report from the v2 predictions.
-- [ ] Add a confidence signal that reflects the lineage distance (the nearest-relative level is a first version).
+- [x] Regenerate the charts and the PDF report from the new predictions. Done 2026-10-12, built from the data files
+      by `scripts/pipeline/build_report.py`; the old versions are archived in `Test on HQ genomes/superseded/`.
+- [x] Add a confidence signal that reflects the lineage distance. Done 2026-10-12: every genome carries its nearest
+      labeled relative, the typical error and an 80% range measured with lineages held out, and the prediction run stops
+      if its inputs drift from the training range.
 - [x] Re-run the loss-function and gap-species comparisons (quantile, Huber, round 1 and 2) with species held out
       and the consistent features. Done 2026-10-05: median loss is the best and is now the default, Huber and
       weighting repeated species do not matter, the 15 gap species do not help.
@@ -291,8 +294,17 @@ really are, a training-loss and label-distribution problem, not a feature or dat
 - [x] Place archaea with GTDB's archaeal tree. Done 2026-10-05: 99 archaeal species added, archaeal log R2 0.47 to
       0.57 with lineages held out, no change for bacteria. Caveat: mostly hyperthermophiles and methanogens, so
       partly the temperature correction.
-- [ ] Check that the reference-temperature correction is not distorting thermophile targets (Thermotogaceae
-      predicted at 123 h).
+- [x] Check the reference-temperature correction. Done 2026-10-12: it multiplies hot organisms' doubling times by up to
+      about 140 and lets the model score well partly by recognizing hot organisms, so the primary prediction is now the raw
+      doubling time at the predicted growth temperature, with the growth temperature and the 20 C value alongside.
+- [x] Add codon usage bias for the GEM genomes. Done 2026-10-12 with an annotation-free pipeline (pyrodigal, Pfam
+      ribosomal protein HMMs, MILC) that reproduces the annotation-based values (Pearson 0.993), plus IVYWREL for growth
+      temperature.
+- [ ] Handle the 623 genomes with no phylogeny placement (GEM uses older GTDB names) and the 1,264 with no 16S.
+- [ ] Rerun the Phydon and gRodon comparison on the final data with lineages held out.
+- [ ] Tune the model, try other learners and ensembling (the tree model has used fixed settings from the start).
+- [ ] Extend the predictions beyond the HQ set, and test completeness-aware features for MAGs.
+- [ ] Predictions are compressed toward the middle, so very slow growth is underestimated; look for a way to recover it.
 
 ## Notes
 
