@@ -1,11 +1,11 @@
-genome_id,predicted_doubling_time_hours,genome_size_bp,gc_content,branches_used,ecosystem_category,habitat
-3300029610_25,39.254314,2175427.0,0.6001856187314031,genomic_traits+gtdb_distance+rrna16s,Human,Human fecal
-3300011602_6,30.353653,2655766.0,0.6010190656857569,genomic_traits+gtdb_distance+rrna16s,Built environment,city subway metal/plastic
-3300029656_20,24.018353,1797213.0,0.6240006053817773,genomic_traits+gtdb_distance+rrna16s,Human,Human fecal
-3300029754_19,23.721094,2033022.0,0.6236676238624078,genomic_traits+gtdb_distance+rrna16s,Human,Human feces
-3300029374_18,22.489355,2277881.0,0.5973077610287807,genomic_traits+gtdb_distance+rrna16s,Human,Human feces
-3300029481_18,22.255754,1923301.0,0.5989270530197821,genomic_traits+gtdb_distance+rrna16s,Human,Human fecal
-3300014921_6,22.243092,2138630.0,0.6000280553438416,genomic_traits+gtdb_distance+rrna16s,Human,Human host-associated
-3300029884_18,22.20013,1797944.0,0.6234554580120404,genomic_traits+gtdb_distance+rrna16s,Human,Human fecal
-3300029718_31,22.141054,1998891.0,0.6025631212507335,genomic_traits+gtdb_distance+rrna16s,Human,Human fecal
-3300029076_9,22.053185,2088010.0,0.6007121613402234,genomic_traits+gtdb_distance+rrna16s,Human,Human host-associated
+genome_id,doubling_time_hours_at_growth_temp,range_low_hours,range_high_hours,predicted_growth_temp_c,gtdb_family,gtdb_genus,habitat
+3300017444_35,60.332,16.005,361.507,37.1,envOPS12,UBA12294,hot spring sediment
+3300013138_53,60.101,15.944,360.123,39.2,envOPS12,,freshwater
+3300025859_13,56.994,15.167,324.016,37.1,envOPS12,UBA12294,Anaerobic digestor sludge
+3300025861_17,56.994,15.167,324.016,37.1,envOPS12,UBA12294,Anaerobic digestor sludge
+3300017444_50,56.857,15.13,323.236,35.7,envOPS12,OLB14,hot spring sediment
+3300021517_12,56.629,15.07,321.943,36.9,envOPS12,OLB14,Freshwater sediment
+3300029304_4,56.557,15.05,321.532,37.1,envOPS12,UBA5796,Anaerobic bioreactor
+3300025644_11,54.098,14.396,307.553,36.8,envOPS12,,Marine
+3300027878_55,53.499,14.237,304.148,34.9,envOPS12,,Freshwater
+3300020198_26,49.14,13.077,279.365,37.4,,,freshwater lake

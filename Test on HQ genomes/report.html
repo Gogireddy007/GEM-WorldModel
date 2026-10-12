@@ -4,143 +4,167 @@
 <meta charset="UTF-8">
 <title>Growth Rate Predictions for the High Quality GEM Genomes</title>
 <style>
-  body { font-family: "Times New Roman", Times, serif; max-width: 700px; margin: 0 auto; padding: 48px 24px 100px; color: #000; line-height: 1.5; font-size: 17px; }
+  body { font-family: "Times New Roman", Times, serif; max-width: 720px; margin: 0 auto; padding: 48px 24px 100px; color: #000; line-height: 1.5; font-size: 17px; }
   h1 { font-size: 22px; margin-bottom: 2px; }
   .subtitle { font-size: 14px; margin-bottom: 30px; font-style: italic; }
-  h2 { font-size: 18px; margin-top: 36px; }
+  h2 { font-size: 18px; margin-top: 34px; }
   p { margin: 12px 0; text-align: justify; }
   ul, ol { margin: 10px 0; padding-left: 28px; }
   li { margin: 4px 0; }
   img { max-width: 100%; margin: 14px 0; display: block; }
   .caption { font-size: 13px; margin-top: -6px; margin-bottom: 20px; font-style: italic; }
-  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 15px; }
-  th, td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid #ccc; }
-  code { font-family: monospace; font-size: 14px; }
-  hr { border: none; border-top: 1px solid #ccc; margin: 36px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 5px 8px 5px 0; border-bottom: 1px solid #ccc; vertical-align: top; }
+  code { font-family: monospace; font-size: 13px; }
 </style>
 </head>
 <body>
 
 <h1>Growth Rate Predictions for the High Quality GEM Genomes</h1>
-<div class="subtitle">GEM-WorldModel project, September 2026</div>
+<div class="subtitle">GEM-WorldModel project, version 3, October 2026</div>
 
-<p>You asked for predicted growth rates on the high quality GEM genomes, about 9,000 of them, genomes that
-have never had a growth rate measured in a lab. This report covers that work: how we picked the genomes, how
-the prediction works, what came out of it, and where it is still weak.</p>
+<p>This report covers predicted growth rates for the 9,143 high quality genomes in the GEM catalog, genomes that
+have never had a growth rate measured in a lab. We produced a prediction for 9,139 of them. This version
+replaces the first one, which should not be used. The next section explains why.</p>
 
-<h2>How many genomes, and where they came from</h2>
+<h2>What was wrong with the first version</h2>
 
-<p>The GEM catalog grades every genome it holds using a standard called MIMAG, which sorts genomes into
-high quality, medium quality, or lower, based on how complete and clean the assembly is. We filtered the
-whole catalog down to the genomes marked high quality. That gave us 9,143 genomes, close to the "about
-9,000 to 10,000" you asked about, so this should be the right set.</p>
+<p>The first predictions gave the model information about where each organism sits on the tree of life, and about its
+16S gene, in a different numerical form from the one the model had been trained on. The model still produced numbers,
+but they were squeezed toward fast growth: the median predicted doubling time was 0.6 hours against 7 hours for the
+species it was trained on, no genome was predicted to take longer than 24 hours, and gut microbes looked no different
+from ocean microbes. We found this while rebuilding the pipeline. It is fixed, and the prediction script now stops if
+its inputs fall outside the range of the training data.</p>
 
-<p>Of those 9,143 genomes, we were able to produce a prediction for 9,134 of them. That is 99.9 percent.</p>
+<h2>What the table contains</h2>
+
+<p>The file <code>hq_genome_predictions.csv</code> has one row per genome. The main columns are:</p>
+<ul>
+<li><b>doubling_time_hours_at_growth_temp</b>, the predicted doubling time, in hours, at the temperature the organism
+itself grows best at. This is what you would measure in a culture at its own optimum. <b>range_low_hours</b> and
+<b>range_high_hours</b> give a range that covered about 80% of held-out species, and <b>typical_fold_error</b> is how far off
+a prediction typically is, as a multiplier.</li>
+<li><b>predicted_growth_temp_c</b>, the predicted growth temperature in degrees C, and <b>hot_organism</b>, true when that is
+45 C or above.</li>
+<li><b>doubling_time_hours_at_20C</b>, the same doubling time rescaled to 20 C so organisms that grow at very different
+temperatures can be compared. For hot-growing organisms this is an extrapolation to a temperature they could not grow at,
+so it should be read as a relative score and not a prediction of real growth.</li>
+<li><b>nearest_labeled_relative</b>, <b>model_used</b> and <b>phylogeny_rank_used</b>, which say how close the genome is to a
+species with a measured growth rate and which inputs the prediction could use.</li>
+<li>The genome traits, <b>codon_usage_bias</b>, <b>ivywrel_fraction</b>, assembly quality (<b>completeness</b>, <b>contamination</b>), taxonomy and
+habitat from the GEM catalog.</li>
+</ul>
 
 <h2>How the prediction works</h2>
 
-<p>For each genome, three things are pulled straight from its DNA sequence:</p>
+<p>Five kinds of information are taken from each genome's DNA: its size, GC content and number of tRNA genes; how strongly
+its ribosomal protein genes favor particular codons (codon usage bias, a known signature of fast growth); the share of its
+proteins made of the amino acids I, V, Y, W, R, E and L, which rises with growth temperature; where it sits on the tree of
+life; and its 16S gene. Genes were predicted directly from the DNA, so no annotation was needed, and the same steps were
+applied to the species with measured growth rates and to the GEM genomes.</p>
 
-<ol>
-<li>Genome size, GC content, and how the organism uses its DNA "words," known as codon usage. Past work has
-shown this tracks with growth rate.</li>
-<li>Where the organism sits on the tree of life, compared to other organisms whose growth rate is already
-known.</li>
-<li>The organism's 16S gene, which gives a second, independent way of placing it on the tree of life.</li>
-</ol>
+<p>A model was trained on 597 genomes from 509 species with a measured growth rate (498 bacterial
+genomes and 99 archaeal genomes), mostly from the compilation by Madin and colleagues (2020). It predicts three things: the doubling
+time at the organism's own growth temperature, the growth temperature itself, and the doubling time rescaled to 20 C.
+Growth temperature matters because rescaling multiplies a hot-growing organism's doubling time by a large factor, about 4 for
+organisms growing at 30 to 45 C, 16 at 45 to 60 C and 48 at 60 to 80 C, so a model can look accurate on the rescaled value
+partly by recognizing hot organisms. We therefore report both values, and judge the model mainly on the first.</p>
 
-<p>A model was trained on 304 real species that already have a published, measured growth rate. That trained
-model was then run on every genome in the high quality GEM set, one at a time, and it produces one number per
-genome: the predicted doubling time in hours, meaning how long it would take that organism to double in
-population.</p>
+<p>Not every genome had every input. 7,297 genomes had all four and got the full model. The rest were predicted with
+whichever inputs they had, and the table says which. For 10% of genomes the nearest labeled
+relative is in the same genus, for 22% in the same family, for
+26% in the same order, and 41% have no labeled relative
+at order level. These shares are worst cases, because GEM uses older taxonomic names than the labeled species and a renamed group
+looks more distant than it is.</p>
 
-<p>Not every genome had all three pieces of information. 7,873 genomes had a usable 16S gene and got the
-full prediction. 1,261 genomes did not have a usable 16S gene in their assembly, which happens with real
-genomes pulled from the environment and is not something we did wrong, so those were predicted using just
-the genome traits and the tree of life position instead. Only 9 genomes out of the whole set could not be
-scored at all.</p>
+<h2>How accurate it is</h2>
 
-<img src="charts/01_coverage.png" alt="coverage chart">
-<p class="caption">How many of the 9,143 genomes fell into each group.</p>
+<p>Accuracy was never measured on a species the model had seen. We also left out whole genera, families and orders, because
+most GEM genomes have no close relative among the species with measured rates, and accuracy falls as the nearest relative gets
+more distant. The table gives the numbers for each situation, using the full model.</p>
 
-<h2>The result worth paying attention to</h2>
+<table><tr><th>Nearest labeled relative</th><th>Share of genomes</th><th>Typical error</th><th>Ranking (Spearman)</th><th>80% range around the prediction</th><th>Typical error, 20 C value</th><th>Ranking, 20 C value</th></tr><tr><td>same genus</td><td>10%</td><td>1.9x</td><td>0.66</td><td>x0.32 to x4.41</td><td>1.9x</td><td>0.81</td></tr><tr><td>same family, new genus</td><td>22%</td><td>2.1x</td><td>0.59</td><td>x0.26 to x4.70</td><td>1.9x</td><td>0.80</td></tr><tr><td>same order, new family</td><td>26%</td><td>2.2x</td><td>0.58</td><td>x0.27 to x5.69</td><td>2.0x</td><td>0.78</td></tr><tr><td>new order</td><td>41%</td><td>2.4x</td><td>0.50</td><td>x0.23 to x5.61</td><td>2.1x</td><td>0.76</td></tr></table>
 
-<p>The model was never told what environment any genome came from. It only ever looks at DNA sequence. When
-the 9,134 predictions are grouped by where each genome was actually collected, human and animal associated
-genomes come out predicted as the fastest growers, and soil and plant associated genomes come out predicted
-as the slowest. That is the correct pattern. It matches what is already known about these organisms, and the
-model arrived at it on its own, from sequence alone.</p>
+<img src="charts/01_accuracy_by_novelty.png" alt="Accuracy by novelty">
+<div class="caption">Figure 1. Typical error and ranking accuracy when a whole lineage is held out. Blue is the doubling time at
+the organism's own growth temperature, green is the value rescaled to 20 C.</div>
 
-<img src="charts/03_by_ecosystem.png" alt="predicted growth rate by where the genome was collected">
-<p class="caption">Median predicted doubling time by where the genome was collected. Fastest at the bottom,
-slowest at the top.</p>
+<p>In plain terms, a typical prediction at the organism's own temperature is off by a factor of about 1.9
+when a genus relative is known and about 2.4 when none is, and the
+ranking of genomes from fast to slow is moderately reliable, better for close relatives. The predictions are best used to
+rank genomes and to find groups that are likely fast or slow, not as exact doubling times.</p>
 
-<h2>What the predictions look like overall</h2>
+<p>Two further checks. First, we trained on the original species only and predicted 188 bacterial species it had never
+seen: typical error 2.3x at the organism's own temperature
+(ranking 0.51) and 2.0x for the 20 C
+value (ranking 0.75). Second, because the GEM genomes are assembled from
+environmental samples and not isolates, we checked the pipeline on 718 real GEM genomes from 48 species that have a
+measured growth rate, each species held out of training. Typical error was 2.5x from the GEM genomes against
+1.9x from the isolate genomes of the same species (this check used the model without 16S so that more species
+qualify), so assembling genomes from the environment costs some accuracy, while the ranking is almost unchanged.</p>
 
-<img src="charts/02_distribution.png" alt="spread of predicted doubling times">
-<p class="caption">Most genomes are predicted to double in under an hour, with a smaller number predicted
-much slower. This is the shape you would expect from a real, mixed environmental sample rather than a hand
-picked lab collection.</p>
+<img src="charts/05_calibration.png" alt="Calibration" style="max-width:62%">
+<div class="caption">Figure 2. Predicted against measured doubling times for the labeled genomes, each predicted with its species held out.</div>
 
-<p>The five fastest predicted genomes:</p>
-<table>
-<tr><th>Genome ID</th><th>Predicted doubling time</th><th>Where it was collected</th></tr>
-<tr><td>3300029771_7</td><td>0.07 hours</td><td>Human feces</td></tr>
-<tr><td>3300028983_3</td><td>0.08 hours</td><td>Human host associated</td></tr>
-<tr><td>3300029132_4</td><td>0.08 hours</td><td>Host associated</td></tr>
-<tr><td>3300014529_9</td><td>0.08 hours</td><td>Human host associated</td></tr>
-<tr><td>3300014522_4</td><td>0.08 hours</td><td>Human host associated</td></tr>
-</table>
+<img src="charts/06_real_mags.png" alt="Real MAGs">
+<div class="caption">Figure 3. Species with a measured growth rate and GEM genomes, predicted from the isolate genome and from the GEM genomes.</div>
 
-<p>The five slowest predicted genomes:</p>
-<table>
-<tr><th>Genome ID</th><th>Predicted doubling time</th><th>Where it was collected</th></tr>
-<tr><td>3300029610_25</td><td>39.3 hours</td><td>Human fecal</td></tr>
-<tr><td>3300011602_6</td><td>30.4 hours</td><td>City subway, metal or plastic surface</td></tr>
-<tr><td>3300029656_20</td><td>24.0 hours</td><td>Human fecal</td></tr>
-<tr><td>3300029754_19</td><td>23.7 hours</td><td>Human feces</td></tr>
-<tr><td>3300029374_18</td><td>22.5 hours</td><td>Human feces</td></tr>
-</table>
+<p>The model compresses the range. Among the held-out species, 7% have a measured doubling time above 24 hours
+but only 1.7% are predicted to, and a tenfold change in the measured time shows up as about a
+2.5-fold change in the prediction. It can tell that a very slow species is slower than most (it separates species above
+24 hours from the rest with an area under the curve of 0.79) but not how slow it is. Read the predictions as a
+relative score, and expect very slow growth to be underestimated.</p>
 
-<p>The full lists of the ten fastest and ten slowest are included as separate files, fastest10.csv and
-slowest10.csv, alongside this report.</p>
+<p>Weak spots. Ranking among fast growers (doubling time under 5 hours) is the weakest part. Codon usage bias helped most
+there, but it is still only moderate. Archaea are covered by far fewer labeled species than bacteria, mostly hyperthermophiles
+and methanogens, and groups with no labeled archaeal relative are less reliable than the numbers above.</p>
 
-<h2>GC content and predicted growth rate</h2>
+<h2>What came out</h2>
 
-<img src="charts/04_gc_vs_growth.png" alt="GC content vs predicted growth rate">
-<p class="caption">Genomes with higher GC content tend to get a slower prediction. This lines up with what
-other studies have found, so it is not something the model invented on its own.</p>
+<p>The predicted doubling time at the organism's own growth temperature has a median of 3.1 hours (middle 90% from
+0.7 to 10), against 2.2 hours (middle 90% from 0.3 to 32) measured for the labeled species. The
+spread is much narrower for the reason given above: when the model is unsure it pulls the prediction toward the middle, so
+the spread of the predictions understates the spread of real growth rates. About 7% of genomes are predicted to grow
+at 45 C or above. As a check on the growth temperature, which the model was not told anything about, 66% of the
+396 genomes from hot spring and other thermal habitats are predicted to grow at 45 C or above, against
+1% of the human-associated genomes. The second number is not zero, so a few mesophiles are being called hot. Treat the
+<b>hot_organism</b> flag as a hint, not a measurement.</p>
 
-<h2>Where this is still weak</h2>
+<img src="charts/02_distribution.png" alt="Distribution" style="max-width:78%">
+<div class="caption">Figure 4. Predicted doubling times for the GEM genomes against measured times for the labeled species.</div>
 
-<p>Two honest problems, stated plainly rather than left out.</p>
+<p>By habitat, genomes from the built environment habitat group are predicted fastest (median 1.8 hours)
+and those from wastewater slowest (5.3 hours). The model was never told the habitat. By
+family, among families with at least 25 genomes the fastest are Thermaceae (0.5 h), Enterobacteriaceae (0.5 h), Sphingobacteriaceae (0.7 h), Streptococcaceae (0.8 h), and the slowest are Gemmataceae (7 h), UBA3495 (7 h), SG8-4 (7 h), Hyphomonadaceae (6 h). Thermaceae grow hot, so their short time is at their own high temperature, and the 20 C column ranks them differently.</p>
 
-<p><b>The exact numbers are not very accurate yet.</b> When the model is tested carefully on species where we
-already know the real answer, it often does no better than simply guessing the average growth rate for
-everything. It is better at roughly ranking organisms from fast to slow than at getting one exact number
-right for any single genome. The predictions here should be read as a rough ordering, not as a lab
-measurement.</p>
+<img src="charts/04_by_habitat.png" alt="By habitat" style="max-width:80%">
+<div class="caption">Figure 5. Predicted growth by habitat.</div>
+<img src="charts/03_growth_temperature.png" alt="Growth temperature" style="max-width:78%">
+<div class="caption">Figure 6. Predicted growth temperature.</div>
 
-<p><b>The model can be confidently wrong on genomes unlike anything it learned from.</b> A small group of
-genomes with high GC content and a smallish genome got predicted as very slow growers, even though most of
-them came from the human gut, where fast growth is normal. We looked into why. Every one of the 304 training
-species that looks similar on paper, high GC and a small genome, happens to be a heat loving organism,
-because those are the ones that have been measured and published. The model has never seen an ordinary fast
-growing high GC organism, so it falls back on the only similar examples it has, which are heat lovers. This
-is a real gap in the training data, not a mistake in the code, and it will not be fixed by more computer
-time. It needs more real, measured species to train on.</p>
+<h2>What to keep in mind</h2>
+<ul>
+<li>These are statistical estimates, not measurements, and are best used for ranking and for finding groups.</li>
+<li>The growth rates used for training are species averages from the literature and are not matched to the exact strain
+that was sequenced. Growth rate can differ a lot between strains of one species.</li>
+<li>Labeled species are cultured organisms, and the genomes here are mostly uncultured. Predictions for lineages far from
+anything cultured rest on weaker evidence, which the table's nearest-relative column reflects.</li>
+<li>The training values are minimal doubling times under good lab conditions, not growth in the environment.</li>
+<li>Genomes assembled from the environment lose some repeated genes, so rRNA counts and sometimes tRNA counts are
+underestimated, and incomplete genomes miss ribosomal proteins. We checked the pipeline on real GEM genomes of known species,
+but only for the 48 species that have them.</li>
+<li>We did not rerun the comparison with the published tools Phydon and gRodon on the final data.</li>
+</ul>
 
-<h2>What we are doing next</h2>
-
-<p>The project is moving into a phase focused specifically on closing the accuracy gap described above,
-rather than expanding coverage further. That work is being tracked separately and will be reported on once
-there is something real to show, not before.</p>
-
-<hr>
-
-<p>Full predictions for all 9,134 genomes are in unlabeled_predictions_hq.csv in this same folder, one row
-per genome. The branches_used column tells you whether that genome got the full prediction, using real 16S
-data, or the fallback version without it.</p>
+<h2>Files</h2>
+<ul>
+<li><code>hq_genome_predictions.csv</code>, the full table, 9,139 genomes.</li>
+<li><code>fastest10.csv</code> and <code>slowest10.csv</code>, the extremes.</li>
+<li><code>charts/</code>, the figures in this report.</li>
+<li><code>calibration_data_labeled_species.csv</code>, the held-out predictions behind Figure 2.</li>
+<li>Scripts to reproduce everything are in <code>scripts/</code> in the repository, see <code>research_log.md</code>.</li>
+<li><code>superseded/</code>, the first version, kept for the record and not to be used.</li>
+</ul>
 
 </body>
 </html>
