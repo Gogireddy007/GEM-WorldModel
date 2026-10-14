@@ -8,6 +8,7 @@ genome size/GC/rRNA-tRNA/gene-calling fallback) and `_cds_from_genomic.fna.gz`
 """
 
 import gzip
+import re
 import shutil
 import time
 from pathlib import Path
@@ -66,6 +67,41 @@ def _download_gz(url: str, dest_gz: Path, decompress_to: Path) -> Path | None:
     except (requests.RequestException, OSError, gzip.BadGzipFile) as exc:
         logger.warning(f"download/decompress failed for {url}: {exc}")
         return None
+
+
+def ftp_dir_from_listing(accession: str, attempts: int = 4) -> str | None:
+    """Assembly folder on NCBI's FTP found from the parent directory listing.
+
+    Unlike resolve_ftp_dir this needs no E-utilities call, so it is safe to run
+    in parallel without hitting NCBI's rate limit.
+    """
+    prefix, digits = accession.split("_")[0], accession.split("_")[1].split(".")[0]
+    parent = f"https://ftp.ncbi.nlm.nih.gov/genomes/all/{prefix}/{digits[0:3]}/{digits[3:6]}/{digits[6:9]}/"
+    for attempt in range(attempts):
+        try:
+            html = requests.get(parent, timeout=60).text
+            m = re.search(rf'href="({re.escape(accession)}[^"/]*)/?"', html)
+            return parent + m.group(1) if m else None
+        except requests.RequestException:
+            time.sleep(2 * (attempt + 1))
+    return None
+
+
+def fetch_genomic_fasta(accession: str, folder: Path) -> Path | None:
+    """Download <assembly>_genomic.fna(.gz) into folder and return the uncompressed path.
+
+    A suppressed RefSeq (GCF) record keeps only its reports on the FTP site, so
+    the GenBank (GCA) copy of the same assembly is tried next.
+    """
+    for acc in dict.fromkeys((accession, accession.replace("GCF_", "GCA_"))):
+        ftp = ftp_dir_from_listing(acc)
+        if ftp is None:
+            continue
+        base = ftp.rstrip("/").split("/")[-1]
+        got = _download_gz(f"{ftp}/{base}_genomic.fna.gz", folder / f"{base}_genomic.fna.gz", folder / f"{base}_genomic.fna")
+        if got is not None:
+            return got
+    return None
 
 
 def fetch_assembly_files(accession: str, cfg: dict | None = None) -> dict[str, Path | None]:

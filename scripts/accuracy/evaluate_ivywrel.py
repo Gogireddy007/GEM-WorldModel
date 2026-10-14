@@ -42,7 +42,7 @@ def main():
     print(f"{len(df)} rows with a growth temperature, {meso.sum()} below 45 C; "
           f"Spearman of IVYWREL with growth temperature {spearmanr(df.ivywrel, y).correlation:.3f}")
     for level in ("species", "genus", "family", "order"):
-        groups = df.species.to_numpy() if level == "species" else df.gtdb_taxonomy.map(lambda t, p=PREFIX.get(level): token(t, p)).to_numpy()
+        groups = df.species_group.to_numpy() if level == "species" else df.gtdb_taxonomy.map(lambda t, p=PREFIX.get(level): token(t, p)).to_numpy()
         for label, cols in (("without IVYWREL", without), ("with IVYWREL", list(range(X.shape[1])))):
             res = []
             for seed in (42, 1, 7):

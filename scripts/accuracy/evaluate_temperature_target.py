@@ -59,7 +59,7 @@ def main():
     df, X, _ = df_.load_training_table(processed, k)
     has_t = df["growth_temp_c"].notna().to_numpy()
     df, X = df[has_t].reset_index(drop=True), X[has_t]
-    sp = df["species"].to_numpy()
+    sp = df["species_group"].to_numpy()
     temp_c = df["growth_temp_c"].to_numpy(float)
     raw = df["doubling_time_hours"].to_numpy(float)
     print(f"{len(df)} rows with a growth temperature ({df['archaeon'].sum():.0f} archaeal)\n")

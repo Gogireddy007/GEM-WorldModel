@@ -16,8 +16,10 @@ Inputs for every genome:
   gene features       codon usage bias (MILC bias of the ribosomal proteins
                       against the genome background) and the IVYWREL amino acid
                       fraction, a signature of growth temperature, from
-                      compute_cub_gem.py (the same annotation-free pipeline that
-                      was run on the labeled genomes)
+                      compute_cub_gem.py, plus gene content for energy
+                      metabolism and lifestyle (lifestyle_genes.py) from
+                      compute_lifestyle_gem.py, all from the same
+                      annotation-free gene predictions as for the labeled genomes
 
 Three things are predicted: the doubling time at the organism's own growth
 temperature, the growth temperature, and the doubling time scaled to 20 C (the
@@ -65,6 +67,20 @@ def token(taxonomy, prefix):
     return m.group(0) if m and m.group(0) != prefix else None
 
 
+MARKERS = {"methanogenesis": "methanogen", "sulfate_reduction": "sulfate reducer", "ammonia_monooxygenase": "ammonia or methane oxidizer",
+           "nitrogen_fixation": "nitrogen fixer", "phototrophy": "phototroph", "rubisco": "carbon fixer (RuBisCO)"}
+
+
+def energy_markers(C):
+    """Readable list of the energy-metabolism genes found, for the output table."""
+    cols = {name: C[:, deploy_features.GENE_FEATURES.index(name)] for name in MARKERS}
+    out = []
+    for i in range(len(C)):
+        found = [label for name, label in MARKERS.items() if cols[name][i] > 0]
+        out.append("; ".join(found) if found else ("" if np.isnan(C[i]).any() else "none of these"))
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--genome-ids-file", default="hq_genome_ids_all.csv")
@@ -79,12 +95,12 @@ def main():
     accuracy = pd.read_csv(processed / "final_accuracy_by_tier.csv")
 
     # ---- training data
-    lab, X_lab, names = deploy_features.load_training_table(processed, k, with_cub=True)
+    lab, X_lab, names = deploy_features.load_training_table(processed, k, with_cub=True, with_lifestyle=True)
     idx = {n: i for i, n in enumerate(names)}
     T_lab = X_lab[:, [idx[n] for n in TRAITS]]
     S_lab = X_lab[:, [i for n, i in idx.items() if n.startswith("s16_")]]
     D_lab = X_lab[:, [idx["archaeon"]]]
-    C_lab = X_lab[:, [idx["cub"], idx["ivywrel"]]]
+    C_lab = X_lab[:, [idx[n] for n in deploy_features.GENE_FEATURES]]
     lm_blocks = [
         np.vstack([tv.lookup(coarsen(t, r), table, "order")[0] for t in lab.gtdb_taxonomy]) for r in RANKS
     ]
@@ -119,6 +135,8 @@ def main():
     gc = pd.read_csv(processed / "unlabeled_corpus_features_enriched.csv")[["genome_id", "gc_content"]]
     prof = pd.read_csv(processed / "unlabeled_corpus_features_16s.csv")[["genome_id", "kmer_profile_16s"]]
     cub = pd.read_csv(processed / "gem_cub.csv").drop_duplicates("genome_id")[["genome_id", "cub", "ivywrel", "n_ribosomal"]]
+    genes = pd.read_csv(processed / "gem_lifestyle_genes.csv").drop_duplicates("genome_id").drop(columns=["error"]).rename(columns={"n_genes": "n_genes_lifestyle"})
+    cub = cub.merge(genes, on="genome_id", how="left").rename(columns={"n_genes_lifestyle": "n_genes"})
     gem = (ids.merge(base, on="genome_id").merge(gc, on="genome_id")
            .merge(meta[["genome_id", "ecosystem", "ecosystem_category"]], on="genome_id")
            .merge(prof, on="genome_id", how="left").merge(cub, on="genome_id", how="left"))
@@ -136,7 +154,7 @@ def main():
         if isinstance(p, str):
             S[i] = [rrna16s.kmer_cosine_distance(literal_eval(p), lp) for lp in landmark_profiles]
     has_lm, has_s = ~np.isnan(LM).any(axis=1), ~np.isnan(S).any(axis=1)
-    C = gem[["cub", "ivywrel"]].to_numpy(float)
+    C = deploy_features.gene_feature_matrix(gem)
     has_c = ~np.isnan(C).any(axis=1)
     T = gem[TRAITS].to_numpy(float)
     D = gem["gtdb_taxonomy"].map(tv.is_archaeon).to_numpy()[:, None]
@@ -202,6 +220,8 @@ def main():
         "codon_usage_bias": gem.cub,
         "ivywrel_fraction": gem.ivywrel,
         "ribosomal_proteins_found": gem.n_ribosomal,
+        "transporters_per_1000_genes": C[:, deploy_features.GENE_FEATURES.index("transporters_per_1000")],
+        "energy_metabolism_markers": energy_markers(C),
         "genome_size_bp": gem.genome_size_bp,
         "gc_content": gem.gc_content,
         "trna_count": gem.trna_count,

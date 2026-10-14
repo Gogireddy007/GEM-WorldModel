@@ -41,7 +41,7 @@ def main():
     processed = resolve_path(load_config("data")["paths"]["processed_dir"])
     k = load_config("features")["rrna16s"]["kmer_k"]
     table = tv.load_taxon_table(processed / "gtdb_taxon_vectors.csv")
-    lab, X, names = deploy_features.load_training_table(processed, k, with_cub=True)
+    lab, X, names = deploy_features.load_training_table(processed, k, with_cub=True, with_lifestyle=True)
     lab = lab.assign(sp=lab["gtdb_taxonomy"].map(lambda t: token(t, "s__")))
     seqs = pd.read_csv(processed / "labeled_16s_sequences.csv").fillna("")
     profiles = {s: rrna16s.kmer_profile(q, k) for s, q in zip(seqs.species, seqs.sequence) if q}
@@ -53,6 +53,8 @@ def main():
     gc = pd.read_csv(processed / "unlabeled_corpus_features_enriched.csv")[["genome_id", "gc_content"]]
     prof = pd.read_csv(processed / "unlabeled_corpus_features_16s.csv")[["genome_id", "kmer_profile_16s"]]
     cub = pd.read_csv(processed / "gem_cub.csv").drop_duplicates("genome_id")[["genome_id", "cub", "ivywrel"]]
+    genes = pd.read_csv(processed / "gem_lifestyle_genes.csv").drop_duplicates("genome_id").drop(columns=["error"])
+    cub = cub.merge(genes, on="genome_id")
     mag = (ids.merge(meta, on="genome_id").merge(base, on="genome_id").merge(gc, on="genome_id")
            .merge(prof, on="genome_id", how="left").merge(cub, on="genome_id"))
     mag["sp"] = mag["ecosystem"].map(lambda t: token(t, "s__"))
@@ -70,15 +72,19 @@ def main():
         for p in mag["kmer_profile_16s"]
     ])
     flag = mag["ecosystem"].map(tv.is_archaeon).to_numpy()[:, None]
-    Xm = np.hstack([mag[deploy_features.TRAITS].to_numpy(float), lm, s16, flag, mag[["cub", "ivywrel"]].to_numpy(float)])
-    # training matrix columns are traits, lm, s16, archaeon, cub, ivywrel, the same order as Xm
+    Xm = np.hstack([mag[deploy_features.TRAITS].to_numpy(float), lm, s16, flag, deploy_features.gene_feature_matrix(mag)])
+    # training matrix columns are traits, lm, s16, archaeon, then GENE_FEATURES, the same order as Xm
     ok = ~np.isnan(np.delete(Xm, range(19, 35), axis=1)).any(axis=1)
     mag, Xm = mag[ok].reset_index(drop=True), Xm[ok]
     print(f"{len(mag)} MAGs from {mag['sp'].nunique()} species with a measured growth rate ({(mag.mimag_quality == 'HQ').sum()} high quality, {mag.has_16s.sum()} with a 16S gene)")
 
     use = lab["has_cub"].to_numpy()
     lab, X = lab[use].reset_index(drop=True), X[use]
-    species = lab["sp"].fillna(lab["species"]).to_numpy()
+    species = lab["species_group"].to_numpy()
+    # MAGs are matched by GTDB species; held-out groups are species groups
+    group_of = dict(zip(lab["sp"].dropna(), lab.loc[lab["sp"].notna(), "species_group"], strict=True))
+    mag_group = mag["sp"].map(group_of).to_numpy()
+    name_of = mag.groupby(mag_group)["sp"].first()
     rows = []
     for variant, drop in (("all four inputs", []), ("without 16S", list(range(19, 35)))):
         Xv = np.delete(X, drop, axis=1)
@@ -97,14 +103,15 @@ def main():
                 for tr, te in GroupKFold(5).split(Xv, y, g):
                     m = GradientBoostingRegressor(random_state=seed, n_estimators=200, max_depth=3, loss="quantile", alpha=0.5).fit(Xv[tr], y[tr])
                     iso[te] = m.predict(Xv[te])
-                    sel = mag["sp"].isin(set(species[te])).to_numpy() & mag_ok
+                    sel = np.isin(mag_group, list(set(species[te]))) & mag_ok
                     if sel.any():
                         mag_pred[sel] = m.predict(Xmv[sel])
                 per_seed.append((iso, mag_pred))
             iso_mean = np.mean([p[0] for p in per_seed], axis=0)
             mag_mean = np.nanmean([p[1] for p in per_seed], axis=0)
-            sp_table = (pd.DataFrame({"sp": species, "truth": y, "isolate": iso_mean}).groupby("sp").mean()
-                        .join(pd.DataFrame({"sp": mag["sp"], "mag": mag_mean}).groupby("sp").agg(mag=("mag", "median"), n_mags=("mag", "count"))).dropna())
+            sp_table = (pd.DataFrame({"group": species, "truth": y, "isolate": iso_mean}).groupby("group").mean()
+                        .join(pd.DataFrame({"group": mag_group, "mag": mag_mean}).groupby("group").agg(mag=("mag", "median"), n_mags=("mag", "count"))).dropna())
+            sp_table.index = sp_table.index.map(name_of).rename("sp")
             t, a_, b_ = sp_table["truth"].to_numpy(), sp_table["isolate"].to_numpy(), sp_table["mag"].to_numpy()
             print(f"\n{variant}, {tname}: {len(sp_table)} species, {int(sp_table.n_mags.sum())} MAGs (whole species held out, mean of {len(SEEDS)} seeds)")
             print(f"  typical fold error : isolate {np.exp(np.median(np.abs(t - a_))):.2f}x   MAG {np.exp(np.median(np.abs(t - b_))):.2f}x")

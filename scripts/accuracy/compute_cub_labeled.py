@@ -7,7 +7,6 @@ already in the corpus.
 Genomes come from the cached NCBI downloads. Writes labeled_cub_pipeline.csv.
 """
 
-import glob
 from multiprocessing import Pool
 
 import numpy as np
@@ -20,11 +19,11 @@ HMM = "data/raw/ribosomal_pfam.hmm"
 
 
 def work(acc):
-    files = sorted(glob.glob(f"data/raw/ncbi_genomes/{acc}/*_genomic.fna")) or sorted(glob.glob(f"data/raw/ncbi_genomes/{acc}/*_genomic.fna.gz"))
-    if not files:
+    path = cub_pipeline.genome_fasta(f"data/raw/ncbi_genomes/{acc}")
+    if path is None:
         return {"accession": acc, "cub_pipeline": np.nan, "ivywrel": np.nan, "n_genes": np.nan, "n_ribosomal": np.nan}
     try:
-        r = cub_pipeline.genome_cub(files[0], HMM)
+        r = cub_pipeline.genome_cub(path, HMM)
     except Exception as exc:  # noqa: BLE001
         print(f"{acc}: {exc}")
         return {"accession": acc, "cub_pipeline": np.nan, "ivywrel": np.nan, "n_genes": np.nan, "n_ribosomal": np.nan}

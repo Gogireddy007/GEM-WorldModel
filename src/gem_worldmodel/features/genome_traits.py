@@ -72,21 +72,29 @@ def count_rrna_trna_genes(fasta_path: str | Path) -> dict[str, float]:
     else:
         logger.warning("barrnap not found on PATH; rRNA counts will be NaN")
 
+    counts["trna_count"] = count_trna(fasta_path)
+    return counts
+
+
+def count_trna(fasta_path: str | Path, domain: str = "bacteria", timeout: int = 300) -> float:
+    """tRNA gene count from tRNAscan-SE with the bacterial (-B) or archaeal (-A) model.
+
+    NaN if tRNAscan-SE is not on PATH or fails. The input must be uncompressed.
+    """
+    flag = "-A" if domain == "archaea" else "-B"
     for exe in ("tRNAscan-SE", "trnascan"):
         if shutil.which(exe):
             try:
                 out = subprocess.run(
-                    [exe, "-B", "-q", "-o", "-", str(fasta_path)],
-                    capture_output=True, text=True, check=True, timeout=300,
+                    [exe, flag, "-q", "-o", "-", str(fasta_path)],
+                    capture_output=True, text=True, check=True, timeout=timeout,
                 ).stdout
-                counts["trna_count"] = max(0, len(out.splitlines()) - 3)
+                return float(max(0, len(out.splitlines()) - 3))
             except (subprocess.SubprocessError, OSError) as exc:
                 logger.warning(f"{exe} failed on {fasta_path}: {exc}")
-            break
-    else:
-        logger.warning("tRNAscan-SE not found on PATH; trna_count will be NaN")
-
-    return counts
+                return np.nan
+    logger.warning("tRNAscan-SE not found on PATH; trna_count will be NaN")
+    return np.nan
 
 
 def regulatory_gene_count(cds_headers: list[str]) -> float:

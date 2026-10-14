@@ -1,4 +1,4 @@
-.PHONY: ribosomal-hmms landmarks fetch-16s madin-extension labeled-genes gem-genes accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
+.PHONY: ribosomal-hmms landmarks fetch-16s madin-extension genome-rows labeled-genes gem-genes accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
 
 PYTHON ?= .venv/bin/python
 PIP ?= .venv/bin/pip
@@ -96,8 +96,13 @@ landmarks:
 madin-extension:
 	$(PYTHON) scripts/accuracy/build_madin_extension.py
 
-fetch-16s:
+genome-rows: ribosomal-hmms
+	$(PYTHON) scripts/accuracy/build_madin_genome_extension.py
+	$(PYTHON) scripts/accuracy/build_madin_genome_extension.py --literature
+
+fetch-16s: genome-rows
 	$(PYTHON) scripts/accuracy/fetch_labeled_16s.py --features-files features_sample_expanded.csv madin_extension.csv
+	$(PYTHON) scripts/accuracy/extract_16s_from_genomes.py
 
 ribosomal-hmms:
 	$(PYTHON) scripts/accuracy/build_ribosomal_hmms.py
@@ -105,9 +110,11 @@ ribosomal-hmms:
 labeled-genes: ribosomal-hmms
 	$(PYTHON) scripts/accuracy/compute_cub_labeled.py
 	$(PYTHON) scripts/accuracy/compute_cub_extension.py
+	$(PYTHON) scripts/accuracy/compute_lifestyle_labeled.py
 
 gem-genes:
 	$(PYTHON) scripts/pipeline/compute_cub_gem.py --ids-file mag_validation_ids.csv hq_genome_ids_all.csv --workers 8
+	$(PYTHON) scripts/pipeline/compute_lifestyle_gem.py --ids-file mag_validation_ids.csv hq_genome_ids_all.csv --workers 8
 
 accuracy-table:
 	$(PYTHON) scripts/accuracy/evaluate_final_model.py
@@ -119,7 +126,7 @@ report:
 	$(PYTHON) scripts/pipeline/make_report_charts.py
 	$(PYTHON) scripts/pipeline/build_report.py
 
-predict-all: ribosomal-hmms landmarks madin-extension fetch-16s labeled-genes gem-genes accuracy-table predict report
+predict-all: ribosomal-hmms landmarks madin-extension genome-rows fetch-16s labeled-genes gem-genes accuracy-table predict report
 
 clean:
 	rm -rf checkpoints/ .pytest_cache/ .ruff_cache/

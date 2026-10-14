@@ -94,7 +94,7 @@ stays true here.
 
 - [x] Build a simple score for how far a new genome sits from anything in
       the training data. Done 2026-09-17, see `eval/confidence.py`.
-- [ ] Add that score as a column on every prediction file this project
+- [x] Add that score as a column on every prediction file this project
       produces, including the high quality genome report already sent.
       Not done. Holding off until the score itself actually works, see
       below, there is no point shipping a column that does not mean
@@ -298,13 +298,27 @@ really are, a training-loss and label-distribution problem, not a feature or dat
       about 140 and lets the model score well partly by recognizing hot organisms, so the primary prediction is now the raw
       doubling time at the predicted growth temperature, with the growth temperature and the 20 C value alongside.
 - [x] Add codon usage bias for the GEM genomes. Done 2026-10-12 with an annotation-free pipeline (pyrodigal, Pfam
-      ribosomal protein HMMs, MILC) that reproduces the annotation-based values (Pearson 0.993), plus IVYWREL for growth
-      temperature.
+      ribosomal protein HMMs, MILC) that reproduces the annotation-based values, plus IVYWREL for growth
+      temperature. Correction 2026-10-13: the 0.993 check had run on NCBI's annotated gene files because of a glob bug;
+      on the real genomes it is 0.997.
 - [ ] Handle the 623 genomes with no phylogeny placement (GEM uses older GTDB names) and the 1,264 with no 16S.
-- [ ] Rerun the Phydon and gRodon comparison on the final data with lineages held out.
+- [x] Rerun the Phydon and gRodon comparison on the final data with lineages held out. Done 2026-10-13 with a faithful
+      Phydon-style reimplementation (the earlier "Phydon" was a trait-GBM stand-in). The model beats Phydon-style in
+      every seed at every level, and gRodon-style everywhere except a tie on typical error for new orders at the
+      organism's own temperature, where it ranks far better.
 - [ ] Tune the model, try other learners and ensembling (the tree model has used fixed settings from the start).
 - [ ] Extend the predictions beyond the HQ set, and test completeness-aware features for MAGs.
-- [ ] Predictions are compressed toward the middle, so very slow growth is underestimated; look for a way to recover it.
+- [x] Predictions are compressed toward the middle, so very slow growth is underestimated; look for a way to recover it.
+      Tried 2026-10-13 (squared loss, stretching to the measured spread, weighting rare values, a slow-growth
+      classifier): none recovers slow growth without hurting other predictions, and for new orders nothing beats the base
+      rate. Long predictions come mostly from one slow clade (Anaerolineaceae). Needs new features or more slow-growing
+      labeled species, which belongs with the gene-content item.
+- [x] More slow growers and gene content for lifestyle. Done 2026-10-13: 162 Madin species with traits computed from
+      their genomes, 8 literature strains from lineages Madin lacks, and 14 gene-content inputs from Pfam families.
+      With orders held out on the same test rows, typical error 2.36x to 2.17x and slow-growth AUC 0.72 to 0.77
+      (classifier 0.51 to 0.69). The model still rarely predicts more than a day for a new order.
+- [ ] More measured slow growers from the literature, strain-matched, for lineages still missing (anammox and comammox
+      pure cultures if any appear, Acidobacteria, Planctomycetes, SAR11 strains with published units).
 
 ## Notes
 

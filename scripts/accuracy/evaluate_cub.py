@@ -61,7 +61,7 @@ def main():
     fast = df["doubling_time_hours_ref"].to_numpy() < 5
     X_no = X[:, :-2]  # drops codon usage and IVYWREL
     for level in ("species", "genus", "family", "order"):
-        groups = df["species"].to_numpy() if level == "species" else df["gtdb_taxonomy"].map(lambda t, p=PREFIX.get(level): token(t, p)).to_numpy()
+        groups = df["species_group"].to_numpy() if level == "species" else df["gtdb_taxonomy"].map(lambda t, p=PREFIX.get(level): token(t, p)).to_numpy()
         print(f"--- {level.upper()} HELD OUT (mean of 7 seeds; in brackets: seeds better with codon usage)")
         print(f"{'target':24s}{'features':14s}{'R2':>8s}{'Spearman':>10s}{'error':>14s}{'fast Spearman':>16s}")
         for name, y in targets.items():

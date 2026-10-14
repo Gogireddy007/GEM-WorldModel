@@ -1,0 +1,9 @@
+species,strain,accession,doubling_time_hours,growth_temp_c,how_measured,source,doi
+Nitrosopumilus maritimus,SCM1,GCF_000018465.1,21.0,28,"minimum generation time, 500 uM ammonium, defined medium",Konneke et al. 2005 Nature 437:543,10.1038/nature03911
+Nitrososphaera viennensis,EN76,GCF_000698785.1,27.5,42,"generation time from cell counts, 1 mM pyruvate, 2 mM NH4Cl",Stieglmeier et al. 2014 IJSEM 64:2738,10.1099/ijs.0.063172-0
+Nitrososphaera gargensis,Ga9.2,GCF_000303155.1,113.4,46,"mean generation time from total protein, 0.5 mM ammonium",Palatinszky et al. 2015 Nature 524:105,10.1038/nature14856
+Nitrospira defluvii,A17,GCA_000196815.1,37.0,28,"generation time, pure culture (Table 1)",Nowka et al. 2015 Appl Environ Microbiol 81:745,10.1128/aem.02734-14
+Nitrospira moscoviensis,NSP M-1,GCF_001273775.1,32.0,37,"generation time, pure culture (Table 1)",Nowka et al. 2015 Appl Environ Microbiol 81:745,10.1128/aem.02734-14
+Nitrobacter hamburgensis,X14,GCF_000013885.1,43.0,28,"generation time, pure culture (Table 1)",Nowka et al. 2015 Appl Environ Microbiol 81:745,10.1128/aem.02734-14
+Methylacidiphilum fumariolicum,SolV,GCA_000953475.1,9.9,55,"batch on methane with ammonium, mu 0.07 per h, pH 2.7",Mohammadi et al. 2017 ISME J 11:945,10.1038/ismej.2016.171
+Nitrosotalea devanaterra,Nd1,GCA_900065925.1,57.4,25,"mu 0.29 per day at the optimum temperature, pH 5",Lehtovirta-Morley et al. 2014 FEMS Microbiol Ecol 89:542,10.1111/1574-6941.12353

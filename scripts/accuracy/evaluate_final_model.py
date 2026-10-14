@@ -46,7 +46,7 @@ def token(t, p):
 
 def columns(names, lm, s16, cub):
     keep = [i for i, n in enumerate(names) if n in deploy_features.TRAITS or n == "archaeon"]
-    keep += [i for i, n in enumerate(names) if (lm and n.startswith("lm_")) or (s16 and n.startswith("s16_")) or (cub and n in ("cub", "ivywrel"))]
+    keep += [i for i, n in enumerate(names) if (lm and n.startswith("lm_")) or (s16 and n.startswith("s16_")) or (cub and n in deploy_features.GENE_FEATURES)]
     return sorted(keep)
 
 
@@ -64,7 +64,7 @@ def oof(X, y, groups, seed):
 def main():
     processed = resolve_path(load_config("data")["paths"]["processed_dir"])
     k = load_config("features")["rrna16s"]["kmer_k"]
-    df, X, names = deploy_features.load_training_table(processed, k, with_cub=True)
+    df, X, names = deploy_features.load_training_table(processed, k, with_cub=True, with_lifestyle=True)
     rows = []
     for lm, s16, cub in itertools.product([True, False], repeat=3):
         use = df["has_cub"].to_numpy() if cub else np.ones(len(df), bool)
@@ -77,7 +77,7 @@ def main():
             y = dd[col].to_numpy(float)
             y = y if tname == "growth temperature" else np.log(y)
             for level in ("species", "genus", "family", "order"):
-                groups = dd["species"].to_numpy() if level == "species" else dd["gtdb_taxonomy"].map(lambda t, p=PREFIX.get(level): token(t, p)).to_numpy()
+                groups = dd["species_group"].to_numpy() if level == "species" else dd["gtdb_taxonomy"].map(lambda t, p=PREFIX.get(level): token(t, p)).to_numpy()
                 preds = [oof(XX, y, groups, s) for s in SEEDS]
                 resid = np.concatenate([y - p for p in preds])
                 rows.append({

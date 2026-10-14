@@ -31,7 +31,7 @@ make finetune-benchmark      # benchmark against gRodon and Phydon
 The model that makes the current predictions (gradient-boosted trees, not the encoder) is built and run with:
 
 ```bash
-make predict-all            # ribosomal HMMs, landmark phylogeny, extra species, 16S, gene features, accuracy table, predictions, report
+make predict-all            # ribosomal HMMs, landmark phylogeny, extra species, 16S, gene features and gene content, accuracy table, predictions, report
 ```
 
 or step by step, see `make help`. Predicting on a list of GEM genomes that don't have a growth-rate label, once the
@@ -52,9 +52,9 @@ be used, see `Test on HQ genomes/superseded/README.md` and the 2026-10-04 entrie
 
 ## What's real and what's approximate
 
-The labeled corpus of species with a measured growth rate is small, 597 genomes from 509 species (bacteria and archaea),
-mostly from Madin and colleagues' compilation. The growth rates are species averages, not matched to the exact strain
-that was sequenced. A genome that is not itself on the reference tree of life gets the position of its species, genus
+The labeled corpus of species with a measured growth rate is small, 767 genomes from 679 species (bacteria and archaea),
+mostly from Madin and colleagues' compilation, plus eight hand-checked strains from lineages it lacks
+(`data/curated/`). Most growth rates are species values, not matched to the exact strain that was sequenced. A genome that is not itself on the reference tree of life gets the position of its species, genus
 or family, and the table says which. Predictions are best read as rankings or as rough estimates: a typical error is a
 factor of about 2, the predictions are compressed toward the middle so very slow growth is underestimated, and accuracy
 falls for genomes with no close labeled relative.
@@ -71,7 +71,10 @@ falls for genomes with no close labeled relative.
 
 The rRNA/tRNA gene counts need `barrnap` and `tRNAscan-SE` installed to work, otherwise those columns come back
 empty rather than guessed. Codon usage bias is a from-scratch version of the standard method, computed on genes predicted with pyrodigal and ribosomal
-proteins found with Pfam models, so it is close to but not identical to gRodon's own numbers (it matches the earlier
-annotation-based values at a correlation of 0.99). The gRodon and Phydon comparisons in this project are
+proteins found with Pfam models, so it is close to but not identical to gRodon's own numbers (run on the raw genomes it matches the
+annotation-based values at a correlation of 0.997). Gene content for energy metabolism and lifestyle (methanogenesis,
+sulfate reduction, ammonia oxidation, nitrogen fixation, photosynthesis, transporter density and others) comes from Pfam
+family searches on the same predicted genes, so it is a set of presence calls, not a full annotation. The gRodon and Phydon comparisons in this project (including a faithful Phydon-style version that blends codon usage
+with the nearest relatives' growth rates) are
 reimplementations refit on the same data split, not the original published models. Real 16S extraction from raw
 genome sequences is slow, so it only covers part of the large unlabeled genome catalog, not all of it.

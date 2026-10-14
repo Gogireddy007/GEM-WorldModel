@@ -240,3 +240,79 @@ def test_drift_report_stops_inputs_from_a_different_coordinate_system():
     shifted = {"phylogeny": rng.normal(2.0, 0.4, size=(300, 16)), "16S": rng.normal(0.5, 0.1, size=(300, 16))}
     with pytest.raises(RuntimeError):
         drift_report(train, shifted)
+
+
+def test_phydon_style_uses_relatives_when_close_and_codon_usage_when_far():
+    import numpy as np
+
+    from gem_worldmodel.training.baselines import PhydonStyleBaseline
+
+    rng = np.random.default_rng(0)
+    # two well-separated clades; growth follows the clade, codon usage is only loosely related
+    phylo = np.vstack([rng.normal(0, 0.05, size=(30, 2)), rng.normal(5, 0.05, size=(30, 2))])
+    y = np.concatenate([np.full(30, 0.0), np.full(30, 3.0)]) + rng.normal(0, 0.05, 60)
+    cub = y * 0.1 + rng.normal(0, 0.3, 60)
+    species = np.array([f"s{i}" for i in range(60)])
+    model = PhydonStyleBaseline(k=3).fit(cub, phylo, np.zeros(60), species, y)
+    # a new genome inside clade 2: the prediction should follow its relatives (about 3)
+    pred = model.predict_log(np.array([0.0]), np.array([[5.0, 5.0]]), np.zeros(1), np.array(["new"]))
+    assert abs(pred[0] - 3.0) < 0.5
+
+
+def test_genome_fasta_skips_cds_and_rna_files(tmp_path):
+    from gem_worldmodel.features.cub_pipeline import genome_fasta
+
+    for name in ("GCF_1_ASM1_cds_from_genomic.fna", "GCF_1_ASM1_rna_from_genomic.fna", "GCF_1_ASM1_genomic.fna"):
+        (tmp_path / name).write_text(">x\nACGT\n")
+    assert genome_fasta(tmp_path).name == "GCF_1_ASM1_genomic.fna"
+
+
+def test_species_group_joins_synonyms_and_split_names():
+    import pandas as pd
+
+    from gem_worldmodel.features.deploy_features import species_group
+
+    df = pd.DataFrame({
+        "species": ["Microcystis aeruginosa", "Microcystis viridis", "Yersinia pestis", "Yersinia pestis", "Yersinia pseudotuberculosis", "Lonely one"],
+        "gtdb_taxonomy": ["g__Microcystis;s__Microcystis aeruginosa", "g__Microcystis;s__Microcystis aeruginosa",
+                          "g__Yersinia;s__Yersinia pestis", "g__Yersinia;s__Yersinia pseudotuberculosis",
+                          "g__Yersinia;s__Yersinia pseudotuberculosis", "g__Lonely;s__"],
+    })
+    g = species_group(df).tolist()
+    assert g[0] == g[1]
+    assert g[2] == g[3] == g[4]
+    assert g[5] == "Lonely one"
+    assert len(set(g)) == 3
+
+
+def test_lifestyle_features_rules():
+    import pandas as pd
+
+    from gem_worldmodel.features import lifestyle_genes as lg
+
+    base = {acc: 0 for acc in [*lg.FAMILIES, *lg.EVALUE_FAMILIES]}
+    cyano_no_nif = {**base, "PF00124": 4, "PF00223": 2, "PF00148": 2, "PF00142": 1, "n_genes": 2000}
+    cyano_nif = {**base, "PF00124": 4, "PF00223": 2, "PF00148": 6, "PF00142": 2, "n_genes": 2000}
+    purple_no_nif = {**base, "PF00124": 2, "PF00148": 4, "PF00142": 4, "n_genes": 2000}
+    purple_nif = {**base, "PF00124": 2, "PF00148": 8, "PF00142": 4, "n_genes": 2000}
+    aoa = {**base, "PF04896": 1, "PF00005": 20, "PF00072": 10, "n_genes": 2000}
+    rows = [cyano_no_nif, cyano_nif, purple_no_nif, purple_nif, aoa]
+    f = pd.DataFrame(lg.lifestyle_features(pd.DataFrame(rows)), columns=lg.FEATURES)
+    assert f["nitrogen_fixation"].tolist() == [0.0, 1.0, 0.0, 1.0, 0.0]
+    assert f["phototrophy"].tolist() == [1.0, 1.0, 1.0, 1.0, 0.0]
+    assert f["ammonia_monooxygenase"].tolist() == [0.0, 0.0, 0.0, 0.0, 1.0]
+    assert f.loc[4, "transporters_per_1000"] == 10.0
+    assert f.loc[4, "regulators_per_1000"] == 5.0
+
+
+def test_clean_species_keeps_candidatus_epithet():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts/accuracy/build_madin_genome_extension.py"
+    spec = importlib.util.spec_from_file_location("bmge", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod.clean_species("Candidatus Pelagibacter ubique HTCC1062") == "Candidatus Pelagibacter ubique"
+    assert mod.clean_species("Candidatus Pelagibacter sp.") == "Candidatus Pelagibacter sp."
+    assert mod.clean_species("[Clostridium] thermoalcaliphilum DSM 1") == "Clostridium thermoalcaliphilum"

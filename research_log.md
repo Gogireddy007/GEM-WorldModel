@@ -1,5 +1,171 @@
 # Research Log
 
+## 2026-10-13 (evening), more slow growers, gene content for lifestyle, and a file bug
+
+**A bug in the gene-feature validation.** The glob `*_genomic.fna` also matches NCBI's `*_cds_from_genomic.fna`, which
+sorts first. So `compute_cub_labeled.py` ran the gene finder on the annotated gene sequences of all 304 original genomes,
+not on the genomes, and `compute_cub_extension.py` did the same for 7 of 282 extension genomes. The reported check that
+the annotation-free pipeline reproduces annotation-based codon usage bias (Pearson 0.993) was therefore run on annotated
+genes. Both scripts now use `cub_pipeline.genome_fasta`, which never returns the CDS or RNA files (with a test). Run on the
+real genomes the check holds and is slightly better: Pearson 0.997, Spearman 0.996, slope 1.016. The new values agree with
+the old ones at r 0.996 (CUB) and 0.997 (IVYWREL), so downstream accuracy barely moved (own temperature, new order 2.38x to
+2.35x). Two extension genomes have suppressed RefSeq records; the download now falls back to the GenBank copy, which fixes
+Methanococcus voltae. Methanosarcina barkeri Fusaro has no sequence left in either, so it stays without gene features.
+
+**More labeled species, step 1** (`build_madin_genome_extension.py`). Madin's table has growth rates for species that
+were in neither training file because Madin's trait table has no size, GC or tRNA count for them. Every trait is now
+computed from the genome of the accession Madin gives: size and GC exactly, tRNA genes with tRNAscan-SE (bacterial or
+archaeal model), codon usage and IVYWREL with the same pipeline as GEM. On 24 genomes that also have Madin's values, size
+and GC agree at r 0.999 and 0.997 and tRNA counts are usually within one (median ratio 1.02); the one outlier, Clostridioides
+difficile (40 against 88.6), is a draft assembly in which repeated tRNA genes collapse, while Madin's value averages strains.
+Placement in GTDB is by the genome's own accession for 161 of 163. Names like "Dictyoglomus sp." are skipped, since the
+value belongs to an unnamed strain; a first version let 27 of them through and also cut "Candidatus Pelagibacter sp." to
+"Candidatus Pelagibacter", which slipped past the duplicate check against Ca. P. ubique. Both fixed (test added). Result:
+162 species (53 archaeal), 21 slower than a day.
+
+**Literature rows.** Madin has no rate for ammonia-oxidizing archaea, Nitrospira, anammox, most Acidobacteria or
+Planctomycetes, or Verrucomicrobia. Eight values were checked in the primary paper and paired with the genome of the
+measured strain (`data/curated/literature_growth_rates.csv`, with DOIs): Nitrosopumilus maritimus SCM1 21 h at 28 C
+(Konneke 2005), Nitrososphaera viennensis EN76 27.5 h at 42 C (Stieglmeier 2014), N. gargensis 113 h at 46 C (Palatinszky
+2015), Nitrosotalea devanaterra Nd1 57 h at 25 C (Lehtovirta-Morley 2014), Ca. Nitrospira defluvii 37 h at 28 C,
+N. moscoviensis 32 h at 37 C and Nitrobacter hamburgensis 43 h at 28 C (Nowka 2015, Table 1, pure cultures), and
+Methylacidiphilum fumariolicum SolV 9.9 h at 55 C (Mohammadi 2017). Left out: anammox (enrichment cultures), Gemmata
+obscuriglobus (the quoted 13 h is a budding cycle), comammox N. inopinata (no rate in Kits 2017), Ca. Nitrotoga (enrichment),
+Terriglobus (a range for several isolates), SAR11 HTCC7211 (the only record found has no units). 16S sequences for all
+genome-based rows are cut from the genome with barrnap, as for GEM (134 of 160 have a full copy). The labeled set is now
+767 genomes, 68 slower than a day against 41.
+
+**Leakage check.** Twelve new names share a GTDB species with a training name or with each other (Microcystis viridis
+is GTDB M. aeruginosa, [Haemophilus] ducreyi, Acidiplasma pairs and others), and one name can sit in two GTDB species.
+Splits now group on `deploy_features.species_group`, which joins rows sharing either a name or a GTDB species, and every
+evaluation uses it. On the old data it merges only two pairs (Bacillus thuringiensis with B. cereus, Yersinia pestis with
+Y. pseudotuberculosis), so earlier numbers were barely affected.
+
+**Gene content for lifestyle, step 2** (`features/lifestyle_genes.py`, `compute_lifestyle_labeled.py`,
+`compute_lifestyle_gem.py`). 34 Pfam families searched with gathering thresholds on the predicted proteins, turned into
+14 inputs: aerobic respiration and oxidase count, complex I, hydrogenases, methanogenesis (MCR), sulfate reduction (DsrD),
+nitrogen fixation, RuBisCO, ammonia or methane monooxygenase, phototrophy, transporter and regulator density, motility,
+catalase. Two calls were checked against known biology and corrected. Archaeal ammonia oxidizers have no AmoA hit, but their
+AmoC is found at E about 1e-14 just under Pfam's threshold, so AmoC is searched with an E-value cutoff of 1e-5; the
+monooxygenase call is now positive for every ammonia oxidizer and methanotroph and nothing else. Chlorophyll synthesis
+shares the nitrogenase NifD/K family (two members in cyanobacteria, four in other phototrophs), which made
+Prochlorococcus, Synechococcus and Dinoroseobacter look like nitrogen fixers; the rule now counts only members beyond the
+pigment pathway, and the 15 phototrophs called fixers are all known diazotrophs. All 9,608 GEM genomes were counted
+without errors.
+
+**Does it help, step 3** (`evaluate_new_data_and_genes.py`, own temperature, three seeds, scored on the same 585 old rows):
+
+| orders held out | typical error | Spearman | slow AUC, ranking | slow AUC, classifier | faster called slow |
+|---|---|---|---|---|---|
+| before | 2.36x | 0.52 | 0.72 | 0.51 | 0.18% |
+| + new species | 2.34x | 0.54 | 0.75 | 0.66 | 0.31% |
+| + gene content | 2.22x | 0.57 | 0.72 | 0.56 | 0.18% |
+| + both | 2.17x | 0.58 | 0.77 | 0.69 | 0.37% |
+
+With orders held out, error, Spearman and both AUCs improve in all three seeds; with species held out both AUCs improve in
+all three (classifier 0.68 to 0.83) and error and Spearman in two of three. The 20 C target improves on the same rows too
+(orders held out 2.12x to 2.07x, Spearman 0.76 to 0.79). The bar set for this work, an AUC above about 0.75 for slower than a
+day with orders held out, is met by ranking (0.77) but not by the classifier (0.69), and false slow calls rose from 1 row to
+0 to 3 rows of 544 depending on the seed. The model still almost never predicts more than a day for a new order, so it ranks
+slow organisms better without calling them slow.
+
+Across all labeled genomes, without any correction for relatedness: ammonia or methane oxidizers have a median doubling
+time of 85 h (n 14, inflated because the literature search went looking for slow nitrifiers), methanogens 6.1 h, phototrophs
+9.7 h, nitrogen fixers 5.3 h, all against about 2.3 h for the rest; transporter density falls with doubling time (Spearman
+-0.26) and motility and catalase go with faster growth. In the trained model (permutation importance on the training fit, not
+held out), transporter density is the most useful new input and third overall, after codon usage and IVYWREL. This fits the low-energy explanation for slow growth, but it is a
+correlation across a phylogenetically clumped set, not a test of it.
+
+**Deployment.** The final model, accuracy table, comparisons and GEM predictions now use 767 rows and the gene content.
+The full accuracy table changes test set (755 rows with gene features instead of 585), so it is not comparable line for line:
+own temperature typical error 1.92x, 2.07x, 2.24x, 2.26x and Spearman 0.69, 0.65, 0.60, 0.57 from same genus to new order.
+The model beats Phydon-style and gRodon-style in 30 of 30 seeds each, now including new orders at the organism's own
+temperature (2.27x against 2.95x and 2.59x). With orders held out the calibrated chance of being slower than a day beats the
+base rate (Brier 0.076 against 0.082), where before it did not. Real MAGs without 16S: own temperature 2.14x from MAGs
+against 1.71x from isolates (was 2.23x and 2.10x), 20 C value 2.07x against 1.79x (was 2.00x and 1.81x). Trained on the
+original corpus only, the eight literature strains are predicted badly (3.9x), which is the point of adding them: nothing
+like them was in the corpus. GEM: median 3.3 h, 58 genomes (0.6%) predicted above a day, 21 of them Anaerolineales and 15
+ammonia-oxidizing archaea (Nitrososphaerales); 60% of those carry an energy-metabolism marker against 18% of all genomes.
+The archaeal calls rest on four literature strains and should be read with that in mind. Drift check passed (largest shift
+0.83 training SD). The report and table were regenerated with two new columns, `energy_metabolism_markers` and
+`transporters_per_1000_genes`.
+
+## 2026-10-13 (later), trying to recover very slow growth, and why it does not work
+
+The predictions are squeezed toward the middle (held out, only 1.6% of species predicted above 24 hours against 7.0%
+measured, slope of prediction on measurement about 0.4). `scripts/accuracy/evaluate_slow_growth.py` tested the obvious
+fixes on the doubling time at the organism's own temperature, three seeds:
+
+| species held out | typical error | Spearman | slope | predicted >24 h | slow species found | faster called slow | error on slow species |
+|---|---|---|---|---|---|---|---|
+| current (median loss) | 1.91x | 0.66 | 0.39 | 1.6% | 22% | 0.1% | 9.0x |
+| squared-error loss | 1.93x | 0.66 | 0.45 | 2.9% | 24% | 1.2% | 7.5x |
+| stretched to the measured spread | 2.06x | 0.66 | 0.66 | 7.3% | 31% | 5.5% | 7.2x |
+| rare values weighted up | 2.10x | 0.62 | 0.46 | 3.2% | 24% | 1.6% | 5.7x |
+
+Stretching the predictions gets the share right but finds only a third of the slow species while calling 5.5% of the
+faster ones slow, and costs typical error; weighting helps the error on slow species but hurts ranking. With whole orders
+held out nothing works: the current model finds none of the slow species, stretching finds 9% with 6% false calls, and a
+separate classifier for "slower than 24 hours" is at chance (AUC 0.49), against 0.68 for simply ranking by the current
+prediction.
+
+The reason showed up when turning predictions into a probability of being slower than 24 hours
+(`calibrate_slow_probability.py`, isotonic curve on held-out predictions, checked across seeds). Of the 10 held-out
+predictions above 15 hours, 9 are relatives in one family, Anaerolineaceae (Leptolinea, Bellilinea, Levilinea,
+Longilinea, Anaerolinea), and 9 of the 10 are truly slower than 24 hours; between 5 and 15 hours only about 1 in 7 is.
+The calibrated probability beats the base rate when species or genera are held out (Brier 0.051 and 0.052 against
+0.065) and barely at all when families or orders are (0.062 and 0.064). So the model recognizes slow growth mainly when
+a close relative is a known slow grower. The genome features themselves (size, GC, tRNA, codon usage, IVYWREL, 16S)
+carry little general signal for slow growth, which fits the point that codon usage bias fades above about 5 hours. The
+probability column was not shipped, since its long end rests on one clade and would be overconfident elsewhere. The
+report explains how to read long and short predictions, with the numbers computed from the held-out files. Recovering
+slow growth will need either features that capture a slow lifestyle (gene content) or many more measured slow growers.
+
+## 2026-10-13, comparison with gRodon and Phydon on the final data
+
+The last comparison with the published tools came before the extra species, the archaea and the gene features, and it
+had a weakness worth stating plainly: the "Phydon" it used was gradient-boosted trees on codon usage bias and genome
+traits, which is not Phydon's method. Phydon (Xu, Zakem and Weissman 2025, and the package README) blends a codon-based
+gRodon estimate with a phylogenetic estimate from the measured growth rates of the nearest relatives, in its default
+geometric-mean mode as gRodon^P x Phylopred^(1-P), where P, the probability that the gRodon estimate beats the
+phylogenetic one, depends on the distance to the nearest training relative and on the gRodon estimate. So the earlier
+"beats Phydon" statements compared against a weaker stand-in.
+
+Added `training/baselines.py:PhydonStyleBaseline` with that design, refit on our folds: gRodon part as a linear
+regression of log doubling time on codon usage bias, Phylopred as the distance-weighted mean over the three nearest
+training species (distance between GTDB landmark vectors standing in for tree distance, bacteria and archaea compared
+only within their own tree, a species never its own relative), and P as a logistic function of the nearest-relative
+distance and the gRodon estimate, learned from out-of-fold predictions inside the training data. A unit test checks that
+a genome inside a known clade follows its relatives. The old stand-in is kept for continuity.
+
+`scripts/accuracy/benchmark_against_published.py`: 584 rows (492 bacterial, 92 archaeal, 496 species), identical folds,
+whole species, genera, families or orders held out, five seeds, both targets. Typical error with Spearman in brackets,
+all rows:
+
+| held out | target | ours | Phydon-style | gRodon-style | old stand-in |
+|---|---|---|---|---|---|
+| species | 20 C | 1.87x (0.81) | 2.07x (0.76) | 2.72x (0.61) | 2.30x (0.74) |
+| species | own temperature | 1.90x (0.67) | 2.11x (0.58) | 2.33x (0.34) | 2.23x (0.55) |
+| genus | 20 C | 1.86x (0.80) | 2.24x (0.74) | 2.72x (0.61) | 2.26x (0.73) |
+| genus | own temperature | 2.07x (0.60) | 2.42x (0.45) | 2.36x (0.33) | 2.30x (0.48) |
+| family | 20 C | 1.95x (0.78) | 2.39x (0.67) | 2.74x (0.60) | 2.39x (0.72) |
+| family | own temperature | 2.15x (0.58) | 2.58x (0.40) | 2.40x (0.31) | 2.47x (0.47) |
+| order | 20 C | 2.09x (0.76) | 2.45x (0.67) | 2.72x (0.61) | 2.39x (0.72) |
+| order | own temperature | 2.35x (0.52) | 2.65x (0.33) | 2.35x (0.33) | 2.40x (0.46) |
+
+Log R2 for the 20 C value with species held out: ours 0.642, Phydon-style 0.565, gRodon-style 0.380. Our model is better
+on log R2 and Spearman in 5 of 5 seeds against every comparison at every level and target, except the old stand-in on
+bacteria with orders held out (4 of 5 and 3 of 5). On typical error it beats Phydon-style in every seed and comparison,
+and gRodon-style in all but one case: genomes from new orders at their own temperature, where the typical errors tie at
+2.35x (ours better in 3 of 5 seeds) but ours ranks them far better (0.52 against 0.33). The Phydon-style gap widens with
+distance, as expected, since its relative-based part has less to work with. Results for bacteria alone are the same in
+direction.
+
+Read this as a comparison of methods on the same data, not of the released software: everything is refit on our folds,
+our codon statistic is one MILC measure where Phydon's full mode uses three, and tree distance is approximated. The HQ
+report now includes a table from `published_comparison.csv`, with the win counts taken from the file (30 of 30
+seed-level comparisons against Phydon-style, 28 of 30 against gRodon-style).
+
 ## 2026-10-12, gene-based features, the temperature question, and a rebuilt report
 
 This worked through the "do first" list: codon usage bias for the GEM genomes, a check of the temperature correction,

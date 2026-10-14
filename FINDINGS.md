@@ -274,6 +274,26 @@ rest (area under the curve 0.79) but not how slow, and very slow growth is under
 with a measured growth rate (718 genomes, 48 species) the raw doubling time has a typical error of 2.5x from the MAGs
 against 1.9x from isolates, with ranking mostly preserved.
 
+Update, 2026-10-13: the earlier comparisons used a "Phydon" that was really gradient-boosted trees on codon usage and
+genome traits, not Phydon's method. A faithful reimplementation of Phydon's design (a codon-based estimate blended with
+the nearest relatives' growth rates, weighted by how far the nearest relative is), refit on the same folds, is still beaten
+on every metric in every seed at every level of novelty: for the 20 C value with species held out, typical error 1.87x
+against 2.07x (Phydon-style) and 2.72x (gRodon-style), Spearman 0.81 against 0.76 and 0.61; with orders held out 2.09x
+against 2.45x and 2.72x. gRodon-style ties on typical error only for new orders at the organism's own temperature, where
+it ranks far worse. These are reimplementations refit on our data, not the published software.
+
+Update, 2026-10-13 (evening): two changes aimed at slow growth. The labeled set grew to 767 genomes and 68 species slower
+than a day, with 162 Madin species whose traits were computed from their own genomes and eight hand-checked strains from
+lineages Madin lacks (ammonia-oxidizing archaea, Nitrospira and other nitrite oxidizers). And the model now sees gene content
+for energy metabolism and lifestyle (methanogenesis, sulfate reduction, ammonia oxidation, nitrogen fixation, phototrophy,
+transporter and regulator density, motility, catalase). With whole orders held out, on the same test rows, typical error went
+from 2.36x to 2.17x and the area under the curve for picking out organisms slower than a day from 0.72 to 0.77, improving in
+every seed, though the model still rarely predicts more than a day for a new order. Slow growers are enriched for
+chemolithotrophs, methanogens, nitrogen fixers and phototrophs, and transporter density falls with doubling time, which fits a
+low-energy explanation of slow growth; these are correlations across related organisms, not a controlled test. The same
+round found that the earlier gene-feature validation had run on annotated gene files (a file-pattern bug); on real genomes it
+holds (Pearson 0.997).
+
 How far to trust a prediction depends on how close the genome is to a labeled species. With whole lineages held
 out, typical error and log R2 are 2.13x and 0.44 for new species, 2.21x and 0.36 for new genera, 2.54x and 0.21
 for new families, and 2.51x and 0.20 for new orders. About 60% of the HQ GEM genomes have no labeled relative at

@@ -56,9 +56,11 @@ def main():
     table["typical_fold_error"] = table["typical_fold_error"].round(2)
     table["codon_usage_bias"] = table["codon_usage_bias"].round(4)
     table["ivywrel_fraction"] = table["ivywrel_fraction"].round(4)
+    table["transporters_per_1000_genes"] = table["transporters_per_1000_genes"].round(1)
     cols = ["genome_id", "doubling_time_hours_at_growth_temp", "range_low_hours", "range_high_hours", "typical_fold_error",
             "predicted_growth_temp_c", "doubling_time_hours_at_20C", "hot_organism", "nearest_labeled_relative", "model_used",
-            "phylogeny_rank_used", "codon_usage_bias", "ivywrel_fraction", "ribosomal_proteins_found", "genome_size_bp", "gc_content", "trna_count",
+            "phylogeny_rank_used", "codon_usage_bias", "ivywrel_fraction", "ribosomal_proteins_found",
+            "energy_metabolism_markers", "transporters_per_1000_genes", "genome_size_bp", "gc_content", "trna_count",
             "mimag_quality", "completeness", "contamination", "gtdb_phylum", "gtdb_family", "gtdb_genus", "ecosystem_category",
             "ecosystem_type", "habitat"]
     table[cols].sort_values("genome_id").to_csv(FOLDER / "hq_genome_predictions.csv", index=False)
@@ -83,9 +85,41 @@ def main():
     ib = ind[(ind.archaeon == 0) & (ind.target == "own temperature")]
     ib20 = ind[(ind.archaeon == 0) & (ind.target == "20 C")]
     from scipy.stats import spearmanr
+    comp_all = pd.read_csv(processed / "published_comparison.csv")
+    comp_all = comp_all[(comp_all.subset == "all") & comp_all.held_out.isin(["species", "genus", "order"])]
+    comp = comp_all.groupby(["target", "held_out", "model"])[["r2_log", "spearman", "fold_error"]].mean()
+    seed_err = comp_all.pivot_table(index=["target", "held_out", "seed"], columns="model", values="fold_error")
+    wins = {m: (int((seed_err["ours"] < seed_err[m]).sum()), len(seed_err)) for m in ("Phydon-style", "gRodon-style")}
+    comp_rows = []
+    for lvl, label in (("species", "new species"), ("genus", "new genus"), ("order", "new order")):
+        for target, tlabel in (("20 C", "20 C value"), ("own temperature", "own temperature")):
+            r = [comp.loc[(target, lvl, m)] for m in ("ours", "Phydon-style", "gRodon-style")]
+            comp_rows.append([f"{label}, {tlabel}"] + [f"{x.fold_error:.2f}x ({x.spearman:.2f})" for x in r])
+    comp_table = table_html(comp_rows, ["Held out, target", "This model", "Phydon-style", "gRodon-style"])
     cal = pd.read_csv(FOLDER / "calibration_data_labeled_species.csv")
     from sklearn.metrics import roc_auc_score
     slope = np.polyfit(np.log(cal.measured_hours), np.log(cal.predicted_hours), 1)[0]
+    fam_of = dict(zip(lab["species"], lab["gtdb_taxonomy"].map(lambda t: level(t, "f__")), strict=False))
+    cal["family"] = cal["species"].map(fam_of)
+    long_pred = cal[cal.predicted_hours > 15]
+    long_fams = long_pred["family"].value_counts()
+    long_top, long_top_n = long_fams.index[0], int(long_fams.iloc[0])
+    long_slow = 100 * (long_pred.measured_hours > 24).mean()
+    mid_pred = cal[(cal.predicted_hours > 5) & (cal.predicted_hours <= 15)]
+    mid_slow = 100 * (mid_pred.measured_hours > 24).mean()
+    chk = pd.read_csv(processed / "slow_probability_check.csv").set_index("held_out")
+    nd = pd.read_csv(processed / "new_data_and_genes.csv")
+    nd = nd[(nd["test rows"] == "before rows") & (nd.held_out == "order")].groupby("setup")[["AUC, ranking", "AUC, classifier", "typical error"]].mean()
+    n_lit = len(pd.read_csv(processed / "literature_extension.csv"))
+    n_slow_lab = int((lab["doubling_time_hours"] > 24).sum())
+    beats_base = chk.loc["order", "brier"] < chk.loc["order", "brier_base_rate"] - 0.002
+    order_brier = ("is better than guessing from the overall share, though not by much" if beats_base else "is barely better than guessing from the overall share")
+    g_new = comp.loc[("own temperature", "order", "gRodon-style")].fold_error / comp.loc[("own temperature", "order", "ours")].fold_error
+    grodon_note = ("For those organisms gRodon-style is about as close on typical error at the organism's own temperature, but it ranks them much worse."
+                   if g_new < 1.05 else "gRodon-style does not depend on relatives, so it holds up better than Phydon-style for those organisms, but it is still behind on both typical error and ranking.")
+    slow_markers = pred.loc[pred[d] > 24, "energy_metabolism_markers"].fillna("")
+    slow_with_marker = 100 * (~slow_markers.isin(["", "none of these"])).mean() if len(slow_markers) else 0.0
+    all_with_marker = 100 * (~pred["energy_metabolism_markers"].fillna("").isin(["", "none of these"])).mean()
     slow = cal.measured_hours > 24
     auc = roc_auc_score(slow, cal.predicted_hours)
     share_meas, share_pred = 100 * slow.mean(), 100 * (cal.predicted_hours > 24).mean()
@@ -166,20 +200,28 @@ temperatures can be compared. For hot-growing organisms this is an extrapolation
 so it should be read as a relative score and not a prediction of real growth.</li>
 <li><b>nearest_labeled_relative</b>, <b>model_used</b> and <b>phylogeny_rank_used</b>, which say how close the genome is to a
 species with a measured growth rate and which inputs the prediction could use.</li>
+<li><b>energy_metabolism_markers</b>, which energy-metabolism genes were found (methanogenesis, sulfate reduction, ammonia or
+methane oxidation, nitrogen fixation, phototrophy, RuBisCO), and <b>transporters_per_1000_genes</b>, the density of nutrient
+transporter genes, which is high in organisms that live on rich, changing food supplies.</li>
 <li>The genome traits, <b>codon_usage_bias</b>, <b>ivywrel_fraction</b>, assembly quality (<b>completeness</b>, <b>contamination</b>), taxonomy and
 habitat from the GEM catalog.</li>
 </ul>
 
 <h2>How the prediction works</h2>
 
-<p>Five kinds of information are taken from each genome's DNA: its size, GC content and number of tRNA genes; how strongly
+<p>Six kinds of information are taken from each genome's DNA: its size, GC content and number of tRNA genes; how strongly
 its ribosomal protein genes favor particular codons (codon usage bias, a known signature of fast growth); the share of its
-proteins made of the amino acids I, V, Y, W, R, E and L, which rises with growth temperature; where it sits on the tree of
+proteins made of the amino acids I, V, Y, W, R, E and L, which rises with growth temperature; which genes for making a
+living it carries (energy metabolism such as methanogenesis, sulfate reduction, ammonia oxidation, nitrogen fixation and
+photosynthesis, plus the density of transporters, regulators, motility and catalase genes); where it sits on the tree of
 life; and its 16S gene. Genes were predicted directly from the DNA, so no annotation was needed, and the same steps were
 applied to the species with measured growth rates and to the GEM genomes.</p>
 
 <p>A model was trained on {n_lab} genomes from {n_species} species with a measured growth rate ({n_lab - n_arch_lab} bacterial
-genomes and {n_arch_lab} archaeal genomes), mostly from the compilation by Madin and colleagues (2020). It predicts three things: the doubling
+genomes and {n_arch_lab} archaeal genomes), mostly from the compilation by Madin and colleagues (2020), plus {n_lit} strains
+from lineages that compilation lacks (ammonia-oxidizing archaea, Nitrospira and other nitrite oxidizers, a
+verrucomicrobial methanotroph), each checked against the original paper and paired with the genome of the measured
+strain. {n_slow_lab} of the labeled genomes double more slowly than once a day. It predicts three things: the doubling
 time at the organism's own growth temperature, the growth temperature itself, and the doubling time rescaled to 20 C.
 Growth temperature matters because rescaling multiplies a hot-growing organism's doubling time by a large factor, about 4 for
 organisms growing at 30 to 45 C, 16 at 45 to 60 C and 48 at 60 to 80 C, so a model can look accurate on the rescaled value
@@ -226,9 +268,32 @@ qualify), so assembling genomes from the environment costs some accuracy, while 
 
 <p>The model compresses the range. Among the held-out species, {share_meas:.0f}% have a measured doubling time above 24 hours
 but only {share_pred:.1f}% are predicted to, and a tenfold change in the measured time shows up as about a
-{10 ** slope:.1f}-fold change in the prediction. It can tell that a very slow species is slower than most (it separates species above
-24 hours from the rest with an area under the curve of {auc:.2f}) but not how slow it is. Read the predictions as a
-relative score, and expect very slow growth to be underestimated.</p>
+{10 ** slope:.1f}-fold change in the prediction. It ranks very slow species above most others (area under the curve {auc:.2f}) but does not say how slow
+they are. Where it does predict long times, that is mostly because a close relative is known to grow slowly: {long_top_n}
+of the {len(long_pred)} held-out predictions above 15 hours are in one family, {long_top}, and {long_slow:.0f}% of those are truly
+slower than 24 hours, while only {mid_slow:.0f}% of predictions between 5 and 15 hours are. Adding measured slow growers and the
+energy-metabolism genes helped most where it was weakest, for organisms with no labeled relative in the same order: on the
+same test species, the area under the curve for picking out organisms slower than 24 hours rose from
+{nd.loc['before', 'AUC, ranking']:.2f} to {nd.loc['+ both', 'AUC, ranking']:.2f} when ranking by the prediction, and from
+{nd.loc['before', 'AUC, classifier']:.2f} to {nd.loc['+ both', 'AUC, classifier']:.2f} for a separate slow-growth classifier, and typical error fell from
+{nd.loc['before', 'typical error']:.2f}x to {nd.loc['+ both', 'typical error']:.2f}x. With whole orders held out, a calibrated chance of being slower than 24 hours
+{order_brier} (Brier score {chk.loc['order', 'brier']:.3f} against {chk.loc['order', 'brier_base_rate']:.3f}). Of the GEM genomes predicted to take longer than a day,
+{slow_with_marker:.0f}% carry one of the energy-metabolism markers, against {all_with_marker:.0f}% of all genomes. The model still rarely predicts
+more than a day for a new lineage, and other fixes (other losses, reweighting rare values, stretching the predictions to the
+measured spread) did not recover slow growth without making other predictions worse. Read the predictions as a relative score, a long
+prediction as a sign that the genome resembles known slow growers, and a short one as no guarantee of fast growth.</p>
+
+<p>We also compared the model with reimplementations of the two published tools, refit on exactly the same data and
+the same held-out splits: gRodon, which predicts from codon usage bias alone, and Phydon, which blends that with the
+growth rates of the nearest relatives on the tree, weighting the relatives less the further away they are. The table
+gives the typical error and, in brackets, the ranking accuracy, averaged over five repeats. Counting each repeat
+separately, the model had the lower typical error in {wins['Phydon-style'][0]} of {wins['Phydon-style'][1]} comparisons with
+Phydon-style and {wins['gRodon-style'][0]} of {wins['gRodon-style'][1]} with gRodon-style. The gap with Phydon-style
+widens for organisms without close relatives, because its relative-based part has little to go on there. {grodon_note} These are reimplementations refit on our data,
+not the published fits, and our codon statistic is a single measure where Phydon's full mode uses three, so this
+compares the methods rather than the released software.</p>
+
+{comp_table}
 
 <p>Weak spots. Ranking among fast growers (doubling time under 5 hours) is the weakest part. Codon usage bias helped most
 there, but it is still only moderate. Archaea are covered by far fewer labeled species than bacteria, mostly hyperthermophiles
@@ -260,15 +325,20 @@ family, among families with at least 25 genomes the fastest are {fast_fams}, and
 <h2>What to keep in mind</h2>
 <ul>
 <li>These are statistical estimates, not measurements, and are best used for ranking and for finding groups.</li>
-<li>The growth rates used for training are species averages from the literature and are not matched to the exact strain
-that was sequenced. Growth rate can differ a lot between strains of one species.</li>
+<li>Most growth rates used for training are species values from the literature and are not matched to the exact strain
+that was sequenced. Growth rate can differ a lot between strains of one species. The rows added from the literature, and the
+Madin species whose traits were computed from a named genome, are closer to strain-matched.</li>
+<li>The energy-metabolism markers are presence calls from protein family searches. An incomplete genome can miss a gene, and
+a few enzyme families are shared with other pathways (chlorophyll synthesis shares a family with nitrogenase, which the calls
+correct for).</li>
 <li>Labeled species are cultured organisms, and the genomes here are mostly uncultured. Predictions for lineages far from
 anything cultured rest on weaker evidence, which the table's nearest-relative column reflects.</li>
 <li>The training values are minimal doubling times under good lab conditions, not growth in the environment.</li>
 <li>Genomes assembled from the environment lose some repeated genes, so rRNA counts and sometimes tRNA counts are
 underestimated, and incomplete genomes miss ribosomal proteins. We checked the pipeline on real GEM genomes of known species,
 but only for the {len(mo)} species that have them.</li>
-<li>We did not rerun the comparison with the published tools Phydon and gRodon on the final data.</li>
+<li>The comparison with gRodon and Phydon uses our reimplementations refit on the same data, not the released
+software with its published fit.</li>
 </ul>
 
 <h2>Files</h2>

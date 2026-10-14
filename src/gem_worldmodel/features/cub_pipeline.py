@@ -22,6 +22,21 @@ from gem_worldmodel.features import cub
 MIN_TRAINING_BP = 100_000
 
 
+def genome_fasta(folder):
+    """The genome FASTA in an NCBI download folder, never the CDS or RNA files.
+
+    NCBI names them <assembly>_genomic.fna, <assembly>_cds_from_genomic.fna and
+    <assembly>_rna_from_genomic.fna, so a plain *_genomic.fna pattern also
+    matches the gene files, and they sort first.
+    """
+    folder = Path(folder)
+    for suffix in (".fna", ".fna.gz"):
+        hits = sorted(p for p in folder.glob(f"*_genomic{suffix}") if "_from_genomic" not in p.name)
+        if hits:
+            return hits[0]
+    return None
+
+
 def read_contigs(path) -> list[bytes]:
     path = Path(path)
     opener = gzip.open if path.suffix == ".gz" else open

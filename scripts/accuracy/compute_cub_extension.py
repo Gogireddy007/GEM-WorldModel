@@ -8,16 +8,12 @@ pipeline is run, the same one used for the original corpus and for GEM MAGs.
 Writes extension_cub.csv.
 """
 
-import glob
-import re
-import time
 from multiprocessing import Pool
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pyreadr
-import requests
 
 from gem_worldmodel.data import ncbi_genomes
 from gem_worldmodel.features import cub_pipeline
@@ -26,35 +22,18 @@ from gem_worldmodel.utils.config import load_config, resolve_path
 HMM = "data/raw/ribosomal_pfam.hmm"
 
 
-def ftp_dir(accession):
-    """Genome folder on NCBI's FTP, from the directory listing (E-utilities rate-limit parallel lookups)."""
-    prefix, digits = accession.split("_")[0], accession.split("_")[1].split(".")[0]
-    parent = f"https://ftp.ncbi.nlm.nih.gov/genomes/all/{prefix}/{digits[0:3]}/{digits[3:6]}/{digits[6:9]}/"
-    for attempt in range(4):
-        try:
-            html = requests.get(parent, timeout=60).text
-            m = re.search(rf'href="({accession}[^"/]*)/?"', html)
-            return parent + m.group(1) if m else None
-        except Exception:  # noqa: BLE001
-            time.sleep(2 * (attempt + 1))
-    return None
-
-
 def work(args):
     species, accession = args
     empty = {"species": species, "accession": accession, "cub": np.nan, "ivywrel": np.nan, "n_genes": np.nan, "n_ribosomal": np.nan}
     try:
         folder = Path("data/raw/ncbi_genomes") / accession
-        cached = sorted(glob.glob(str(folder / "*_genomic.fna.gz")))
-        if cached:
-            gz = Path(cached[0])
+        cached = cub_pipeline.genome_fasta(folder)
+        if cached is not None:
+            gz = cached
         else:
-            ftp = ftp_dir(accession)
-            if ftp is None:
+            gz = ncbi_genomes.fetch_genomic_fasta(accession, folder)
+            if gz is None:
                 return empty
-            base = ftp.rstrip("/").split("/")[-1]
-            gz = folder / f"{base}_genomic.fna.gz"
-            ncbi_genomes._download_gz(f"{ftp}/{base}_genomic.fna.gz", gz, folder / f"{base}_genomic.fna")
         r = cub_pipeline.genome_cub(gz, HMM)
         return {**empty, **r}
     except Exception as exc:  # noqa: BLE001
