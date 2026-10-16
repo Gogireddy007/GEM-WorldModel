@@ -68,11 +68,13 @@ photosynthesis, plus the density of transporters, regulators, motility and catal
 life; and its 16S gene. Genes were predicted directly from the DNA, so no annotation was needed, and the same steps were
 applied to the species with measured growth rates and to the GEM genomes.</p>
 
-<p>A model was trained on 767 genomes from 679 species with a measured growth rate (611 bacterial
+<p>A model was trained on 755 genomes from 670 species with a measured growth rate (599 bacterial
 genomes and 156 archaeal genomes), mostly from the compilation by Madin and colleagues (2020), plus 8 strains
 from lineages that compilation lacks (ammonia-oxidizing archaea, Nitrospira and other nitrite oxidizers, a
 verrucomicrobial methanotroph), each checked against the original paper and paired with the genome of the measured
-strain. 68 of the labeled genomes double more slowly than once a day. It predicts three things: the doubling
+strain. 58 of the labeled genomes double more slowly than once a day. 9 values from the compilation were left
+out because they are clearly not maximal growth rates (for example methanotroph values of several days from a study of growth at
+low temperature); the list and the evidence are in <code>data/curated/label_exclusions.csv</code>. It predicts three things: the doubling
 time at the organism's own growth temperature, the growth temperature itself, and the doubling time rescaled to 20 C.
 Growth temperature matters because rescaling multiplies a hot-growing organism's doubling time by a large factor, about 4 for
 organisms growing at 30 to 45 C, 16 at 45 to 60 C and 48 at 60 to 80 C, so a model can look accurate on the rescaled value
@@ -91,7 +93,7 @@ looks more distant than it is.</p>
 most GEM genomes have no close relative among the species with measured rates, and accuracy falls as the nearest relative gets
 more distant. The table gives the numbers for each situation, using the full model.</p>
 
-<table><tr><th>Nearest labeled relative</th><th>Share of genomes</th><th>Typical error</th><th>Ranking (Spearman)</th><th>80% range around the prediction</th><th>Typical error, 20 C value</th><th>Ranking, 20 C value</th></tr><tr><td>same genus</td><td>11%</td><td>1.9x</td><td>0.69</td><td>x0.31 to x4.37</td><td>1.9x</td><td>0.78</td></tr><tr><td>same family, new genus</td><td>24%</td><td>2.1x</td><td>0.64</td><td>x0.28 to x4.76</td><td>2.0x</td><td>0.76</td></tr><tr><td>same order, new family</td><td>27%</td><td>2.2x</td><td>0.60</td><td>x0.25 to x5.87</td><td>2.0x</td><td>0.75</td></tr><tr><td>new order</td><td>38%</td><td>2.3x</td><td>0.57</td><td>x0.23 to x5.61</td><td>2.1x</td><td>0.74</td></tr></table>
+<table><tr><th>Nearest labeled relative</th><th>Share of genomes</th><th>Typical error</th><th>Ranking (Spearman)</th><th>80% range around the prediction</th><th>Typical error, 20 C value</th><th>Ranking, 20 C value</th></tr><tr><td>same genus</td><td>11%</td><td>1.9x</td><td>0.70</td><td>x0.32 to x4.33</td><td>1.9x</td><td>0.80</td></tr><tr><td>same family, new genus</td><td>24%</td><td>2.0x</td><td>0.66</td><td>x0.29 to x4.41</td><td>1.9x</td><td>0.80</td></tr><tr><td>same order, new family</td><td>27%</td><td>2.1x</td><td>0.59</td><td>x0.26 to x5.44</td><td>2.0x</td><td>0.78</td></tr><tr><td>new order</td><td>38%</td><td>2.3x</td><td>0.54</td><td>x0.23 to x5.60</td><td>2.1x</td><td>0.77</td></tr></table>
 
 <img src="charts/01_accuracy_by_novelty.png" alt="Accuracy by novelty">
 <div class="caption">Figure 1. Typical error and ranking accuracy when a whole lineage is held out. Blue is the doubling time at
@@ -102,11 +104,11 @@ when a genus relative is known and about 2.3 when none is, and the
 ranking of genomes from fast to slow is moderately reliable, better for close relatives. The predictions are best used to
 rank genomes and to find groups that are likely fast or slow, not as exact doubling times.</p>
 
-<p>Two further checks. First, we trained on the original species only and predicted 297 bacterial species it had never
+<p>Two further checks. First, we trained on the original species only and predicted 295 bacterial species it had never
 seen: typical error 2.2x at the organism's own temperature
-(ranking 0.56) and 2.1x for the 20 C
-value (ranking 0.68). Second, because the GEM genomes are assembled from
-environmental samples and not isolates, we checked the pipeline on 718 real GEM genomes from 48 species that have a
+(ranking 0.54) and 2.0x for the 20 C
+value (ranking 0.70). Second, because the GEM genomes are assembled from
+environmental samples and not isolates, we checked the pipeline on 717 real GEM genomes from 47 species that have a
 measured growth rate, each species held out of training. Typical error was 2.1x from the GEM genomes against
 1.7x from the isolate genomes of the same species (this check used the model without 16S so that more species
 qualify), so assembling genomes from the environment costs some accuracy, while the ranking is almost unchanged.</p>
@@ -117,19 +119,19 @@ qualify), so assembling genomes from the environment costs some accuracy, while 
 <img src="charts/06_real_mags.png" alt="Real MAGs">
 <div class="caption">Figure 3. Species with a measured growth rate and GEM genomes, predicted from the isolate genome and from the GEM genomes.</div>
 
-<p>The model compresses the range. Among the held-out species, 9% have a measured doubling time above 24 hours
-but only 1.2% are predicted to, and a tenfold change in the measured time shows up as about a
-2.6-fold change in the prediction. It ranks very slow species above most others (area under the curve 0.82) but does not say how slow
-they are. Where it does predict long times, that is mostly because a close relative is known to grow slowly: 8
-of the 18 held-out predictions above 15 hours are in one family, Anaerolineaceae, and 72% of those are truly
-slower than 24 hours, while only 21% of predictions between 5 and 15 hours are. Adding measured slow growers and the
-energy-metabolism genes helped most where it was weakest, for organisms with no labeled relative in the same order: on the
-same test species, the area under the curve for picking out organisms slower than 24 hours rose from
-0.72 to 0.77 when ranking by the prediction, and from
-0.51 to 0.69 for a separate slow-growth classifier, and typical error fell from
-2.35x to 2.17x. With whole orders held out, a calibrated chance of being slower than 24 hours
-is better than guessing from the overall share, though not by much (Brier score 0.076 against 0.082). Of the GEM genomes predicted to take longer than a day,
-60% carry one of the energy-metabolism markers, against 18% of all genomes. The model still rarely predicts
+<p>The model compresses the range. Among the held-out species, 8% have a measured doubling time above 24 hours
+but only 0.9% are predicted to, and a tenfold change in the measured time shows up as about a
+2.9-fold change in the prediction. It ranks very slow species above most others (area under the curve 0.84) but does not say how slow
+they are. Where it does predict long times, that is mostly because a close relative is known to grow slowly: 9
+of the 16 held-out predictions above 15 hours are in one family, Anaerolineaceae, and 69% of those are truly
+slower than 24 hours, while only 19% of predictions between 5 and 15 hours are. We added measured slow growers and the
+energy-metabolism genes to address this. Scored on the same test species, with whole species held out the typical error went from
+1.86x to 1.83x and the area under the curve of a separate
+slow-growth classifier from 0.69 to 0.76. For organisms with no labeled relative in the same order there was no gain: typical error was lower in 1 of 3 runs and the slow-growth ranking better in 0 of 3 (typical error
+2.19x to 2.20x, area under the curve when ranking by the prediction
+0.78 to 0.74), so they do not solve slow growth for new lineages. With whole orders held out, a calibrated chance of being slower than 24 hours
+is better than guessing from the overall share, though not by much (Brier score 0.069 against 0.072). Of the GEM genomes predicted to take longer than a day,
+23% carry one of the energy-metabolism markers, against 18% of all genomes. The model still rarely predicts
 more than a day for a new lineage, and other fixes (other losses, reweighting rare values, stretching the predictions to the
 measured spread) did not recover slow growth without making other predictions worse. Read the predictions as a relative score, a long
 prediction as a sign that the genome resembles known slow growers, and a short one as no guarantee of fast growth.</p>
@@ -144,7 +146,7 @@ widens for organisms without close relatives, because its relative-based part ha
 not the published fits, and our codon statistic is a single measure where Phydon's full mode uses three, so this
 compares the methods rather than the released software.</p>
 
-<table><tr><th>Held out, target</th><th>This model</th><th>Phydon-style</th><th>gRodon-style</th></tr><tr><td>new species, 20 C value</td><td>1.89x (0.78)</td><td>2.13x (0.72)</td><td>2.67x (0.57)</td></tr><tr><td>new species, own temperature</td><td>1.93x (0.69)</td><td>2.19x (0.58)</td><td>2.59x (0.30)</td></tr><tr><td>new genus, 20 C value</td><td>1.97x (0.76)</td><td>2.23x (0.69)</td><td>2.68x (0.56)</td></tr><tr><td>new genus, own temperature</td><td>2.09x (0.64)</td><td>2.52x (0.45)</td><td>2.59x (0.29)</td></tr><tr><td>new order, 20 C value</td><td>2.12x (0.75)</td><td>2.57x (0.61)</td><td>2.73x (0.55)</td></tr><tr><td>new order, own temperature</td><td>2.27x (0.57)</td><td>2.95x (0.26)</td><td>2.59x (0.29)</td></tr></table>
+<table><tr><th>Held out, target</th><th>This model</th><th>Phydon-style</th><th>gRodon-style</th></tr><tr><td>new species, 20 C value</td><td>1.85x (0.81)</td><td>2.06x (0.74)</td><td>2.66x (0.58)</td></tr><tr><td>new species, own temperature</td><td>1.91x (0.70)</td><td>2.12x (0.58)</td><td>2.46x (0.31)</td></tr><tr><td>new genus, 20 C value</td><td>1.92x (0.80)</td><td>2.15x (0.72)</td><td>2.66x (0.58)</td></tr><tr><td>new genus, own temperature</td><td>2.02x (0.66)</td><td>2.40x (0.47)</td><td>2.45x (0.31)</td></tr><tr><td>new order, 20 C value</td><td>2.14x (0.77)</td><td>2.46x (0.65)</td><td>2.67x (0.58)</td></tr><tr><td>new order, own temperature</td><td>2.33x (0.54)</td><td>2.82x (0.30)</td><td>2.54x (0.28)</td></tr></table>
 
 <p>Weak spots. Ranking among fast growers (doubling time under 5 hours) is the weakest part. Codon usage bias helped most
 there, but it is still only moderate. Archaea are covered by far fewer labeled species than bacteria, mostly hyperthermophiles
@@ -152,11 +154,11 @@ and methanogens, and groups with no labeled archaeal relative are less reliable 
 
 <h2>What came out</h2>
 
-<p>The predicted doubling time at the organism's own growth temperature has a median of 3.3 hours (middle 90% from
-0.8 to 12), against 2.5 hours (middle 90% from 0.3 to 44) measured for the labeled species. The
+<p>The predicted doubling time at the organism's own growth temperature has a median of 3.5 hours (middle 90% from
+0.7 to 10), against 2.5 hours (middle 90% from 0.3 to 34) measured for the labeled species. The
 spread is much narrower for the reason given above: when the model is unsure it pulls the prediction toward the middle, so
 the spread of the predictions understates the spread of real growth rates. About 8% of genomes are predicted to grow
-at 45 C or above. As a check on the growth temperature, which the model was not told anything about, 65% of the
+at 45 C or above. As a check on the growth temperature, which the model was not told anything about, 66% of the
 396 genomes from hot spring and other thermal habitats are predicted to grow at 45 C or above, against
 1% of the human-associated genomes. The second number is not zero, so a few mesophiles are being called hot. Treat the
 <b>hot_organism</b> flag as a hint, not a measurement.</p>
@@ -165,8 +167,8 @@ at 45 C or above. As a check on the growth temperature, which the model was not 
 <div class="caption">Figure 4. Predicted doubling times for the GEM genomes against measured times for the labeled species.</div>
 
 <p>By habitat, genomes from the built environment habitat group are predicted fastest (median 1.3 hours)
-and those from terrestrial slowest (6.3 hours). The model was never told the habitat. By
-family, among families with at least 25 genomes the fastest are Enterobacteriaceae (0.6 h), Streptococcaceae (0.7 h), Sphingobacteriaceae (0.7 h), Lactobacillaceae (0.8 h), and the slowest are Gemmataceae (14 h), SG8-4 (11 h), Pedosphaeraceae (10 h), Hyphomonadaceae (7 h).</p>
+and those from wastewater slowest (6.3 hours). The model was never told the habitat. By
+family, among families with at least 25 genomes the fastest are Enterobacteriaceae (0.4 h), Sphingobacteriaceae (0.7 h), Thermaceae (0.8 h), Enterococcaceae (0.8 h), and the slowest are Gemmataceae (12 h), SG8-4 (10 h), UBA3495 (8 h), Pedosphaeraceae (7 h). Thermaceae grow hot, so their short time is at their own high temperature, and the 20 C column ranks them differently.</p>
 
 <img src="charts/04_by_habitat.png" alt="By habitat" style="max-width:80%">
 <div class="caption">Figure 5. Predicted growth by habitat.</div>
@@ -187,7 +189,7 @@ anything cultured rest on weaker evidence, which the table's nearest-relative co
 <li>The training values are minimal doubling times under good lab conditions, not growth in the environment.</li>
 <li>Genomes assembled from the environment lose some repeated genes, so rRNA counts and sometimes tRNA counts are
 underestimated, and incomplete genomes miss ribosomal proteins. We checked the pipeline on real GEM genomes of known species,
-but only for the 48 species that have them.</li>
+but only for the 47 species that have them.</li>
 <li>The comparison with gRodon and Phydon uses our reimplementations refit on the same data, not the released
 software with its published fit.</li>
 </ul>

@@ -55,6 +55,33 @@ FAMILIES = {
     "PF00669": "flagellin N-terminal",
     "PF00015": "methyl-accepting chemotaxis protein",
     "PF00199": "catalase",
+    # energy metabolism, added 2026-10-15 (energy_features)
+    "PF14710": "respiratory nitrate reductase NarG, N-terminal",
+    "PF02665": "respiratory nitrate reductase gamma subunit NarI",
+    "PF03892": "periplasmic nitrate reductase NapB",
+    "PF02239": "cd1 nitrite reductase NirS",
+    "PF18764": "nitrous oxide reductase NosZ",
+    "PF04976": "DMSO/TMAO reductase anchor DmsC",
+    "PF02300": "fumarate reductase subunit C",
+    "PF02313": "fumarate reductase subunit D",
+    "PF11854": "outer membrane porin MtrB/PioB",
+    "PF22111": "decaheme cytochrome MtrC/MtrF",
+    "PF22112": "decaheme cytochrome OmcA",
+    "PF03598": "CO dehydrogenase/acetyl-CoA synthase beta",
+    "PF03599": "CO dehydrogenase/acetyl-CoA synthase delta",
+    "PF00213": "F-type ATP synthase delta (OSCP)",
+    "PF00119": "F-type ATP synthase subunit a",
+    "PF01496": "V/A-type ATP synthase subunit I",
+    "PF01991": "V/A-type ATP synthase subunit E",
+    "PF05896": "Na+-translocating NADH:quinone oxidoreductase NqrA",
+    "PF24836": "NqrA second domain (not in RnfC)",
+    "PF04400": "Na+-NQR maturation protein NqrM",
+    "PF13375": "Rnf complex subunit RnfC",
+    "PF03977": "Na+-pumping decarboxylase beta subunit",
+    "PF04208": "Na+-pumping methyltransferase MtrA",
+    "PF02901": "pyruvate formate-lyase",
+    "PF00871": "acetate kinase",
+    "PF01515": "phosphotransacetylase",
 }
 
 # searched with an E-value cutoff instead of the gathering threshold: the
@@ -70,6 +97,13 @@ FEATURES = [
     "aerobic_respiration", "oxidase_count", "complex_i", "hydrogenase_count", "methanogenesis",
     "sulfate_reduction", "nitrogen_fixation", "rubisco", "ammonia_monooxygenase", "phototrophy",
     "transporters_per_1000", "regulators_per_1000", "motility", "catalase",
+]
+
+
+ENERGY_FEATURES = [
+    "nitrate_respiration", "denitrification", "dmso_tmao_reduction", "fumarate_reductase", "extracellular_electron_transfer",
+    "wood_ljungdahl", "electron_acceptor_classes", "f_type_atpase", "va_type_atpase", "na_nqr", "rnf",
+    "na_decarboxylase", "sodium_pumps", "fermentation_genes", "fermentation_only",
 ]
 
 
@@ -138,4 +172,56 @@ def lifestyle_features(counts) -> np.ndarray:
         c["PF00669"] > 0,
         c["PF00199"] > 0,
     ]
-    return np.column_stack([np.asarray(col, dtype=float) for col in cols])
+    out = np.column_stack([np.asarray(col, dtype=float) for col in cols])
+    out[c["n_genes"].isna().to_numpy()] = np.nan
+    return out
+
+
+def energy_features(counts) -> np.ndarray:
+    """Energy-metabolism inputs from a table of family counts, in ENERGY_FEATURES order.
+
+    Electron acceptor classes counted: oxygen (terminal oxidase), nitrate (NarG or NapB), nitrous oxide
+    (NosZ, the denitrification marker), sulfate (DsrD), metals outside the cell (Mtr/Omc), DMSO or TMAO, fumarate
+    (E. coli-type reductase only) and CO2 (methyl-coenzyme M reductase or the Wood-Ljungdahl
+    CO dehydrogenase/acetyl-CoA synthase). "Fermentation only" means fermentation genes and none of
+    those acceptors and no phototrophy, so an organism using an acceptor these families miss is
+    counted as a fermenter. Rows without gene counts come back as NaN.
+
+    Checked against known organisms (2026-10-15): the NirS heme d1 family (PF02239) and the NarI
+    gamma subunit (PF02665) are counted but not used, since they hit many organisms that neither
+    denitrify nor respire nitrate (a common propeller fold and a generic membrane cytochrome); Na-NQR
+    needs an NqrA-specific domain or NqrM besides the NqrA barrel, which E. coli's RnfC-like protein hits;
+    the Wood-Ljungdahl call uses the acetyl-CoA synthase beta subunit (PF03598) only, since the delta
+    subunit family (PF03599) also hits Bacillus, Anabaena and Caldicellulosiruptor. Known misses: the NarG
+    of Mycobacterium tuberculosis lacks the N-terminal domain used for nitrate respiration, fumarate
+    reductases other than the E. coli type are not detected, and syntrophy has no single-gene marker
+    (the four syntrophs in the labeled set share no pattern that separates them from other anaerobes).
+    """
+    c = counts
+
+    def has(*accs):
+        return c[list(accs)].sum(axis=1) > 0
+
+    oxygen = has("PF00115", "PF01654")
+    nitrate = has("PF14710", "PF03892")
+    denitrification = has("PF18764")
+    sulfate = has("PF08679")
+    eet = has("PF11854", "PF22111", "PF22112")
+    dmso = has("PF04976")
+    fumarate = has("PF02300", "PF02313")
+    methanogen = has("PF02249", "PF02745", "PF02241")
+    wood_ljungdahl = has("PF03598")
+    acceptors = (oxygen.astype(int) + nitrate + denitrification + sulfate + eet + dmso + fumarate + (methanogen | wood_ljungdahl))
+    phototroph = has("PF00124", "PF00223")
+    na_nqr = has("PF05896") & has("PF24836", "PF04400")
+    rnf, na_dec, mtr = has("PF13375"), has("PF03977"), has("PF04208")
+    fermentation = has("PF02901") | (has("PF00871") & has("PF01515"))
+    cols = [
+        nitrate, denitrification, dmso, fumarate, eet, wood_ljungdahl, acceptors,
+        has("PF00213", "PF00119"), has("PF01496", "PF01991"), na_nqr, rnf, na_dec,
+        na_nqr.astype(int) + rnf + na_dec + mtr,
+        fermentation, fermentation & (acceptors == 0) & ~phototroph,
+    ]
+    out = np.column_stack([np.asarray(col, dtype=float) for col in cols])
+    out[c["n_genes"].isna().to_numpy()] = np.nan
+    return out

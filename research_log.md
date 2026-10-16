@@ -1,6 +1,127 @@
 # Research Log
 
+## 2026-10-15 (later), richer energy-metabolism features: a direct test of the low-energy idea
+
+The earlier markers mostly measured the machinery of fast growth, so `lifestyle_genes.energy_features` adds features about
+how an organism makes energy, from 26 more Pfam families (all with curated gathering thresholds, searched on the same
+predicted proteins): nitrate respiration (NarG or NapB), denitrification (NosZ), DMSO/TMAO and E. coli-type fumarate
+respiration, metal reduction outside the cell (MtrB, MtrC/MtrF, OmcA), the Wood-Ljungdahl pathway (acetyl-CoA synthase),
+the number of electron acceptor classes (these plus oxygen, sulfate and CO2 by methanogenesis), F-type and V/A-type ATP
+synthase, sodium energetics (Na+-NQR, Rnf, Na+-pumping decarboxylases, and their count with the methanogen Mtr pump), and
+fermentation genes and "fermentation only" (fermentation genes and none of the acceptors).
+
+Checked on 24 well-known organisms before use. Three families had to be dropped or tightened: the NirS heme d1 family hit
+22% of genomes (12 copies in Methanosarcina), the NarI gamma subunit hit Desulfovibrio and Methanosarcina, the CODH/ACS delta
+subunit hit Bacillus, Anabaena and Caldicellulosiruptor, and the NqrA barrel alone hit E. coli, which has no Na+-NQR. After
+that the calls match the biology: nitrate respiration in E. coli, Bacillus subtilis, Lactobacillus plantarum, Campylobacter
+and Wolinella; NosZ only in Paracoccus, Pseudomonas aeruginosa and Wolinella; metal reduction in Shewanella and Geobacter;
+Wood-Ljungdahl in acetogens, methanogens, Archaeoglobus and Dehalococcoides; V/A-type ATP synthase in methanogens and both
+types in Enterococcus; Na+-NQR in Vibrio, Shewanella, Pseudomonas and Bacteroides; fermentation only in Thermotoga,
+Streptococcus and Clostridium acetobutylicum. Known misses: the NarG of Mycobacterium tuberculosis, fumarate reductases
+other than the E. coli type. Syntrophy was dropped: the four syntrophs in the labeled set (Syntrophus, Syntrophobacter,
+Pelotomaculum, Syntrophothermus) share no pattern in these families that separates them from other anaerobes, and there is
+no single-gene marker for it.
+
+Controlled test (`test_lifestyle_phylogenetic.py`, phylogenetic regression, 593 species groups, lambda 0.73, now 29 inputs):
+none of the new energy features has a significant effect (all Benjamini-Hochberg adjusted p 0.32 or more). The number of
+electron acceptor classes is 0.97x per SD, fermentation only 0.98x, Wood-Ljungdahl 1.19x, sodium pumps 1.00x per SD. Nitrate
+respiration looks strongly faster across species (0.38x) but is 0.79x and not significant after the control; F-type ATP
+synthase carriers lean faster (0.62x, adjusted p 0.32). With the stricter correction for 29 inputs catalase becomes
+borderline (adjusted p 0.08); regulator density still holds (0.79x, adjusted p 0.02).
+
+Model (`evaluate_energy_features.py`, 743 rows, five seeds): adding the 15 energy features to the deployed inputs makes no
+consistent difference. Species held out: typical error 1.91x against 1.94x with them (better in 1 of 5 seeds); families:
+2.15x against 2.14x; orders: 2.33x against 2.31x (4 of 5), slow-growth AUC 0.74 either way. So they are not added to the
+deployed model; `load_training_table(with_energy=True)` keeps them available.
+
+Reading. With relatedness controlled, how many ways an organism can respire, whether it can only ferment, which ATP
+synthase it has and whether it uses sodium energetics do not explain its maximal growth rate in this set. That is a real
+negative result for the simplest form of the low-energy explanation, with two limits: the labeled set has few organisms on
+the thinnest energy budgets (5 ammonia oxidizers, no anammox, few syntrophs), and gene presence says what an organism can
+do, not the energy yield of what it does when growing fastest.
+
+
+## 2026-10-15, bad labels found, the slow-growth gains of 2026-10-13 withdrawn, and a controlled test of the low-energy idea
+
+**Bad labels.** A controlled test of the gene-content associations (below) first gave methane or ammonia oxidizers a
+fivefold slowdown. The checks traced it to four methanotrophs (Methylosinus sporium 187 h, M. trichosporium 131 h,
+Methylocystis parvus 152 h, Methylomonas methanica 112 h). All four come from one study, Kevbrina et al. 2001, "Growth of
+mesophilic methanotrophs at low temperatures", through Corkrey et al.'s compilation, where they are 2,700 to 4,600 h at 20
+to 30 C (Madin's values are about a 24th of that, so a units step happened somewhere). The same study gives Methylococcus
+capsulatus about 4,600 h, against 1.87 h elsewhere in Madin. Because one source made a whole genus look slow, a screen against
+relatives cannot catch this kind of error. `scripts/accuracy/screen_labels.py` then flagged the 16 species that are at least
+5 times from both their held-out prediction and their genus relatives and listed every source record behind them (Madin's
+per-source files, `data/raw/madin_prepared`). Five more were clearly not maximal rates: Flavobacterium segetis 433 h and
+F. weaverense 178 h (recorded at 13 and 16 C; Bergey's gives 6.8 and 2.9 h), Acidithiobacillus ferrooxidans 386 h and
+A. thiooxidans 74 h (one temperature study, 70 and 13 times their genus; other organisms in that study look fine), and
+Klebsiella oxytoca 11.7 h (a lag-phase study in meat). The other eleven are real (Mycobacterium leprae 240 h, Clostridium
+perfringens 0.11 h confirmed by two sources, psychrotolerant methanogens from their species descriptions) and stay. The nine
+are listed with the evidence in `data/curated/label_exclusions.csv` and `deploy_features.load_training_table` drops them, so
+every model and test now runs without them: 755 genomes, 670 species, 58 slower than a day (was 68).
+
+**What changed when they went.** Everything was rerun. The full model's typical error at the organism's own temperature is
+1.90x, 2.02x, 2.13x and 2.31x from same genus to new order (Spearman 0.70, 0.66, 0.59, 0.54), against 1.92x, 2.07x, 2.24x
+and 2.26x before; the 20 C value improved at every level (1.87x to 2.11x, Spearman 0.80 to 0.77). The test set also lost the
+bad values, so these are not strictly comparable. The model still beats Phydon-style and gRodon-style in 40 of 40 seed
+comparisons each. Real MAGs without 16S: 2.11x from MAGs against 1.67x from isolates at own temperature, 1.99x against 1.60x
+for the 20 C value. Bacteria never seen in training (original corpus only): 2.22x, Spearman 0.54. With orders held out the
+calibrated chance of being slower than a day barely beats the base rate (Brier 0.069 against 0.072).
+
+**The 2026-10-13 slow-growth gains do not survive.** Rerun on clean labels (`evaluate_new_data_and_genes.py`, same 574 test
+rows for every setup): with orders held out, adding the new species and gene content gives typical error 2.19x to 2.20x
+(lower in 1 of 3 seeds) and slow-growth ranking AUC 0.78 to 0.74 (lower in 3 of 3); the classifier is erratic (0.57 to
+0.57). The reported 2.36x to 2.17x and 0.72 to 0.77 came largely from the fake-slow methanotrophs, which the monooxygenase
+marker helped "find". With species held out there is a modest real gain: typical error 1.86x to 1.83x, slow classifier AUC
+0.69 to 0.76, gene content alone lowering the error in 3 of 3 seeds. In GEM, 26 genomes (0.3%) are now predicted slower
+than a day, 22 of them Anaerolineales; the 15 ammonia-oxidizing archaea predicted slow before are no longer, since their
+long predictions were borrowed from the bad methanotroph labels through the shared marker.
+
+**Controlled test of the low-energy idea** (`test_lifestyle_phylogenetic.py`, final numbers without the nine values).
+Phylogenetic generalized least squares on the GTDB trees, one row per species group with a growth temperature (593), log
+doubling time at own temperature with growth temperature and an archaea flag as covariates, 527 groups at their own GTDB
+species representative and 66 at a stand-in of the same genus, bacteria and archaea as separate blocks. Pagel's lambda 0.73;
+the data reject both lambda 0 and lambda 1 by a wide margin, so doubling time is strongly patterned by the tree and raw
+comparisons across species overstate effects.
+
+| input | across species | PGLS (95% CI) | adjusted p | all inputs together |
+|---|---|---|---|---|
+| regulator density, per SD | 0.78x | 0.79x (0.69 to 0.90) | 0.010 | 0.72x |
+| catalase | 0.48x | 0.73x (0.59 to 0.91) | 0.041 | 0.77x |
+| hydrogenases, per SD | 1.20x | 1.13x (1.00 to 1.27) | 0.20 | 1.09x |
+| nitrogen fixation | 1.53x | 1.19x (0.94 to 1.50) | 0.47 | 1.17x |
+| transporter density, per SD | 0.83x | 0.87x (0.76 to 1.00) | 0.20 | 0.95x |
+| ammonia or methane oxidation (n 7) | 3.78x | 1.49x (0.47 to 4.80) | 0.73 | 1.06x |
+| sulfate reduction (n 24) | 2.85x | 1.33x (0.64 to 2.79) | 0.73 | 1.29x |
+| phototrophy | 2.52x | 0.93x (0.52 to 1.66) | 0.88 | 0.79x |
+| complex I | 1.57x | 0.97x (0.72 to 1.30) | 0.88 | 1.01x |
+| methanogenesis | 0.74x | 0.75x (0.27 to 2.09) | 0.73 | 0.61x |
+| genome size, per doubling | 0.89x | 0.89x (0.73 to 1.09) | 0.50 | 1.25x |
+
+Fold change in doubling time (above 1 is slower), per standard deviation for densities and counts; adjusted p is
+Benjamini-Hochberg over 15 inputs. Six checks (`check_lifestyle_phylogenetic.py`, output saved to
+`lifestyle_phylogenetic_checks.txt`): (1) leaving out one phylum at a time, catalase stays 0.70x to 0.77x but is borderline
+without Pseudomonadota (p 0.056), and regulator density depends on Pseudomonadota (0.98x, p 0.81 without it); (2) ammonia
+oxidizers alone 1.9x slower (p 0.44, five species), methanotrophs alone not different; (3) for slower than a day (logistic
+regression with ten phylogenetic eigenvectors), transporter density has an odds ratio of 0.44 per SD (p 0.0015), and among
+groups slower than 5 hours regulator (0.86x) and transporter density (0.85x) still go with faster growth; (4) without the
+temperature covariate catalase and regulators lose their effect, on the 20 C value they are strong, so these genes and
+growth temperature are entangled; (5) all exact tips carry the group's GTDB species and all stand-ins its genus; (6) dropping
+any single species changes no conclusion. Two of the checks use approximations: the logistic model controls for relatedness
+through ten eigenvectors rather than a full phylogenetic logistic model, and the single-species check holds lambda fixed.
+
+**Reading.** Once relatedness is controlled and the bad labels are out, none of the energy-metabolism markers (ammonia or
+methane oxidation, methanogenesis, sulfate reduction, nitrogen fixation, phototrophy, carbon fixation, complex I, aerobic
+respiration) has a clear effect on doubling time. For chemolithotrophs this is mostly a lack of power: five ammonia oxidizers,
+estimated about 2x slower with a wide interval. What holds is a weaker copiotroph signature: more regulators and catalase
+go with faster growth (regulators mainly within Pseudomonadota), and transporter-poor genomes are more likely to double less
+than once a day. That is consistent with slow growers lacking the machinery for rich, changing conditions, but these markers
+measure that machinery, not energy yield, so the low-energy explanation is not yet tested directly.
+
 ## 2026-10-13 (evening), more slow growers, gene content for lifestyle, and a file bug
+
+Correction, 2026-10-15: nine labels used here were not maximal growth rates (see the 2026-10-15 entry). With them removed,
+the order-level gains reported below (typical error 2.36x to 2.17x, slow AUC 0.72 to 0.77) disappear; only a modest gain
+with species held out remains. The raw gene-content associations below were also inflated by four of those labels.
 
 **A bug in the gene-feature validation.** The glob `*_genomic.fna` also matches NCBI's `*_cds_from_genomic.fna`, which
 sorts first. So `compute_cub_labeled.py` ran the gene finder on the annotated gene sequences of all 304 original genomes,

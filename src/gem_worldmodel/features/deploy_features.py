@@ -7,6 +7,7 @@ flag for archaea.
 """
 
 import re
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -21,6 +22,7 @@ TRAITS = ["genome_size_bp", "gc_content", "trna_count"]
 KEEP = ["species", "gtdb_taxonomy", "doubling_time_hours", "doubling_time_hours_ref", "growth_temp_c"] + TRAITS
 # everything computed from the predicted proteins; a genome has all or none
 GENE_FEATURES = ["cub", "ivywrel"] + lifestyle_genes.FEATURES
+EXCLUSIONS = Path(__file__).resolve().parents[3] / "data/curated/label_exclusions.csv"
 GENOME_ROWS = {"madin_genome_extension.csv": "Madin genome extension", "literature_extension.csv": "literature"}
 
 
@@ -53,7 +55,7 @@ def species_group(df):
 
 
 def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_rows: bool = True,
-                        with_lifestyle: bool = False):
+                        with_lifestyle: bool = False, with_energy: bool = False):
     """Return (table, X, names). Rows are the original corpus plus the Madin extension.
 
     With `genome_rows=True` (the default) the rows whose traits were all
@@ -61,6 +63,7 @@ def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_r
     species with a genome accession but no traits in Madin's table, and the
     hand-checked literature rows (data/curated/literature_growth_rates.csv).
     The table has a `species_group` column (see species_group) for splits.
+    Species listed in data/curated/label_exclusions.csv are dropped.
 
     Rows whose taxonomy cannot be placed in GTDB are dropped. Missing traits or
     16S values are filled with the median of the bacterial rows. With
@@ -84,6 +87,9 @@ def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_r
                 extra["origin"] = origin
                 parts.append(extra[KEEP + ["origin", "accession", "cub", "ivywrel"]].rename(columns={"cub": "own_cub", "ivywrel": "own_ivywrel"}))
     df = pd.concat(parts, ignore_index=True)
+    if EXCLUSIONS.exists():
+        # growth rates that are not maximal growth at the stated temperature, see data/curated/README.md
+        df = df[~df["species"].isin(set(pd.read_csv(EXCLUSIONS)["species"]))].reset_index(drop=True)
     df["species_group"] = species_group(df)
     df["archaeon"] = df["gtdb_taxonomy"].map(tv.is_archaeon)
 
@@ -132,6 +138,11 @@ def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_r
         med = np.nanmedian(feats[df["has_lifestyle"].to_numpy()], axis=0)
         X = np.hstack([X, np.where(np.isnan(feats), med, feats)])
         names = names + lifestyle_genes.FEATURES
+        if with_energy:
+            energy = lifestyle_genes.energy_features(table)
+            med = np.nanmedian(energy[df["has_lifestyle"].to_numpy()], axis=0)
+            X = np.hstack([X, np.where(np.isnan(energy), med, energy)])
+            names = names + lifestyle_genes.ENERGY_FEATURES
     return df[keep].reset_index(drop=True), X[keep], names
 
 

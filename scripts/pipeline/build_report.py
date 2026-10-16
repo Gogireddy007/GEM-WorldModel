@@ -108,8 +108,21 @@ def main():
     mid_pred = cal[(cal.predicted_hours > 5) & (cal.predicted_hours <= 15)]
     mid_slow = 100 * (mid_pred.measured_hours > 24).mean()
     chk = pd.read_csv(processed / "slow_probability_check.csv").set_index("held_out")
-    nd = pd.read_csv(processed / "new_data_and_genes.csv")
-    nd = nd[(nd["test rows"] == "before rows") & (nd.held_out == "order")].groupby("setup")[["AUC, ranking", "AUC, classifier", "typical error"]].mean()
+    nd_all = pd.read_csv(processed / "new_data_and_genes.csv")
+    nd_all = nd_all[nd_all["test rows"] == "before rows"]
+    nd = nd_all[nd_all.held_out == "order"].groupby("setup")[["AUC, ranking", "AUC, classifier", "typical error"]].mean()
+    nds = nd_all[nd_all.held_out == "species"].groupby("setup")[["AUC, ranking", "AUC, classifier", "typical error"]].mean()
+    n_excluded = len(pd.read_csv(Path(__file__).resolve().parents[2] / "data/curated/label_exclusions.csv"))
+
+    def change(a, b, unit=""):
+        return f"{a:.2f}{unit} to {b:.2f}{unit}"
+
+    seeds = nd_all[nd_all.held_out == "order"].pivot_table(index="seed", columns="setup", values=["typical error", "AUC, ranking"])
+    err_better = int((seeds["typical error"]["+ both"] < seeds["typical error"]["before"]).sum())
+    auc_better = int((seeds["AUC, ranking"]["+ both"] > seeds["AUC, ranking"]["before"]).sum())
+    n_seeds = len(seeds)
+    order_note = (f"For organisms with no labeled relative in the same order there was no gain: typical error was lower in {err_better} of {n_seeds} runs "
+                  f"and the slow-growth ranking better in {auc_better} of {n_seeds}")
     n_lit = len(pd.read_csv(processed / "literature_extension.csv"))
     n_slow_lab = int((lab["doubling_time_hours"] > 24).sum())
     beats_base = chk.loc["order", "brier"] < chk.loc["order", "brier_base_rate"] - 0.002
@@ -221,7 +234,9 @@ applied to the species with measured growth rates and to the GEM genomes.</p>
 genomes and {n_arch_lab} archaeal genomes), mostly from the compilation by Madin and colleagues (2020), plus {n_lit} strains
 from lineages that compilation lacks (ammonia-oxidizing archaea, Nitrospira and other nitrite oxidizers, a
 verrucomicrobial methanotroph), each checked against the original paper and paired with the genome of the measured
-strain. {n_slow_lab} of the labeled genomes double more slowly than once a day. It predicts three things: the doubling
+strain. {n_slow_lab} of the labeled genomes double more slowly than once a day. {n_excluded} values from the compilation were left
+out because they are clearly not maximal growth rates (for example methanotroph values of several days from a study of growth at
+low temperature); the list and the evidence are in <code>data/curated/label_exclusions.csv</code>. It predicts three things: the doubling
 time at the organism's own growth temperature, the growth temperature itself, and the doubling time rescaled to 20 C.
 Growth temperature matters because rescaling multiplies a hot-growing organism's doubling time by a large factor, about 4 for
 organisms growing at 30 to 45 C, 16 at 45 to 60 C and 48 at 60 to 80 C, so a model can look accurate on the rescaled value
@@ -271,12 +286,12 @@ but only {share_pred:.1f}% are predicted to, and a tenfold change in the measure
 {10 ** slope:.1f}-fold change in the prediction. It ranks very slow species above most others (area under the curve {auc:.2f}) but does not say how slow
 they are. Where it does predict long times, that is mostly because a close relative is known to grow slowly: {long_top_n}
 of the {len(long_pred)} held-out predictions above 15 hours are in one family, {long_top}, and {long_slow:.0f}% of those are truly
-slower than 24 hours, while only {mid_slow:.0f}% of predictions between 5 and 15 hours are. Adding measured slow growers and the
-energy-metabolism genes helped most where it was weakest, for organisms with no labeled relative in the same order: on the
-same test species, the area under the curve for picking out organisms slower than 24 hours rose from
-{nd.loc['before', 'AUC, ranking']:.2f} to {nd.loc['+ both', 'AUC, ranking']:.2f} when ranking by the prediction, and from
-{nd.loc['before', 'AUC, classifier']:.2f} to {nd.loc['+ both', 'AUC, classifier']:.2f} for a separate slow-growth classifier, and typical error fell from
-{nd.loc['before', 'typical error']:.2f}x to {nd.loc['+ both', 'typical error']:.2f}x. With whole orders held out, a calibrated chance of being slower than 24 hours
+slower than 24 hours, while only {mid_slow:.0f}% of predictions between 5 and 15 hours are. We added measured slow growers and the
+energy-metabolism genes to address this. Scored on the same test species, with whole species held out the typical error went from
+{change(nds.loc['before', 'typical error'], nds.loc['+ both', 'typical error'], 'x')} and the area under the curve of a separate
+slow-growth classifier from {change(nds.loc['before', 'AUC, classifier'], nds.loc['+ both', 'AUC, classifier'])}. {order_note} (typical error
+{change(nd.loc['before', 'typical error'], nd.loc['+ both', 'typical error'], 'x')}, area under the curve when ranking by the prediction
+{change(nd.loc['before', 'AUC, ranking'], nd.loc['+ both', 'AUC, ranking'])}), so they do not solve slow growth for new lineages. With whole orders held out, a calibrated chance of being slower than 24 hours
 {order_brier} (Brier score {chk.loc['order', 'brier']:.3f} against {chk.loc['order', 'brier_base_rate']:.3f}). Of the GEM genomes predicted to take longer than a day,
 {slow_with_marker:.0f}% carry one of the energy-metabolism markers, against {all_with_marker:.0f}% of all genomes. The model still rarely predicts
 more than a day for a new lineage, and other fixes (other losses, reweighting rare values, stretching the predictions to the

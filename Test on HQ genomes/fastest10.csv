@@ -1,11 +1,11 @@
 genome_id,doubling_time_hours_at_growth_temp,range_low_hours,range_high_hours,predicted_growth_temp_c,gtdb_family,gtdb_genus,habitat
-3300011788_1,0.377,0.087,2.32,34.8,Planococcaceae,Lysinibacillus,city subway metal
-3300011660_2,0.385,0.106,1.833,36.5,Enterobacteriaceae,Atlantibacter,city subway wood
-3300011534_2,0.385,0.106,1.833,36.6,Enterobacteriaceae,Atlantibacter,city subway metal
-3300012280_2,0.39,0.108,1.859,36.7,Enterobacteriaceae,Atlantibacter,city subway wood
-3300011463_1,0.39,0.108,1.859,36.5,Enterobacteriaceae,Atlantibacter,city subway metal
-3300011541_3,0.39,0.108,1.859,36.5,Enterobacteriaceae,Atlantibacter,city subway metal
-3300011547_2,0.39,0.108,1.859,36.5,Enterobacteriaceae,Atlantibacter,city subway metal
-3300011461_2,0.39,0.108,1.859,36.5,Enterobacteriaceae,Atlantibacter,city subway metal/plastic
-3300012258_1,0.39,0.108,1.859,36.7,Enterobacteriaceae,Atlantibacter,city subway wood
-3300011527_2,0.396,0.109,1.887,36.1,Enterobacteriaceae,Atlantibacter,city subway metal
+3300011238_2,0.309,0.089,1.361,34.3,Enterobacteriaceae,Enterobacter,city subway wood
+3300013822_2,0.31,0.089,1.366,34.1,Enterobacteriaceae,Enterobacter,city subway metal/plastic
+3300014734_2,0.31,0.089,1.366,34.3,Enterobacteriaceae,Enterobacter,city subway metal
+3300029594_5,0.313,0.101,1.356,33.4,Enterobacteriaceae,Escherichia,Human fecal
+3300029181_2,0.316,0.102,1.37,35.3,Enterobacteriaceae,Escherichia,Host-associated
+3300011217_2,0.319,0.092,1.404,34.5,Enterobacteriaceae,Enterobacter,city subway wood
+3300011804_4,0.322,0.093,1.421,34.3,Enterobacteriaceae,Enterobacter,city subway metal
+3300013644_1,0.322,0.093,1.421,34.1,Enterobacteriaceae,Enterobacter,city subway metal
+3300011714_2,0.322,0.093,1.421,34.5,Enterobacteriaceae,Enterobacter,city subway wood
+3300014950_5,0.322,0.093,1.421,34.5,Enterobacteriaceae,Enterobacter,Human host-associated

@@ -282,17 +282,24 @@ against 2.07x (Phydon-style) and 2.72x (gRodon-style), Spearman 0.81 against 0.7
 against 2.45x and 2.72x. gRodon-style ties on typical error only for new orders at the organism's own temperature, where
 it ranks far worse. These are reimplementations refit on our data, not the published software.
 
-Update, 2026-10-13 (evening): two changes aimed at slow growth. The labeled set grew to 767 genomes and 68 species slower
-than a day, with 162 Madin species whose traits were computed from their own genomes and eight hand-checked strains from
-lineages Madin lacks (ammonia-oxidizing archaea, Nitrospira and other nitrite oxidizers). And the model now sees gene content
-for energy metabolism and lifestyle (methanogenesis, sulfate reduction, ammonia oxidation, nitrogen fixation, phototrophy,
-transporter and regulator density, motility, catalase). With whole orders held out, on the same test rows, typical error went
-from 2.36x to 2.17x and the area under the curve for picking out organisms slower than a day from 0.72 to 0.77, improving in
-every seed, though the model still rarely predicts more than a day for a new order. Slow growers are enriched for
-chemolithotrophs, methanogens, nitrogen fixers and phototrophs, and transporter density falls with doubling time, which fits a
-low-energy explanation of slow growth; these are correlations across related organisms, not a controlled test. The same
-round found that the earlier gene-feature validation had run on annotated gene files (a file-pattern bug); on real genomes it
-holds (Pearson 0.997).
+Update, 2026-10-13 and 2026-10-15: two changes aimed at slow growth, and a correction. The labeled set grew by 162 Madin
+species whose traits were computed from their own genomes and eight hand-checked literature strains from lineages Madin lacks,
+and the model now sees gene content for energy metabolism and lifestyle. A first evaluation showed large gains for new
+lineages, but on 2026-10-15 nine labels turned out not to be maximal growth rates (four methanotroph values of several days
+from a study of growth at low temperature, plus five others found by screening against relatives and second sources). They
+are now excluded everywhere (`data/curated/label_exclusions.csv`), and on clean labels the gains for new orders disappear;
+with species held out a modest gain remains (typical error 1.86x to 1.83x, slow classifier AUC 0.69 to 0.76). A controlled
+test of the low-energy explanation (phylogenetic regression on the GTDB trees, Pagel's lambda 0.73, six robustness checks)
+finds no clear effect of any energy-metabolism marker once relatedness is accounted for; ammonia oxidizers point the expected
+way but there are only five. What holds is a weaker copiotroph signature: regulator density and catalase go with faster
+growth, and transporter-poor genomes are more likely to double less than once a day. So the data fit the view that slow
+growers lack the machinery for rich, changing conditions. A direct test followed with energy-metabolism features (electron
+acceptor classes, nitrate and metal respiration, Wood-Ljungdahl, ATP synthase type, sodium energetics, fermentation only):
+none has a significant effect once relatedness is controlled, and adding them to the model changes nothing consistent. So
+the simplest form of the low-energy explanation is not supported here, with the caveat that the labeled set has few
+organisms on the thinnest energy budgets and gene presence does not measure energy yield. The same work
+found that the earlier gene-feature validation had run on annotated gene files (a file-pattern bug); on real genomes it holds
+(Pearson 0.997).
 
 How far to trust a prediction depends on how close the genome is to a labeled species. With whole lineages held
 out, typical error and log R2 are 2.13x and 0.44 for new species, 2.21x and 0.36 for new genera, 2.54x and 0.21

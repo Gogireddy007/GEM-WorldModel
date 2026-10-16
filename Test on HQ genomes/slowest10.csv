@@ -1,11 +1,11 @@
 genome_id,doubling_time_hours_at_growth_temp,range_low_hours,range_high_hours,predicted_growth_temp_c,gtdb_family,gtdb_genus,habitat
-3300027826_18,120.245,27.699,732.427,29.2,Koribacteraceae,,Surface soil
-3300029304_4,68.552,17.261,402.215,35.5,envOPS12,UBA5796,Anaerobic bioreactor
-3300027878_55,60.974,15.353,357.753,34.5,envOPS12,,Freshwater
-3300025458_24,58.679,18.55,277.636,41.2,Nitrosopumilaceae,Nitrosopumilus,Marine
-3300025859_13,57.73,14.536,338.719,36.2,envOPS12,UBA12294,Anaerobic digestor sludge
-3300025861_17,57.73,14.536,338.719,36.3,envOPS12,UBA12294,Anaerobic digestor sludge
-3300013138_53,54.345,13.56,332.961,38.4,envOPS12,,freshwater
-3300029822_19,54.229,14.282,269.603,39.0,Anaerolineaceae,T78,Fermentation pit mud
-3300017444_35,52.524,13.105,321.801,36.1,envOPS12,UBA12294,hot spring sediment
-3300013136_44,52.333,13.058,320.635,38.6,envOPS12,,freshwater
+3300027878_55,63.974,16.446,348.26,35.1,envOPS12,,Freshwater
+3300025861_17,61.861,15.903,336.756,36.3,envOPS12,UBA12294,Anaerobic digestor sludge
+3300025859_13,61.437,15.794,334.448,36.2,envOPS12,UBA12294,Anaerobic digestor sludge
+3300017444_50,55.637,14.303,302.875,37.1,envOPS12,OLB14,hot spring sediment
+3300029304_4,54.887,14.11,298.793,35.8,envOPS12,UBA5796,Anaerobic bioreactor
+3300021517_12,54.273,13.952,295.451,35.7,envOPS12,OLB14,Freshwater sediment
+3300025644_11,54.185,13.93,294.97,37.5,envOPS12,,Marine
+3300025846_15,53.952,15.532,237.765,37.4,Anaerolineaceae,,Arctic peat soil
+3300017444_35,51.662,13.066,279.8,36.8,envOPS12,UBA12294,hot spring sediment
+3300013138_53,47.611,12.041,257.86,37.0,envOPS12,,freshwater

@@ -316,3 +316,72 @@ def test_clean_species_keeps_candidatus_epithet():
     assert mod.clean_species("Candidatus Pelagibacter ubique HTCC1062") == "Candidatus Pelagibacter ubique"
     assert mod.clean_species("Candidatus Pelagibacter sp.") == "Candidatus Pelagibacter sp."
     assert mod.clean_species("[Clostridium] thermoalcaliphilum DSM 1") == "Clostridium thermoalcaliphilum"
+
+
+def _phylo_test_module():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts/accuracy/test_lifestyle_phylogenetic.py"
+    spec = importlib.util.spec_from_file_location("tlp", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_leaf_covariance_is_shared_path_length():
+    import dendropy
+    import numpy as np
+
+    mod = _phylo_test_module()
+    tree = dendropy.Tree.get(data="((A:1,B:2):3,C:4);", schema="newick")
+    cov = mod.leaf_covariance(tree, ["A", "B", "C"])
+    assert np.allclose(cov, [[4, 3, 0], [3, 5, 0], [0, 0, 4]])
+
+
+def test_gls_with_identity_matches_ordinary_least_squares():
+    import numpy as np
+
+    mod = _phylo_test_module()
+    rng = np.random.default_rng(0)
+    X = np.column_stack([np.ones(50), rng.normal(size=50)])
+    y = X @ np.array([1.0, 2.0]) + rng.normal(scale=0.1, size=50)
+    beta = mod.gls(y, X, np.eye(50))[0]
+    assert np.allclose(beta, np.linalg.lstsq(X, y, rcond=None)[0])
+    # with a star tree (no shared branches) lambda has nothing to act on and PGLS equals OLS
+    beta_p = mod.pgls(y, X, np.eye(50))[0]
+    assert np.allclose(beta_p, beta)
+
+
+def test_label_exclusions_file_is_well_formed():
+    from pathlib import Path
+
+    import pandas as pd
+
+    path = Path(__file__).resolve().parents[1] / "data/curated/label_exclusions.csv"
+    ex = pd.read_csv(path)
+    assert {"species", "label_hours", "reason", "source"} <= set(ex.columns)
+    assert ex["species"].is_unique
+    assert ex["reason"].str.len().gt(10).all() and ex["source"].str.len().gt(5).all()
+
+
+def test_energy_feature_rules():
+    import numpy as np
+    import pandas as pd
+
+    from gem_worldmodel.features import lifestyle_genes as lg
+
+    base = {acc: 0 for acc in [*lg.FAMILIES, *lg.EVALUE_FAMILIES]}
+    fermenter = {**base, "PF02901": 1, "PF00213": 1, "n_genes": 2000}
+    respirer = {**base, "PF00115": 1, "PF14710": 1, "PF02901": 1, "n_genes": 4000}
+    nqr_like_only = {**base, "PF05896": 1, "n_genes": 3000}
+    acetogen = {**base, "PF03598": 1, "PF13375": 1, "n_genes": 3000}
+    delta_only = {**base, "PF03599": 2, "n_genes": 3000}
+    missing = {**base, "n_genes": np.nan}
+    f = pd.DataFrame(lg.energy_features(pd.DataFrame([fermenter, respirer, nqr_like_only, acetogen, delta_only, missing])),
+                     columns=lg.ENERGY_FEATURES)
+    assert f["fermentation_only"].tolist()[:5] == [1.0, 0.0, 0.0, 0.0, 0.0]
+    assert f.loc[1, "electron_acceptor_classes"] == 2.0 and f.loc[1, "nitrate_respiration"] == 1.0
+    assert f.loc[2, "na_nqr"] == 0.0  # the NqrA barrel alone is not enough
+    assert f.loc[3, "wood_ljungdahl"] == 1.0 and f.loc[4, "wood_ljungdahl"] == 0.0
+    assert f.loc[5].isna().all()

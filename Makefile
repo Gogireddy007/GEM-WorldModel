@@ -1,4 +1,4 @@
-.PHONY: ribosomal-hmms landmarks fetch-16s madin-extension genome-rows labeled-genes gem-genes accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
+.PHONY: lifestyle-test ribosomal-hmms landmarks fetch-16s madin-extension genome-rows labeled-genes gem-genes accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
 
 PYTHON ?= .venv/bin/python
 PIP ?= .venv/bin/pip
@@ -115,6 +115,11 @@ labeled-genes: ribosomal-hmms
 gem-genes:
 	$(PYTHON) scripts/pipeline/compute_cub_gem.py --ids-file mag_validation_ids.csv hq_genome_ids_all.csv --workers 8
 	$(PYTHON) scripts/pipeline/compute_lifestyle_gem.py --ids-file mag_validation_ids.csv hq_genome_ids_all.csv --workers 8
+
+lifestyle-test:
+	$(PYTHON) scripts/accuracy/test_lifestyle_phylogenetic.py
+	PYTHONPATH=scripts/accuracy $(PYTHON) scripts/accuracy/check_lifestyle_phylogenetic.py
+	$(PYTHON) scripts/accuracy/evaluate_energy_features.py
 
 accuracy-table:
 	$(PYTHON) scripts/accuracy/evaluate_final_model.py

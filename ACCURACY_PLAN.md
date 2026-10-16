@@ -286,7 +286,10 @@ really are, a training-loss and label-distribution problem, not a feature or dat
 - [x] Re-run the loss-function and gap-species comparisons (quantile, Huber, round 1 and 2) with species held out
       and the consistent features. Done 2026-10-05: median loss is the best and is now the default, Huber and
       weighting repeated species do not matter, the 15 gap species do not help.
-- [ ] Test richer gene-content features within slow growers, controlling for lineage.
+- [x] Test richer gene-content features within slow growers, controlling for lineage. Done 2026-10-15: energy
+      features (electron acceptors, ATP synthase type, sodium energetics, fermentation only) built, checked against
+      known organisms, tested with phylogenetic regression (no significant effect) and in the model (no consistent
+      gain, not deployed). Syntrophy has no reliable gene marker.
 - [ ] Find strain-matched growth rates for the thin regions, the largest remaining lever.
 - [x] Use the landmark phylogeny to bring back the Madin species that were dropped for lack of a tree match.
       Done 2026-10-05: 194 species added, log R2 and Spearman better in 7 of 7 seeds at every novelty level,
@@ -315,8 +318,14 @@ really are, a training-loss and label-distribution problem, not a feature or dat
       labeled species, which belongs with the gene-content item.
 - [x] More slow growers and gene content for lifestyle. Done 2026-10-13: 162 Madin species with traits computed from
       their genomes, 8 literature strains from lineages Madin lacks, and 14 gene-content inputs from Pfam families.
-      With orders held out on the same test rows, typical error 2.36x to 2.17x and slow-growth AUC 0.72 to 0.77
-      (classifier 0.51 to 0.69). The model still rarely predicts more than a day for a new order.
+      Correction 2026-10-15: on clean labels the order-level gain disappears; with species held out typical error 1.86x
+      to 1.83x and slow classifier AUC 0.69 to 0.76.
+- [x] Remove bad labels and rerun. Done 2026-10-15: nine values excluded (`data/curated/label_exclusions.csv`), found by
+      tracing the methanotroph result to its source and by `screen_labels.py`. The screen cannot catch an error shared
+      by a whole genus; a source-level check (every species from a suspect study) is still worth doing for the other
+      large single-study sources in Corkrey et al.
+- [ ] The 2026-10-13 order-level slow-growth gain did not survive clean labels. Slow growth for new lineages is still
+      unsolved; richer energy features (next item) and more trustworthy slow labels are the remaining routes.
 - [ ] More measured slow growers from the literature, strain-matched, for lineages still missing (anammox and comammox
       pure cultures if any appear, Acidobacteria, Planctomycetes, SAR11 strains with published units).
 

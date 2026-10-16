@@ -52,9 +52,10 @@ be used, see `Test on HQ genomes/superseded/README.md` and the 2026-10-04 entrie
 
 ## What's real and what's approximate
 
-The labeled corpus of species with a measured growth rate is small, 767 genomes from 679 species (bacteria and archaea),
+The labeled corpus of species with a measured growth rate is small, 755 genomes from 670 species (bacteria and archaea),
 mostly from Madin and colleagues' compilation, plus eight hand-checked strains from lineages it lacks
-(`data/curated/`). Most growth rates are species values, not matched to the exact strain that was sequenced. A genome that is not itself on the reference tree of life gets the position of its species, genus
+(`data/curated/`). Nine values from the compilation that are clearly not maximal growth rates are left out, with the
+evidence for each in `data/curated/label_exclusions.csv`. Most growth rates are species values, not matched to the exact strain that was sequenced. A genome that is not itself on the reference tree of life gets the position of its species, genus
 or family, and the table says which. Predictions are best read as rankings or as rough estimates: a typical error is a
 factor of about 2, the predictions are compressed toward the middle so very slow growth is underestimated, and accuracy
 falls for genomes with no close labeled relative.
