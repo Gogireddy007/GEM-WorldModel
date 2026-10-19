@@ -16,10 +16,10 @@ import re
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
-from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import r2_score
 
 from gem_worldmodel.features import deploy_features
+from gem_worldmodel.models.deployed import DeployedRegressor
 from gem_worldmodel.utils.config import load_config, resolve_path
 
 SEEDS = [42, 1, 7, 13, 2024]
@@ -54,7 +54,7 @@ def main():
     out = []
     for tname, col in TARGETS.items():
         y = np.log(df[col].to_numpy(float))
-        pred = np.mean([GradientBoostingRegressor(random_state=s, n_estimators=200, max_depth=3, loss="quantile", alpha=0.5).fit(X[train], y[train]).predict(X[test]) for s in SEEDS], axis=0)
+        pred = np.mean([DeployedRegressor(tname, s).fit(X[train], y[train]).predict(X[test]) for s in SEEDS], axis=0)
         d = df[test].assign(truth=y[test], pred=pred, target=tname)
         out.append(d[["species", "origin", "target", "tier", "archaeon", "truth", "pred"]])
         print(f"\n{tname}: trained on {train.sum()} original rows, tested on {test.sum()} unseen species")

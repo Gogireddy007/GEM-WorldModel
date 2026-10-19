@@ -30,6 +30,7 @@ from sklearn.metrics import r2_score
 from sklearn.model_selection import GroupKFold
 
 from gem_worldmodel.features import deploy_features
+from gem_worldmodel.models.deployed import DeployedRegressor
 from gem_worldmodel.training.baselines import PhydonStyleBaseline
 from gem_worldmodel.utils.config import load_config, resolve_path
 
@@ -75,7 +76,7 @@ def main():
                 g = np.array([perm[v] for v in groups])
                 pred = {m: np.full(len(y), np.nan) for m in MODELS}
                 for tr, te in GroupKFold(5).split(X, y, g):
-                    pred["ours"][te] = GradientBoostingRegressor(random_state=seed, n_estimators=200, max_depth=3, loss="quantile", alpha=0.5).fit(X[tr], y[tr]).predict(X[te])
+                    pred["ours"][te] = DeployedRegressor(tname, seed).fit(X[tr], y[tr]).predict(X[te])
                     pred["gRodon-style"][te] = LinearRegression().fit(cub[tr, None], y[tr]).predict(cub[te, None])
                     ph = PhydonStyleBaseline(k=3).fit(cub[tr], lm[tr], domain[tr], species[tr], y[tr])
                     pred["Phydon-style"][te] = ph.predict_log(cub[te], lm[te], domain[te], species[te])

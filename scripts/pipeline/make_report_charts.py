@@ -16,10 +16,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
-from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import GroupKFold
 
 from gem_worldmodel.features import deploy_features
+from gem_worldmodel.models.deployed import DeployedRegressor
 from gem_worldmodel.utils.config import load_config, resolve_path
 
 plt.rcParams.update({
@@ -111,7 +111,7 @@ def main():
     use = lab["has_cub"].to_numpy()
     lab_rows, Xl = lab[use].reset_index(drop=True), X[use]
     y = np.log(lab_rows["doubling_time_hours"].to_numpy())
-    oof = np.mean([_oof(Xl, y, lab_rows["species"].to_numpy(), s) for s in (42, 1, 7)], axis=0)
+    oof = np.mean([_oof(Xl, y, lab_rows["species_group"].to_numpy(), s) for s in (42, 1, 7)], axis=0)
     pd.DataFrame({"species": lab_rows["species"], "archaeon": lab_rows["archaeon"].astype(int), "measured_hours": np.exp(y), "predicted_hours": np.exp(oof)}).to_csv(
         OUT.parent / "calibration_data_labeled_species.csv", index=False)
     fig, ax = plt.subplots(figsize=(6.2, 6.2))
@@ -151,7 +151,7 @@ def _oof(X, y, groups, seed):
     g = np.array([perm[v] for v in groups])
     pred = np.full(len(y), np.nan)
     for tr, te in GroupKFold(5).split(X, y, g):
-        pred[te] = GradientBoostingRegressor(random_state=seed, n_estimators=200, max_depth=3, loss="quantile", alpha=0.5).fit(X[tr], y[tr]).predict(X[te])
+        pred[te] = DeployedRegressor("own temperature", seed).fit(X[tr], y[tr]).predict(X[te])
     return pred
 
 

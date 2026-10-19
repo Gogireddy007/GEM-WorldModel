@@ -1,0 +1,37 @@
+# Settings of the deployed model, chosen by scripts/accuracy/tune_deployed_model.py. Do not edit by hand.
+own temperature:
+  hist:
+    min_samples_leaf: 20
+    max_leaf_nodes: 31
+    max_iter: 200
+    max_features: 0.5
+    learning_rate: 0.1
+    l2_regularization: 1.0
+  forest:
+    min_samples_leaf: 5
+    max_samples: 0.7
+    max_features: 0.5
+20 C:
+  hist:
+    min_samples_leaf: 5
+    max_leaf_nodes: 15
+    max_iter: 800
+    max_features: 0.5
+    learning_rate: 0.03
+    l2_regularization: 0.0
+  forest:
+    min_samples_leaf: 3
+    max_samples: null
+    max_features: 0.2
+growth temperature:
+  hist:
+    min_samples_leaf: 5
+    max_leaf_nodes: 31
+    max_iter: 200
+    max_features: 1.0
+    learning_rate: 0.05
+    l2_regularization: 1.0
+  forest:
+    min_samples_leaf: 1
+    max_samples: null
+    max_features: 0.5

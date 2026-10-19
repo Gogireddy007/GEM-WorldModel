@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.16.0, 2026-10-19
+
+New deployed learner: the average of histogram gradient boosting (median loss) and a random forest (`models/deployed.py`), with settings per target in `configs/deployed_model.yaml` (`tune_deployed_model.py`, `make tune`). Chosen by an untuned comparison (`evaluate_learners.py`) and nested tuning (`evaluate_tuning.py`), where it beat the old gradient-boosted trees at every level of novelty. All deployment scripts use it. Own-temperature error 1.81x to 2.12x from same genus to new order (was 1.86x to 2.21x), growth temperature 5.1 to 6.2 C (was 5.6 to 6.5 C).
+
+## 1.15.0, 2026-10-18
+
+The deployed model now includes the released gRodon's codon statistics (`deploy_features.GRODON_FEATURES`: codon usage bias of the highly expressed genes, consistency, codon pair bias, gRodon's log doubling time), computed for all labeled genomes and all 9,608 GEM genomes (`scripts/r/grodon_stats.R`, `scripts/pipeline/compute_grodon_gem.py`). Tested with ten seeds (`evaluate_grodon_and_temperature.py`): better at every level, new orders 2.29x to 2.18x and slow AUC 0.74 to 0.79. A predicted growth temperature as input does not help and is not used. Reran everything: own-temperature error 1.86x to 2.21x from same genus to new order (was 1.93x to 2.36x), real MAGs 1.87x against 1.81x from isolates. The report's released-tools paragraph now states the ranking result from the numbers. Makefile targets `r-packages` and `released-tools`.
+
+## 1.14.0, 2026-10-18
+
+Compared against the released gRodon (2.7.3) and Phydon (1.1.0) R packages, installed in a project library (`.Rlib`), on the same genes and species-held-out folds (`prepare_released_tools_input.py`, `compare_released_tools.py`, `scripts/r/run_released_phydon.R`, `scripts/r/run_released_grodon.R`); Phydon's own training table is stripped of each fold's species before it predicts them. The released tools get the measured growth temperature and our model does not; on equal inputs our model has the lower typical error (1.92x against 2.40x without temperature, 1.80x against 1.93x and 1.85x with it), while released gRodon ranks about as well when both get the temperature. Released gRodon's codon statistics improve our model (1.92x to 1.86x). The earlier wins were against weaker reimplementations and are now labeled as such.
+
+## 1.13.1, 2026-10-16
+
+Added `scripts/accuracy/evaluate_added_species.py` (ten seeds, same test rows): the deployed training set is not significantly different from the set without the added species at any level of novelty; the genome-based Madin species alone slightly worsen new-order predictions. The deployed model is unchanged. `load_training_table(genome_rows=...)` now also takes a list of which added sets to include.
+
+## 1.13.0, 2026-10-16
+
+Added a label check by source study (`scripts/accuracy/screen_label_sources.py`): labels are traced to their source record in Madin's per-source files and compared with evidence from other studies only, which catches a study that shifts a whole genus. Positive control: with the exclusions off it finds 8 of the 9 known bad values. On current labels all flagged studies have a plausible reason except one value, Streptomyces coelicolor (0.5 h from MediaDB, 4 times faster than another source and implausible), now the tenth exclusion. Added `scripts/accuracy/false_slow_calls.py`: on clean labels false slow calls are rare (none with species held out, one with orders held out); the problem is the reverse, slow lineages are almost never called slow. Reran everything. With orders held out the added genome-based species now look slightly harmful (worse in 3 of 3 seeds), a question for a larger comparison. Tests for both scripts; `make label-check`.
+
+## 1.12.2, 2026-10-15
+
+Tried a syntrophy marker (`lifestyle_genes.syntrophy_candidate`, rule fixed from the literature before evaluation; `scripts/accuracy/evaluate_syntrophy_marker.py`). It finds 3 of 6 known syntrophs and makes 66 false calls, mostly butyrate-producing clostridia and Thermotogales, so it is not used. Ten more Pfam families are counted for it.
+
+## 1.12.1, 2026-10-15
+
+Nitrate respiration also uses NarG domain V (catches actinobacterial NarG such as Mycobacterium tuberculosis; also counts nitrite oxidizers). The all-inputs-together model in the lifestyle test now leaves out the overlapping energy features. The slower-than-a-day check uses 20 phylogenetic eigenvectors instead of 10 (10 left the slow Anaerolineales clade unabsorbed and produced a spurious fumarate reductase effect), shows 10 and 30 as a sensitivity check, covers the energy features, and runs robustness checks on that test for anything significant. Results: no energy feature is significant; transporter density (odds ratio 0.27 per SD) and regulator density (0.36) are robustly linked to fewer slow growers; catalase is not robust at the slow end.
+
 ## 1.12.0, 2026-10-15
 
 Added energy-metabolism features (`lifestyle_genes.energy_features`, 26 more Pfam families: nitrate, nitrous oxide, DMSO/TMAO, fumarate and metal respiration, Wood-Ljungdahl, number of electron acceptor classes, F- and V/A-type ATP synthase, Na+-NQR, Rnf, sodium-pumping decarboxylases, fermentation only), checked against 24 well-known organisms with four families dropped or tightened after false hits; syntrophy has no reliable gene marker and was left out. In the phylogenetic test none of them has a significant effect, and they make no consistent difference to the model (`evaluate_energy_features.py`), so they are available via `load_training_table(with_energy=True)` but not deployed. Feature functions now return NaN for genomes without gene counts.

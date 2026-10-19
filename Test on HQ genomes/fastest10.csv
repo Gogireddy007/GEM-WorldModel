@@ -1,11 +1,11 @@
 genome_id,doubling_time_hours_at_growth_temp,range_low_hours,range_high_hours,predicted_growth_temp_c,gtdb_family,gtdb_genus,habitat
-3300011238_2,0.309,0.089,1.361,34.3,Enterobacteriaceae,Enterobacter,city subway wood
-3300013822_2,0.31,0.089,1.366,34.1,Enterobacteriaceae,Enterobacter,city subway metal/plastic
-3300014734_2,0.31,0.089,1.366,34.3,Enterobacteriaceae,Enterobacter,city subway metal
-3300029594_5,0.313,0.101,1.356,33.4,Enterobacteriaceae,Escherichia,Human fecal
-3300029181_2,0.316,0.102,1.37,35.3,Enterobacteriaceae,Escherichia,Host-associated
-3300011217_2,0.319,0.092,1.404,34.5,Enterobacteriaceae,Enterobacter,city subway wood
-3300011804_4,0.322,0.093,1.421,34.3,Enterobacteriaceae,Enterobacter,city subway metal
-3300013644_1,0.322,0.093,1.421,34.1,Enterobacteriaceae,Enterobacter,city subway metal
-3300011714_2,0.322,0.093,1.421,34.5,Enterobacteriaceae,Enterobacter,city subway wood
-3300014950_5,0.322,0.093,1.421,34.5,Enterobacteriaceae,Enterobacter,Human host-associated
+3300011456_1,0.275,0.083,0.928,36.4,Enterobacteriaceae,Enterobacter,city subway metal
+3300013626_1,0.278,0.083,0.938,36.3,Enterobacteriaceae,Enterobacter,city subway metal
+3300029257_6,0.289,0.087,0.977,36.1,Enterobacteriaceae,Enterobacter,Host-associated
+3300011201_2,0.29,0.1,1.015,35.9,Enterobacteriaceae,Klebsiella,city subway wood
+3300011674_1,0.29,0.087,0.979,36.1,Enterobacteriaceae,Enterobacter,city subway metal
+3300011631_1,0.296,0.089,1.0,35.9,Enterobacteriaceae,Enterobacter,city subway metal
+3300014950_5,0.296,0.089,1.001,36.1,Enterobacteriaceae,Enterobacter,Human host-associated
+3300011692_1,0.299,0.09,1.01,35.4,Enterobacteriaceae,Enterobacter,city subway metal
+3300013644_1,0.303,0.091,1.022,35.3,Enterobacteriaceae,Enterobacter,city subway metal
+3300011842_2,0.303,0.091,1.023,36.0,Enterobacteriaceae,Enterobacter,city subway wood

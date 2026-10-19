@@ -19,12 +19,12 @@ from ast import literal_eval
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
-from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import r2_score
 from sklearn.model_selection import GroupKFold
 
 from gem_worldmodel.features import deploy_features, rrna16s
 from gem_worldmodel.features import taxon_vectors as tv
+from gem_worldmodel.models.deployed import DeployedRegressor
 from gem_worldmodel.utils.config import load_config, resolve_path
 
 warnings.filterwarnings("ignore", message="Mean of empty slice")
@@ -55,6 +55,8 @@ def main():
     cub = pd.read_csv(processed / "gem_cub.csv").drop_duplicates("genome_id")[["genome_id", "cub", "ivywrel"]]
     genes = pd.read_csv(processed / "gem_lifestyle_genes.csv").drop_duplicates("genome_id").drop(columns=["error"])
     cub = cub.merge(genes, on="genome_id")
+    grodon = pd.read_csv(processed / "gem_grodon_stats.csv").drop_duplicates("genome_name").rename(columns={"genome_name": "genome_id"})
+    cub = cub.merge(grodon[["genome_id", "CUBHE", "ConsistencyHE", "CPB", "grodon_d"]], on="genome_id", how="left")
     mag = (ids.merge(meta, on="genome_id").merge(base, on="genome_id").merge(gc, on="genome_id")
            .merge(prof, on="genome_id", how="left").merge(cub, on="genome_id"))
     mag["sp"] = mag["ecosystem"].map(lambda t: token(t, "s__"))
@@ -101,7 +103,7 @@ def main():
                 iso = np.full(len(lab), np.nan)
                 mag_pred = np.full(len(mag), np.nan)
                 for tr, te in GroupKFold(5).split(Xv, y, g):
-                    m = GradientBoostingRegressor(random_state=seed, n_estimators=200, max_depth=3, loss="quantile", alpha=0.5).fit(Xv[tr], y[tr])
+                    m = DeployedRegressor(tname, seed).fit(Xv[tr], y[tr])
                     iso[te] = m.predict(Xv[te])
                     sel = np.isin(mag_group, list(set(species[te]))) & mag_ok
                     if sel.any():

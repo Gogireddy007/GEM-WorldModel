@@ -282,17 +282,31 @@ against 2.07x (Phydon-style) and 2.72x (gRodon-style), Spearman 0.81 against 0.7
 against 2.45x and 2.72x. gRodon-style ties on typical error only for new orders at the organism's own temperature, where
 it ranks far worse. These are reimplementations refit on our data, not the published software.
 
+Update, 2026-10-18: the released gRodon and Phydon R packages were run on the same genes and species-held-out folds
+(Phydon's own training table stripped of each fold's species). The reimplementations above were much weaker than the real
+tools, so those wins do not carry over. The released tools are given the measured growth temperature, which our model is
+not; on equal inputs our model has the lower typical error (without temperature 1.92x against 2.40x for gRodon; with it
+1.80x against 1.93x for gRodon and 1.85x for Phydon, though gRodon then ranks species slightly better, Spearman 0.73 against
+0.71), and adding released gRodon's codon statistics to our model improves it. Since 2026-10-18 they are part of the deployed
+model: own-temperature error 1.86x to 2.21x from same genus to new order (was 1.93x to 2.36x), slow-growth detection for new
+orders AUC 0.79 (was 0.74), and the gap between MAGs and isolates nearly gone (1.87x against 1.81x). Without being given the
+measured temperature, the model now matches released Phydon given it (1.86x against 1.85x).
+
 Update, 2026-10-13 and 2026-10-15: two changes aimed at slow growth, and a correction. The labeled set grew by 162 Madin
 species whose traits were computed from their own genomes and eight hand-checked literature strains from lineages Madin lacks,
 and the model now sees gene content for energy metabolism and lifestyle. A first evaluation showed large gains for new
 lineages, but on 2026-10-15 nine labels turned out not to be maximal growth rates (four methanotroph values of several days
 from a study of growth at low temperature, plus five others found by screening against relatives and second sources). They
-are now excluded everywhere (`data/curated/label_exclusions.csv`), and on clean labels the gains for new orders disappear;
-with species held out a modest gain remains (typical error 1.86x to 1.83x, slow classifier AUC 0.69 to 0.76). A controlled
+are now excluded everywhere (`data/curated/label_exclusions.csv`, ten values after a further check by source study on
+2026-10-16), and on clean labels the gains for new orders disappear, with some sign that the added species slightly hurt
+them; with species held out the slow classifier still improves (AUC 0.70 to 0.79). On clean labels the model rarely makes
+false slow calls; its weakness is the reverse, it almost never calls a new lineage slow. A controlled
 test of the low-energy explanation (phylogenetic regression on the GTDB trees, Pagel's lambda 0.73, six robustness checks)
 finds no clear effect of any energy-metabolism marker once relatedness is accounted for; ammonia oxidizers point the expected
-way but there are only five. What holds is a weaker copiotroph signature: regulator density and catalase go with faster
-growth, and transporter-poor genomes are more likely to double less than once a day. So the data fit the view that slow
+way but there are only five. What holds is a copiotroph signature: genomes with fewer transporters and fewer regulators
+are much more likely to double less than once a day (odds ratios 0.27 and 0.36 per standard deviation, robust to how
+relatedness is modeled), and regulator density goes with faster growth across the whole range (mainly within
+Pseudomonadota); catalase points the same way but is not robust. So the data fit the view that slow
 growers lack the machinery for rich, changing conditions. A direct test followed with energy-metabolism features (electron
 acceptor classes, nitrate and metal respiration, Wood-Ljungdahl, ATP synthase type, sodium energetics, fermentation only):
 none has a significant effect once relatedness is controlled, and adding them to the model changes nothing consistent. So

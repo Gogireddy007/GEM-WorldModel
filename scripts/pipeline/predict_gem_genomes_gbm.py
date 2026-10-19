@@ -18,7 +18,8 @@ Inputs for every genome:
                       fraction, a signature of growth temperature, from
                       compute_cub_gem.py, plus gene content for energy
                       metabolism and lifestyle (lifestyle_genes.py) from
-                      compute_lifestyle_gem.py, all from the same
+                      compute_lifestyle_gem.py, and the released gRodon's codon
+                      statistics from compute_grodon_gem.py, all from the same
                       annotation-free gene predictions as for the labeled genomes
 
 Three things are predicted: the doubling time at the organism's own growth
@@ -46,11 +47,11 @@ from ast import literal_eval
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import GradientBoostingRegressor
 
 from gem_worldmodel.features import deploy_features, rrna16s
 from gem_worldmodel.features import taxon_vectors as tv
 from gem_worldmodel.features.deploy_features import coarsen, combo_label, drift_report
+from gem_worldmodel.models.deployed import DeployedRegressor
 from gem_worldmodel.utils.config import load_config, resolve_path
 from gem_worldmodel.utils.logging import get_logger
 
@@ -116,7 +117,7 @@ def main():
             parts = [T_lab[rows]] + ([block[rows]] if lm else []) + ([S_lab[rows]] if s16 else []) + ([C_lab[rows]] if cub else []) + [D_lab[rows]]
             blocks.append(np.hstack(parts))
             targets.append(y)
-        model = GradientBoostingRegressor(random_state=args.seed, n_estimators=200, max_depth=3, loss="quantile", alpha=0.5)
+        model = DeployedRegressor(target, args.seed)
         return model.fit(np.vstack(blocks), np.concatenate(targets))
 
     combos = list(itertools.product([True, False], repeat=3))
@@ -137,6 +138,8 @@ def main():
     cub = pd.read_csv(processed / "gem_cub.csv").drop_duplicates("genome_id")[["genome_id", "cub", "ivywrel", "n_ribosomal"]]
     genes = pd.read_csv(processed / "gem_lifestyle_genes.csv").drop_duplicates("genome_id").drop(columns=["error"]).rename(columns={"n_genes": "n_genes_lifestyle"})
     cub = cub.merge(genes, on="genome_id", how="left").rename(columns={"n_genes_lifestyle": "n_genes"})
+    grodon = pd.read_csv(processed / "gem_grodon_stats.csv").drop_duplicates("genome_name").rename(columns={"genome_name": "genome_id"})
+    cub = cub.merge(grodon[["genome_id", "CUBHE", "ConsistencyHE", "CPB", "grodon_d"]], on="genome_id", how="left")
     gem = (ids.merge(base, on="genome_id").merge(gc, on="genome_id")
            .merge(meta[["genome_id", "ecosystem", "ecosystem_category"]], on="genome_id")
            .merge(prof, on="genome_id", how="left").merge(cub, on="genome_id", how="left"))

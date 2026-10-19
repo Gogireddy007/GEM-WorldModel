@@ -50,6 +50,10 @@ from gem_worldmodel.utils.config import load_config, resolve_path
 BINARY = ["aerobic_respiration", "complex_i", "methanogenesis", "sulfate_reduction", "nitrogen_fixation", "rubisco",
           "ammonia_monooxygenase", "phototrophy", "motility", "catalase"]
 CONTINUOUS = ["transporters_per_1000", "regulators_per_1000", "oxidase_count", "hydrogenase_count"]
+# the all-inputs-together model uses these only; the energy features below are built from overlapping
+# gene sets (the acceptor count from the individual acceptors, the pump count from the pumps), which
+# makes a joint fit with them unstable (fold changes like 0.02x)
+JOINT = BINARY + CONTINUOUS + ["log2_genome_size"]
 # energy metabolism (lifestyle_genes.energy_features), added 2026-10-15
 BINARY += ["nitrate_respiration", "denitrification", "dmso_tmao_reduction", "fumarate_reductase", "extracellular_electron_transfer",
            "wood_ljungdahl", "f_type_atpase", "va_type_atpase", "na_nqr", "rnf", "na_decarboxylase", "fermentation_only"]
@@ -243,15 +247,15 @@ def run(g, C, label, lam=None):
     out.loc[ok, "p_within_family_bh"] = multipletests(out.loc[ok, "p_within_family"], method="fdr_bh")[1]
 
     # all inputs together in one PGLS model
-    cols = BINARY + CONTINUOUS + ["log2_genome_size"]
+    cols = JOINT
     Z = g[cols].to_numpy(float)
     sd = np.where(np.isin(cols, CONTINUOUS), Z.std(axis=0), 1.0)
     Z = np.where(np.isin(cols, CONTINUOUS), (Z - Z.mean(axis=0)) / sd, Z)
     b, cov, dfr, lam_all = pgls(y, np.column_stack([base, Z]), C, lam)
     se = np.sqrt(np.diag(cov))[base.shape[1]:]
-    joint = [effect(bi, si, dfr) for bi, si in zip(b[base.shape[1]:], se, strict=True)]
-    out["fold_pgls_joint"] = [j[0] for j in joint]
-    out["p_pgls_joint"] = [j[3] for j in joint]
+    joint = {c: effect(bi, si, dfr) for c, bi, si in zip(cols, b[base.shape[1]:], se, strict=True)}
+    out["fold_pgls_joint"] = out["input"].map(lambda f: joint[f][0] if f in joint else np.nan)
+    out["p_pgls_joint"] = out["input"].map(lambda f: joint[f][3] if f in joint else np.nan)
     out["lambda_joint"] = lam_all
     return out
 
@@ -265,7 +269,7 @@ def show(out):
         fam = "" if np.isnan(r.families_with_both) else f"{int(r.families_carriers_slower)}/{int(r.families_with_both)}"
         fam_p = "" if pd.isna(getattr(r, "p_within_family_bh", np.nan)) else f"{r.p_within_family_bh:.3f}"
         print(f"{r.label:40s}{n:>5s}{r.fold_across_species:8.2f}x{r.fold_pgls:8.2f}x ({r.ci_low_pgls:.2f} to {r.ci_high_pgls:.2f})"
-              f"{r.p_pgls_bh:9.3f}{r.fold_pgls_joint:7.2f}x{fam:>17s}{fam_p:>8s}")
+              f"{r.p_pgls_bh:9.3f}{(f'{r.fold_pgls_joint:7.2f}x' if np.isfinite(r.fold_pgls_joint) else '      -'):>8s}{fam:>17s}{fam_p:>8s}")
 
 
 def main():
@@ -288,7 +292,8 @@ def main():
         results += runs
     pd.concat(results).to_csv(processed / "lifestyle_phylogenetic_test.csv", index=False)
     print("\nfold: doubling time with the gene against without (or per SD, or per genome size doubling); above 1 means slower."
-          "\nacross: no control for relatedness. joint: all inputs in one PGLS model. p adj: Benjamini-Hochberg.")
+          "\nacross: no control for relatedness. joint: the original inputs in one PGLS model (not fitted with the "
+          "energy features, which overlap each other). p adj: Benjamini-Hochberg.")
 
 
 if __name__ == "__main__":

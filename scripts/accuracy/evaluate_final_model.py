@@ -23,11 +23,11 @@ import re
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
-from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import r2_score
 from sklearn.model_selection import GroupKFold
 
 from gem_worldmodel.features import deploy_features
+from gem_worldmodel.models.deployed import DeployedRegressor
 from gem_worldmodel.utils.config import load_config, resolve_path
 from gem_worldmodel.utils.logging import get_logger
 
@@ -50,14 +50,14 @@ def columns(names, lm, s16, cub):
     return sorted(keep)
 
 
-def oof(X, y, groups, seed):
+def oof(X, y, groups, seed, target):
     rng = np.random.default_rng(seed)
     ug = np.unique(groups)
     perm = dict(zip(ug, rng.permutation(len(ug))))
     g = np.array([perm[v] for v in groups])
     pred = np.full(len(y), np.nan)
     for tr, te in GroupKFold(5).split(X, y, g):
-        pred[te] = GradientBoostingRegressor(random_state=seed, n_estimators=200, max_depth=3, loss="quantile", alpha=0.5).fit(X[tr], y[tr]).predict(X[te])
+        pred[te] = DeployedRegressor(target, seed).fit(X[tr], y[tr]).predict(X[te])
     return pred
 
 
@@ -78,7 +78,7 @@ def main():
             y = y if tname == "growth temperature" else np.log(y)
             for level in ("species", "genus", "family", "order"):
                 groups = dd["species_group"].to_numpy() if level == "species" else dd["gtdb_taxonomy"].map(lambda t, p=PREFIX.get(level): token(t, p)).to_numpy()
-                preds = [oof(XX, y, groups, s) for s in SEEDS]
+                preds = [oof(XX, y, groups, s, tname) for s in SEEDS]
                 resid = np.concatenate([y - p for p in preds])
                 rows.append({
                     "model": label, "target": tname, "tier": TIER[level], "held_out": level, "n_rows": len(dd),

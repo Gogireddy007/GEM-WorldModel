@@ -22,12 +22,12 @@ import re
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import brier_score_loss, roc_auc_score
 from sklearn.model_selection import GroupKFold
 
 from gem_worldmodel.features import deploy_features
+from gem_worldmodel.models.deployed import DeployedRegressor
 from gem_worldmodel.utils.config import load_config, resolve_path
 
 SEEDS = [42, 1, 7]
@@ -48,7 +48,7 @@ def oof(X, y, groups, seed):
     g = np.array([perm[v] for v in groups])
     pred = np.full(len(y), np.nan)
     for tr, te in GroupKFold(5).split(X, y, g):
-        pred[te] = GradientBoostingRegressor(random_state=seed, n_estimators=200, max_depth=3, loss="quantile", alpha=0.5).fit(X[tr], y[tr]).predict(X[te])
+        pred[te] = DeployedRegressor("own temperature", seed).fit(X[tr], y[tr]).predict(X[te])
     return pred
 
 

@@ -385,3 +385,82 @@ def test_energy_feature_rules():
     assert f.loc[2, "na_nqr"] == 0.0  # the NqrA barrel alone is not enough
     assert f.loc[3, "wood_ljungdahl"] == 1.0 and f.loc[4, "wood_ljungdahl"] == 0.0
     assert f.loc[5].isna().all()
+
+
+def _script_module(name):
+    import importlib.util
+    import sys
+    from pathlib import Path
+
+    folder = Path(__file__).resolve().parents[1] / "scripts/accuracy"
+    sys.path.insert(0, str(folder))
+    spec = importlib.util.spec_from_file_location(name, folder / f"{name}.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_label_source_study_flags():
+    import numpy as np
+    import pandas as pd
+
+    mod = _script_module("screen_label_sources")
+    comp = pd.DataFrame({
+        "species": ["a", "b", "c", "d", "e", "f", "g"],
+        "study": ["slow study"] * 3 + ["mixed study"] * 2 + ["fine study"] * 2,
+        "log_ratio": [np.log(20), np.log(30), np.log(25), np.log(10), np.log(0.1), np.log(1.2), np.log(0.9)],
+    })
+    s = mod.flag_studies(comp, fold=3.0).set_index("study")
+    assert s.loc["slow study", "flag"]  # consistently far off
+    assert not s.loc["mixed study", "flag"]  # far off but in both directions
+    assert not s.loc["fine study", "flag"]
+    single = pd.DataFrame({"species": ["x"], "study": ["one label"], "log_ratio": [np.log(50)]})
+    assert mod.flag_studies(single).empty  # a study needs at least two comparable labels
+
+
+def test_false_slow_call_classification():
+    import numpy as np
+
+    mod = _script_module("false_slow_calls")
+    pred = np.array([30.0, 30.0, 12.0, 12.0, 2.0])
+    meas = np.array([40.0, 5.0, 2.0, 8.0, 1.0])
+    called, slow, false_slow, over = mod.classify(pred, meas)
+    assert false_slow.tolist() == [False, True, False, False, False]
+    assert over.tolist() == [False, True, True, False, False]
+
+
+def test_grodon_matrix_and_gene_feature_order():
+    import numpy as np
+    import pandas as pd
+
+    from gem_worldmodel.features import deploy_features as d
+    from gem_worldmodel.features import lifestyle_genes as lg
+
+    stats = pd.DataFrame({"CUBHE": [0.6, np.nan], "ConsistencyHE": [0.5, 0.4], "CPB": [-0.3, -0.2], "grodon_d": [2.0, 4.0]})
+    g = d.grodon_matrix(stats)
+    assert g.shape == (2, len(d.GRODON_FEATURES))
+    assert np.isclose(g[0, 3], np.log(2.0)) and np.isnan(g[1, 0])
+    counts = {acc: 0 for acc in [*lg.FAMILIES, *lg.EVALUE_FAMILIES]}
+    table = pd.DataFrame([{**counts, "n_genes": 1000, "cub": 0.3, "ivywrel": 0.4, "CUBHE": 0.6, "ConsistencyHE": 0.5, "CPB": -0.3, "grodon_d": 2.0}])
+    m = d.gene_feature_matrix(table)
+    assert m.shape == (1, len(d.GENE_FEATURES))
+    assert d.GENE_FEATURES[-len(d.GRODON_FEATURES):] == d.GRODON_FEATURES
+    assert np.isclose(m[0, -1], np.log(2.0))
+
+
+def test_deployed_regressor_averages_its_two_members():
+    import numpy as np
+
+    from gem_worldmodel.models.deployed import DeployedRegressor
+
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(200, 5))
+    y = X[:, 0] * 2 + rng.normal(scale=0.1, size=200)
+    settings = {"hist": {"max_iter": 100, "learning_rate": 0.1, "max_leaf_nodes": 15, "min_samples_leaf": 5,
+                         "l2_regularization": 0.0, "max_features": 1.0},
+                "forest": {"min_samples_leaf": 3, "max_features": 0.5, "max_samples": None}}
+    model = DeployedRegressor(seed=0, settings=settings).fit(X, y)
+    pred = model.predict(X)
+    members = [m.predict(X) for m in model.members_]
+    assert np.allclose(pred, (members[0] + members[1]) / 2)
+    assert np.corrcoef(pred, y)[0, 1] > 0.95

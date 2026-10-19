@@ -96,6 +96,41 @@ def main():
             r = [comp.loc[(target, lvl, m)] for m in ("ours", "Phydon-style", "gRodon-style")]
             comp_rows.append([f"{label}, {tlabel}"] + [f"{x.fold_error:.2f}x ({x.spearman:.2f})" for x in r])
     comp_table = table_html(comp_rows, ["Held out, target", "This model", "Phydon-style", "gRodon-style"])
+    released_note = ""
+    rel_path = processed / "released_tools_comparison.csv"
+    if rel_path.exists():
+        rc = pd.read_csv(rel_path)
+        rc = rc[rc["subset"] == "all genomes"].groupby("method")[["typical error", "Spearman"]].mean()
+
+        def m(name):
+            return f"{rc.loc[name, 'typical error']:.2f}x (ranking {rc.loc[name, 'Spearman']:.2f})"
+
+        ours_t = rc.loc["this model + measured temperature"]
+        best_rank = max(rc.loc["gRodon (released)", "Spearman"], rc.loc["Phydon (released)", "Spearman"])
+        rank_note = ("So on equal inputs this model has the lower typical error and ranks species better."
+                     if ours_t["Spearman"] > best_rank else
+                     "So on equal inputs this model has the lower typical error, while a released tool given the temperature ranks "
+                     "species about as well or slightly better.")
+
+        released_note = (
+            "We also ran the released gRodon and Phydon software on the same genes and the same held-out species (for Phydon, "
+            "each test species was removed from its built-in training data first). The released tools are given the measured "
+            "growth temperature, which this model is not given and has to predict. Without the temperature, released gRodon "
+            f"reaches {m('gRodon (released), no temperature')} against {m('this model')} for this model. With the temperature, "
+            f"released gRodon reaches {m('gRodon (released)')} and Phydon {m('Phydon (released)')}, while this model given the "
+            f"same temperature reaches {m('this model + measured temperature')}. {rank_note} The comparison in the table above, "
+            "against our reimplementations, overstates the gap: the real tools are stronger than the reimplementations.")
+    grodon_stats_note = ""
+    ge_path = processed / "grodon_and_temperature_evaluation.csv"
+    if ge_path.exists():
+        ge = pd.read_csv(ge_path)
+        ge = ge[ge["held_out"] == "order"].groupby("setup")[["typical error", "Spearman", "AUC slow"]].mean()
+        grodon_stats_note = (
+            "What did help was replacing our single codon usage statistic with the fuller set from the published gRodon method: "
+            f"with whole orders held out, typical error went from {ge.loc['deployed', 'typical error']:.2f}x to "
+            f"{ge.loc['+ gRodon statistics', 'typical error']:.2f}x and the area under the curve for picking out organisms "
+            f"slower than 24 hours from {ge.loc['deployed', 'AUC slow']:.2f} to {ge.loc['+ gRodon statistics', 'AUC slow']:.2f}, "
+            "in every one of ten repeats, and the current model includes them.")
     cal = pd.read_csv(FOLDER / "calibration_data_labeled_species.csv")
     from sklearn.metrics import roc_auc_score
     slope = np.polyfit(np.log(cal.measured_hours), np.log(cal.predicted_hours), 1)[0]
@@ -223,7 +258,8 @@ habitat from the GEM catalog.</li>
 <h2>How the prediction works</h2>
 
 <p>Six kinds of information are taken from each genome's DNA: its size, GC content and number of tRNA genes; how strongly
-its ribosomal protein genes favor particular codons (codon usage bias, a known signature of fast growth); the share of its
+its ribosomal protein genes favor particular codons (codon usage bias, a known signature of fast growth, measured both with
+our own statistic and with the statistics of the published gRodon method); the share of its
 proteins made of the amino acids I, V, Y, W, R, E and L, which rises with growth temperature; which genes for making a
 living it carries (energy metabolism such as methanogenesis, sulfate reduction, ammonia oxidation, nitrogen fixation and
 photosynthesis, plus the density of transporters, regulators, motility and catalase genes); where it sits on the tree of
@@ -291,7 +327,7 @@ energy-metabolism genes to address this. Scored on the same test species, with w
 {change(nds.loc['before', 'typical error'], nds.loc['+ both', 'typical error'], 'x')} and the area under the curve of a separate
 slow-growth classifier from {change(nds.loc['before', 'AUC, classifier'], nds.loc['+ both', 'AUC, classifier'])}. {order_note} (typical error
 {change(nd.loc['before', 'typical error'], nd.loc['+ both', 'typical error'], 'x')}, area under the curve when ranking by the prediction
-{change(nd.loc['before', 'AUC, ranking'], nd.loc['+ both', 'AUC, ranking'])}), so they do not solve slow growth for new lineages. With whole orders held out, a calibrated chance of being slower than 24 hours
+{change(nd.loc['before', 'AUC, ranking'], nd.loc['+ both', 'AUC, ranking'])}), so they do not solve slow growth for new lineages. {grodon_stats_note} With whole orders held out, a calibrated chance of being slower than 24 hours
 {order_brier} (Brier score {chk.loc['order', 'brier']:.3f} against {chk.loc['order', 'brier_base_rate']:.3f}). Of the GEM genomes predicted to take longer than a day,
 {slow_with_marker:.0f}% carry one of the energy-metabolism markers, against {all_with_marker:.0f}% of all genomes. The model still rarely predicts
 more than a day for a new lineage, and other fixes (other losses, reweighting rare values, stretching the predictions to the
@@ -309,6 +345,8 @@ not the published fits, and our codon statistic is a single measure where Phydon
 compares the methods rather than the released software.</p>
 
 {comp_table}
+
+<p>{released_note}</p>
 
 <p>Weak spots. Ranking among fast growers (doubling time under 5 hours) is the weakest part. Codon usage bias helped most
 there, but it is still only moderate. Archaea are covered by far fewer labeled species than bacteria, mostly hyperthermophiles
@@ -352,8 +390,8 @@ anything cultured rest on weaker evidence, which the table's nearest-relative co
 <li>Genomes assembled from the environment lose some repeated genes, so rRNA counts and sometimes tRNA counts are
 underestimated, and incomplete genomes miss ribosomal proteins. We checked the pipeline on real GEM genomes of known species,
 but only for the {len(mo)} species that have them.</li>
-<li>The comparison with gRodon and Phydon uses our reimplementations refit on the same data, not the released
-software with its published fit.</li>
+<li>The table above compares with our reimplementations of gRodon and Phydon. The comparison with the released software,
+in the paragraph after it, is the one to quote; the reimplementations turned out weaker than the real tools.</li>
 </ul>
 
 <h2>Files</h2>

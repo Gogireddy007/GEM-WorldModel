@@ -1,4 +1,4 @@
-.PHONY: lifestyle-test ribosomal-hmms landmarks fetch-16s madin-extension genome-rows labeled-genes gem-genes accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
+.PHONY: tune released-tools r-packages label-check lifestyle-test ribosomal-hmms landmarks fetch-16s madin-extension genome-rows labeled-genes gem-genes tune accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
 
 PYTHON ?= .venv/bin/python
 PIP ?= .venv/bin/pip
@@ -111,15 +111,39 @@ labeled-genes: ribosomal-hmms
 	$(PYTHON) scripts/accuracy/compute_cub_labeled.py
 	$(PYTHON) scripts/accuracy/compute_cub_extension.py
 	$(PYTHON) scripts/accuracy/compute_lifestyle_labeled.py
+	$(PYTHON) scripts/accuracy/prepare_released_tools_input.py
+	Rscript scripts/r/grodon_stats.R data/processed/released_tools_input.csv data/processed/labeled_grodon_stats.csv 8
 
 gem-genes:
 	$(PYTHON) scripts/pipeline/compute_cub_gem.py --ids-file mag_validation_ids.csv hq_genome_ids_all.csv --workers 8
 	$(PYTHON) scripts/pipeline/compute_lifestyle_gem.py --ids-file mag_validation_ids.csv hq_genome_ids_all.csv --workers 8
+	PYTHONPATH=scripts/pipeline $(PYTHON) scripts/pipeline/compute_grodon_gem.py --ids-file mag_validation_ids.csv hq_genome_ids_all.csv --workers 8
+
+r-packages:
+	mkdir -p .Rlib
+	Rscript scripts/r/install_packages.R
+
+released-tools:
+	$(PYTHON) scripts/accuracy/compare_released_tools.py --prepare
+	Rscript scripts/r/run_released_phydon.R 0,1,2
+	Rscript scripts/r/run_released_grodon.R
+	$(PYTHON) scripts/accuracy/compare_released_tools.py
+	$(PYTHON) scripts/accuracy/evaluate_grodon_and_temperature.py
+
+label-check:
+	$(PYTHON) scripts/accuracy/screen_labels.py
+	PYTHONPATH=scripts/accuracy $(PYTHON) scripts/accuracy/screen_label_sources.py
+	$(PYTHON) scripts/accuracy/false_slow_calls.py
+	$(PYTHON) scripts/accuracy/evaluate_added_species.py
 
 lifestyle-test:
 	$(PYTHON) scripts/accuracy/test_lifestyle_phylogenetic.py
 	PYTHONPATH=scripts/accuracy $(PYTHON) scripts/accuracy/check_lifestyle_phylogenetic.py
 	$(PYTHON) scripts/accuracy/evaluate_energy_features.py
+	$(PYTHON) scripts/accuracy/evaluate_syntrophy_marker.py
+
+tune:
+	$(PYTHON) scripts/accuracy/tune_deployed_model.py
 
 accuracy-table:
 	$(PYTHON) scripts/accuracy/evaluate_final_model.py
@@ -131,7 +155,7 @@ report:
 	$(PYTHON) scripts/pipeline/make_report_charts.py
 	$(PYTHON) scripts/pipeline/build_report.py
 
-predict-all: ribosomal-hmms landmarks madin-extension genome-rows fetch-16s labeled-genes gem-genes accuracy-table predict report
+predict-all: ribosomal-hmms landmarks madin-extension genome-rows fetch-16s labeled-genes gem-genes tune accuracy-table predict report
 
 clean:
 	rm -rf checkpoints/ .pytest_cache/ .ruff_cache/

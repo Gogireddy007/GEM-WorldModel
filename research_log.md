@@ -1,5 +1,218 @@
 # Research Log
 
+## 2026-10-19, tuning and a new learner
+
+The deployed learner had not changed since the start (gradient-boosted trees, 200 trees, depth 3, median loss).
+`evaluate_learners.py` compared it with histogram gradient boosting (median loss), random forest and extra trees, and
+averages of them, on the same folds, five seeds. `evaluate_tuning.py` then tuned the two best with nested cross-validation
+(settings chosen inside each outer training fold by a three-fold split grouped by family). The average of tuned histogram
+boosting and tuned random forest was the most consistent: species held out 1.86x to 1.79x, families 2.08x to 2.06x (ranking
+0.65 to 0.68, slow AUC 0.80 to 0.82), orders 2.17x to 2.11x (ranking 0.62 to 0.66, slow AUC 0.79 to 0.81), with ranking
+better in 5 of 5 seeds at every level. The chosen settings vary between folds for histogram boosting (several are about
+equally good) and are steadier for the forest, so the gain comes from the learners more than from fine tuning.
+
+The deployed model is now this average (`gem_worldmodel.models.deployed.DeployedRegressor`), with settings per target chosen
+once on all labeled rows by the same search (`tune_deployed_model.py`, `configs/deployed_model.yaml`); the accuracy table is
+therefore slightly optimistic and the nested numbers above are the unbiased estimate of the gain. Everything was rerun.
+Own temperature, same genus to new order: 1.81x, 1.92x, 2.05x, 2.12x (Spearman 0.74, 0.71, 0.67, 0.65), was 1.86x to 2.21x.
+Growth temperature improved most: mean error 5.1 to 6.2 C, was 5.6 to 6.5 C. 20 C value slightly better except for new
+genera (1.81x against 1.79x, ranking still higher). Real MAGs without 16S 1.83x against 1.72x from isolates; unseen bacteria
+2.00x (Spearman 0.63). Against the released tools on the same 680 genomes, without the measured temperature 1.86x (0.71)
+against Phydon with it 1.85x (0.70); with the same temperature 1.74x (0.76). No false slow calls. GEM: median 2.9 h, 0.8%
+slower than a day, drift check passed.
+
+
+## 2026-10-18 (later), gRodon's codon statistics in the model; predicted temperature does not help
+
+Two candidate inputs were tested on the same rows and folds, ten seeds, whole species groups, families or orders held out
+(`evaluate_grodon_and_temperature.py`). The released gRodon's codon statistics (codon usage bias of the highly expressed
+genes, its consistency, codon pair bias, and gRodon's own doubling time, log; `scripts/r/grodon_stats.R`, no temperature)
+improve the model at every level, most for new lineages: species 1.92x to 1.85x (Spearman 0.69 to 0.72), families 2.19x to
+2.09x (slow AUC 0.77 to 0.80), orders 2.29x to 2.18x (Spearman 0.55 to 0.62, slow AUC 0.74 to 0.79); better in 9 or 10 of
+10 seeds, p 0.004 or less. A two-stage predicted growth temperature (out-of-fold predictions for the training rows, the
+fold model for the test rows) makes no significant difference at any level and is left out; only the measured temperature
+helped, and GEM genomes have none.
+
+gRodon's statistics were computed for all 741 labeled genomes with genes and, by a streaming pass that downloads, writes
+gene files, runs gRodon and deletes them batch by batch (`scripts/pipeline/compute_grodon_gem.py`), for all 9,608 GEM
+genomes in the HQ and validation lists, with no failures. They are now part of the deployed gene features
+(`deploy_features.GRODON_FEATURES`), and everything was rerun. Full model, own temperature, same genus to new order: 1.86x,
+1.98x, 2.11x, 2.21x (Spearman 0.72, 0.69, 0.64, 0.61), against 1.93x, 2.01x, 2.26x, 2.36x before; 20 C value 1.77x, 1.79x,
+1.89x, 1.92x (was 1.83x to 2.14x); growth temperature unchanged. Real MAGs without 16S: 1.87x from MAGs against 1.81x from
+isolates (was 2.17x against 1.65x), so the MAG penalty nearly disappears. Unseen bacteria: 2.15x (Spearman 0.59). With orders
+held out the calibrated slow-growth probability ranks at AUC 0.79 (was 0.72). False slow calls: none with species or orders
+held out. GEM: median 2.9 h, 0.4% slower than a day, drift check passed. Against the released tools on the same 680
+genomes: this model, without the measured temperature, 1.86x (Spearman 0.69), released Phydon with it 1.85x (0.70), released
+gRodon with it 1.93x (0.73), without it 2.40x (0.52); this model given the same temperature 1.76x (0.75), so on equal inputs
+it now has both the lower error and the better ranking.
+
+
+## 2026-10-18, comparison with the released gRodon and Phydon
+
+All earlier comparisons were against our own reimplementations ("gRodon-style", "Phydon-style"). The released R packages
+were installed in a project library (`.Rlib`, R 4.6.1, gRodon 2.7.3, Phydon 1.1.0) and run on 680 labeled genomes that
+have a growth temperature, with the same genes as our pipeline (pyrodigal genes, ribosomal proteins from the Pfam HMMs,
+written in Prokka layout by `scripts/accuracy/prepare_released_tools_input.py`), on the same species-held-out folds as our
+model (`compare_released_tools.py`, 3 seeds; `scripts/r/run_released_phydon.R`, `scripts/r/run_released_grodon.R`).
+
+Fairness. Released Phydon leaves the genomes it is asked about out of its phylogenetic estimate, but its distance to the
+nearest training relative still counted the species itself (0 for every known species), which makes it trust the
+phylogenetic estimate too much on held-out species. For each fold the fold's species were therefore removed from Phydon's
+own training table (Madin growth rates on GTDB r220) before the call, without changing its code; its distances then come
+out at 0.04 to 0.16 for the test genomes. Two advantages of the released tools remain: their regressions were fitted on data
+that include our species, and Phydon's training set has species ours lacks. A larger asymmetry: both released tools are
+given the measured growth temperature, our model is not (it predicts it).
+
+Species held out, same 680 genomes, mean of 3 seeds:
+
+| method | measured temperature given | typical error | Spearman | slow AUC |
+|---|---|---|---|---|
+| gRodon released, no temperature | no | 2.40x | 0.52 | 0.75 |
+| this model (deployed) | no | 1.92x | 0.66 | 0.83 |
+| this model + gRodon's codon statistics | no | 1.86x | 0.69 | 0.82 |
+| gRodon released | yes | 1.93x | 0.73 | 0.84 |
+| Phydon released | yes | 1.85x | 0.70 | 0.81 |
+| this model + measured temperature | yes | 1.80x | 0.71 | 0.86 |
+| this model + temperature + gRodon statistics | yes | 1.74x | 0.74 | 0.85 |
+
+On equal inputs our model has the lower typical error: without the measured temperature 1.92x against 2.40x for released
+gRodon (and better ranking, 0.66 against 0.52); with it 1.80x against 1.93x (gRodon) and 1.85x (Phydon), lower in 3 of 3
+seeds against each, while released gRodon ranks slightly better (Spearman 0.73 against 0.71) and Phydon slightly worse
+(0.70). With gRodon's statistics and the temperature, our model is ahead on both (1.74x, Spearman 0.74). The released tools' apparent edge came from
+the temperature. Released gRodon's codon statistics (codon usage bias of the highly expressed genes, its consistency,
+codon pair bias) are better than our single MILC value: added to our model they lower the error from 1.92x to 1.86x and
+raise Spearman from 0.66 to 0.69, which can be deployed. Our "gRodon-style" reimplementation was far weaker than the real
+gRodon (Spearman about 0.3 against 0.73 with temperature, 0.52 without), so the earlier 40-of-40 wins over the
+reimplementations must not be read as wins over the published tools. Only species held out could be compared, since
+Phydon's training set cannot be made to leave out whole orders without editing its data further.
+
+
+## 2026-10-16 (later), do the added species help? Ten seeds
+
+`scripts/accuracy/evaluate_added_species.py` compares four training sets on the same 573 rows (the original corpus and Madin
+extension), with the deployed features, ten seeds: A without the added species, B with the 161 genome-based Madin species,
+C with the eight literature strains, D with both (deployed). Change against A, seeds better, paired Wilcoxon p:
+
+| held out | B + Madin genome species | C + literature | D both (deployed) |
+|---|---|---|---|
+| species | error -0.006 (6/10, p 0.92) | -0.019 (5/10, p 0.32) | +0.013 (4/10, p 0.56) |
+| family | -0.019 (6/10, p 0.56) | 0.000 (6/10, p 1.0) | -0.034 (7/10, p 0.19) |
+| order | +0.081 (2/10, p 0.014), Spearman -0.027 (p 0.037) | +0.024 (4/10, p 0.43) | +0.033 (4/10, p 0.28) |
+
+The deployed set is not significantly different from A at any level. The three-seed result of the morning (worse in 3 of
+3) was mostly fold noise. The genome-based Madin species on their own do make predictions for new orders slightly worse
+(typical error 2.16x to 2.24x), the one significant effect; combined with the literature strains it is not significant.
+This comparison scores only species that were already in A, so it cannot show the main reason for adding species: GEM
+genomes in lineages that only the added species cover (ammonia-oxidizing archaea, Nitrospira) get labeled relatives. The
+deployed model is kept as it is; the order-level effect of the Madin genome species is a caution if new labels are added the
+same way (traits from the genome, species-level growth values).
+
+
+## 2026-10-16, label check by source study, and where the slow calls go wrong
+
+**Label check by study** (`scripts/accuracy/screen_label_sources.py`). The species-level screen cannot catch one study that
+makes a whole genus look slow, because the relatives come from the same study; that is how the four methanotroph values got
+in. 581 of 670 training labels were traced to the exact record they came from in Madin's per-source files, and each traced
+label was compared with evidence from other studies only: the same species in another source, else genus (or family)
+relatives whose labels come from a different study. Studies were flagged when at least two of their labels sit a median of 3
+times or more from that evidence, 80% in one direction; labels that match no record but sit 3 times or more from the
+closest one were listed too (a conversion step). Positive control: run with the exclusions switched off, it catches 8 of
+the 9 known bad values on its own (the four Kevbrina methanotrophs as labels 24 times off their record, both Flavobacterium
+values as a study 63 times off, both Acidithiobacillus values as a study 11 times off); the ninth, Klebsiella oxytoca, is a
+one-species study and was caught by the species-level screen.
+
+On the current labels it flags 8 studies and 14 species where sources disagree 3 times or more. All 8 studies have a
+plausible reason: Robinson et al.'s haloarchaea at 1 to 3 h are rich-medium rates at the optimum (Haloferax volcanii at
+about 2 h is well known), slower relatives come from other conditions; the two Thermotoga studies point opposite ways
+(0.9 h and 8 h), which is diversity within the genus; the Geotoga/Petrotoga, Thermomonas, acid-tolerant Clostridium,
+cold-tolerant Acetobacterium and acidophile studies are within plausible ranges. Most of the 14 disagreements are 3 to 5
+fold differences between conditions (Methylococcus is the Kevbrina source again; the label is right). One was not:
+Streptomyces coelicolor at 0.5 h, from MediaDB. MediaDB values are otherwise about 1.6 times slower than other sources for
+the same species (defined media; this also confirms that MediaDB's growth rates were converted correctly, and that SAR11
+HTCC7211's 47.5 h is ln 2 / 0.0146 per hour), while this one is 4 times faster than another source's 2.04 h, and 0.5 h is
+implausible for a filamentous Streptomyces. It is the tenth exclusion. Limits: only 27 studies have two or more comparable
+labels, so most single-species studies are checked only against relatives; growth temperature is not adjusted, so flags
+need a person to read them.
+
+**False slow calls** (`scripts/accuracy/false_slow_calls.py`, deployed features, five seeds). On clean labels they are
+rare. Whole species held out: 7 genomes predicted slower than a day, all 7 truly slow, no false slow calls; two fast species
+are predicted about 13 h for a measured 2 h (Methanospirillum stamsii, Desulfobacterium autotrophicum), both fast members
+of slow genera or families, so the prediction is borrowed from relatives. Whole orders held out: a single slow call,
+Caldilinea aerophila (25 h predicted, 5 h measured, a fast relative of the slow Anaerolineae), and overpredictions near 10 h
+for haloarchaea (1 to 2 h measured) and Mycoplasma pulmonis (1 h), whose tiny genome looks like a slow grower's. So the
+extra false slow calls measured on 2026-10-13 came from the bad labels; on clean labels the problem is the other way round,
+the model almost never calls a new lineage slow (1 call for 58 slow organisms with orders held out).
+
+**Rerun after the tenth exclusion** (754 genomes, 669 species, 58 slower than a day). Own temperature, same genus to new
+order: 1.93x, 2.01x, 2.26x, 2.36x (Spearman 0.69, 0.66, 0.59, 0.53); 20 C value 1.83x to 2.14x. Dropping one species moved
+some of these by up to 0.13 (new family 2.13x to 2.26x), more than one label should; removing a species changes which species
+share a test fold, so differences of about 0.1 in these tables are within the noise of fold assignment with three seeds.
+Still 40 of 40 seed comparisons won against Phydon-style and gRodon-style; real MAGs without 16S 2.17x against 1.65x from
+isolates; unseen bacteria 2.21x. GEM: 0.3% predicted slower than a day.
+
+The new-data comparison moved more than that. With orders held out, adding the new species now gives a higher typical error
+in all three seeds (2.09x, 2.14x, 2.12x to 2.19x, 2.29x, 2.35x; Spearman 0.60 to 0.52 to 0.60), and adding both new species
+and gene content likewise (2.22x, 2.27x, 2.37x); in the run before this exclusion the same comparison was mixed (worse in 2 of
+3 seeds). Gene content alone stays neutral. With species held out the new species are neutral and the slow classifier still
+improves (AUC 0.70 to 0.79). So the honest reading is that the 162 genome-based Madin species and eight literature strains
+do not help predictions for new orders and may slightly hurt them. The deployed model includes them; whether to keep them
+needs a comparison with more seeds (ten or more), which is the next step, not a change made here.
+
+
+## 2026-10-15 (night), a syntrophy marker: tried and rejected
+
+Syntrophy was the one item on the energy-feature list not built. A rule was fixed from the literature before it was run
+(`lifestyle_genes.syntrophy_candidate`): the full beta-oxidation set or the methylmalonyl-CoA route for propionate, both
+electron transfer flavoprotein domains, a hydrogenase or formate dehydrogenase type enzyme, and no oxygen, nitrate or nitrous
+oxide acceptor, no methanogenesis and no phototrophy. It was tested against the six syntrophs in the labeled set that have a
+genome (`scripts/accuracy/evaluate_syntrophy_marker.py`). It finds three (Syntrophothermus lipocalidus, Thermosyntropha
+lipolytica and, by the beta-oxidation route, the acetate oxidizer Clostridium ultunense). It misses Syntrophus aciditrophicus
+and Syntrophobacter fumaroxidans, which carry a cytochrome bd oxidase as many anaerobes do for oxygen tolerance, and the
+acetate oxidizer Thermacetogenium phaeum, which the rule does not cover. It also calls 66 genomes that are not known
+syntrophs, mostly butyrate-producing clostridia and Thermotogales, which carry the same beta-oxidation, flavoprotein and
+hydrogenase genes run in the other direction; only 3 of its 69 calls (4%) are known syntrophs. The rule was not tuned after
+seeing this, since with six syntrophs a tuned rule would only memorize them. Conclusion: syntrophy cannot be read from gene
+presence with these families, because the same enzymes serve fermenters, and it is not used as a feature. Telling the two
+apart would need the direction of the pathway (expression or physiology), not the genes.
+
+
+## 2026-10-15 (evening), closing the gaps in the energy-feature test, and a weakness in the slow-growth check
+
+Four gaps left open in the energy-feature work were closed.
+
+NarG. The NarG N-terminal family misses the nitrate reductase of actinobacteria. NarG domain V (PF28599) catches
+Mycobacterium tuberculosis and fires in none of ten organisms that do not respire nitrate; it adds 35 calls, mostly right
+(Corynebacterium, Streptomyces, Pyrobaculum aerophilum, Ferroglobus, Brucella, Thermus scotoductus), and it also catches the
+nitrite oxidoreductase of nitrite oxidizers such as Nitrobacter, a NarG relative, which are then counted as nitrate respirers.
+Nitrate respiration now uses NarG N-terminal or domain V or NapB. Fumarate reductases other than the E. coli type remain
+undetected, since Pfam has no family specific to them.
+
+All-inputs-together column. The energy features overlap by construction (the acceptor count is built from the acceptors,
+the pump count from the pumps), which made the joint fit unstable (fold changes like 0.02x). The joint model now uses only the
+original inputs, and the energy rows show a dash.
+
+Slow growers specifically, for the energy features. With the same logistic check used before (slower than a day, ten
+phylogenetic eigenvectors as covariates), E. coli-type fumarate reductase came out very strong (odds ratio 13.7, adjusted p
+0.001). Six of its seven slow carriers are Anaerolineales, the one slow clade that dominates the slow end; with 20 or 30
+eigenvectors the effect is 0.94 and 0.57, and without Anaerolineales 0.88. Ten eigenvectors were not enough to absorb that
+clade. The check now uses 20, with 10 and 30 shown alongside. With 20, no energy feature is significant after correction in
+either slow-grower test (among groups slower than 5 hours, or slower than a day). Nitrate respirers (odds ratio 0.13) and
+Na+-NQR carriers (0.10) are less often slow, but not significantly after correction (adjusted p 0.22 and 0.30). With nothing
+significant, the leave-one-lineage-out and single-species checks for the energy features had nothing to test; the script
+runs them on the slower-than-a-day test for any feature that does come out significant.
+
+The same weakness touched the earlier result for the original inputs, so it was rerun with 20 eigenvectors (10 and 30 in
+brackets). Transporter density is stronger than reported before: odds ratio 0.27 per SD for being slower than a day
+(p 8.5e-5; 0.44 with 10, 0.21 with 30; 0.28 without Anaerolineales). Regulator density is now clear too: 0.36 per SD
+(p 0.0005; 0.73 p 0.13 with 10, 0.33 with 30; 0.53 without Anaerolineales). Catalase (0.36, p 0.03) and genome size (0.54,
+p 0.03) depend on the number of eigenvectors and are not robust. Ammonia or methane oxidation is 10.8 with a very wide
+interval (p 0.054; seven species).
+
+The model evaluation was rerun with the NarG fix: still no consistent gain, so the energy features stay out of the deployed
+model. Syntrophy is still not built (no gene pattern separates the four known syntrophs), and the checks of each energy call
+are a spot check of about 30 organisms, not a systematic accuracy estimate.
+
+
 ## 2026-10-15 (later), richer energy-metabolism features: a direct test of the low-energy idea
 
 The earlier markers mostly measured the machinery of fast growth, so `lifestyle_genes.energy_features` adds features about
@@ -24,14 +237,14 @@ no single-gene marker for it.
 
 Controlled test (`test_lifestyle_phylogenetic.py`, phylogenetic regression, 593 species groups, lambda 0.73, now 29 inputs):
 none of the new energy features has a significant effect (all Benjamini-Hochberg adjusted p 0.32 or more). The number of
-electron acceptor classes is 0.97x per SD, fermentation only 0.98x, Wood-Ljungdahl 1.19x, sodium pumps 1.00x per SD. Nitrate
-respiration looks strongly faster across species (0.38x) but is 0.79x and not significant after the control; F-type ATP
-synthase carriers lean faster (0.62x, adjusted p 0.32). With the stricter correction for 29 inputs catalase becomes
+electron acceptor classes is 0.99x per SD, fermentation only 0.98x, Wood-Ljungdahl 1.19x, sodium pumps 1.00x per SD. Nitrate
+respiration (136 groups, after the NarG fix below) looks faster across species (0.51x) but is 0.93x and not significant after
+the control; F-type ATP synthase carriers lean faster (0.62x, adjusted p 0.32). With the stricter correction for 29 inputs catalase becomes
 borderline (adjusted p 0.08); regulator density still holds (0.79x, adjusted p 0.02).
 
 Model (`evaluate_energy_features.py`, 743 rows, five seeds): adding the 15 energy features to the deployed inputs makes no
-consistent difference. Species held out: typical error 1.91x against 1.94x with them (better in 1 of 5 seeds); families:
-2.15x against 2.14x; orders: 2.33x against 2.31x (4 of 5), slow-growth AUC 0.74 either way. So they are not added to the
+consistent difference. Species held out: typical error 1.91x against 1.93x with them (better in 1 of 5 seeds); families:
+2.15x either way (2 of 5); orders: 2.33x against 2.35x (2 of 5), slow-growth AUC 0.74 either way. So they are not added to the
 deployed model; `load_training_table(with_energy=True)` keeps them available.
 
 Reading. With relatedness controlled, how many ways an organism can respire, whether it can only ferment, which ATP

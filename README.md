@@ -52,9 +52,9 @@ be used, see `Test on HQ genomes/superseded/README.md` and the 2026-10-04 entrie
 
 ## What's real and what's approximate
 
-The labeled corpus of species with a measured growth rate is small, 755 genomes from 670 species (bacteria and archaea),
+The labeled corpus of species with a measured growth rate is small, 754 genomes from 669 species (bacteria and archaea),
 mostly from Madin and colleagues' compilation, plus eight hand-checked strains from lineages it lacks
-(`data/curated/`). Nine values from the compilation that are clearly not maximal growth rates are left out, with the
+(`data/curated/`). Ten values from the compilation that are clearly not maximal growth rates are left out, with the
 evidence for each in `data/curated/label_exclusions.csv`. Most growth rates are species values, not matched to the exact strain that was sequenced. A genome that is not itself on the reference tree of life gets the position of its species, genus
 or family, and the table says which. Predictions are best read as rankings or as rough estimates: a typical error is a
 factor of about 2, the predictions are compressed toward the middle so very slow growth is underestimated, and accuracy
@@ -75,7 +75,10 @@ empty rather than guessed. Codon usage bias is a from-scratch version of the sta
 proteins found with Pfam models, so it is close to but not identical to gRodon's own numbers (run on the raw genomes it matches the
 annotation-based values at a correlation of 0.997). Gene content for energy metabolism and lifestyle (methanogenesis,
 sulfate reduction, ammonia oxidation, nitrogen fixation, photosynthesis, transporter density and others) comes from Pfam
-family searches on the same predicted genes, so it is a set of presence calls, not a full annotation. The gRodon and Phydon comparisons in this project (including a faithful Phydon-style version that blends codon usage
-with the nearest relatives' growth rates) are
-reimplementations refit on the same data split, not the original published models. Real 16S extraction from raw
+family searches on the same predicted genes, so it is a set of presence calls, not a full annotation. The model has been compared with the released gRodon and Phydon R
+packages on the same genes and splits (`scripts/accuracy/compare_released_tools.py`, R packages in a project library
+`.Rlib`): on the same inputs it has the lower typical error (released gRodon ranks about as well when both get the measured
+temperature), and the released tools look better only when they are given the measured growth temperature, which the model
+has to predict. Older comparisons in this repository used reimplementations
+that were weaker than the real tools. Real 16S extraction from raw
 genome sequences is slow, so it only covers part of the large unlabeled genome catalog, not all of it.

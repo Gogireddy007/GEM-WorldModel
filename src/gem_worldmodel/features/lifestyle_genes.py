@@ -57,6 +57,8 @@ FAMILIES = {
     "PF00199": "catalase",
     # energy metabolism, added 2026-10-15 (energy_features)
     "PF14710": "respiratory nitrate reductase NarG, N-terminal",
+    "PF28599": "respiratory nitrate reductase NarG, domain V",
+    "PF14711": "respiratory nitrate reductase NarH, C-terminal",
     "PF02665": "respiratory nitrate reductase gamma subunit NarI",
     "PF03892": "periplasmic nitrate reductase NapB",
     "PF02239": "cd1 nitrite reductase NirS",
@@ -82,6 +84,17 @@ FAMILIES = {
     "PF02901": "pyruvate formate-lyase",
     "PF00871": "acetate kinase",
     "PF01515": "phosphotransacetylase",
+    # syntrophy candidate (syntrophy_candidate), added 2026-10-15
+    "PF00441": "acyl-CoA dehydrogenase, C-terminal",
+    "PF00378": "enoyl-CoA hydratase",
+    "PF00725": "3-hydroxyacyl-CoA dehydrogenase, C-terminal",
+    "PF02737": "3-hydroxyacyl-CoA dehydrogenase, NAD binding",
+    "PF00108": "thiolase, N-terminal",
+    "PF01642": "methylmalonyl-CoA mutase",
+    "PF01039": "carboxyl transferase (propionyl-CoA carboxylase)",
+    "PF01012": "electron transfer flavoprotein, beta-like domain",
+    "PF00766": "electron transfer flavoprotein alpha, FAD binding",
+    "PF00384": "molybdopterin oxidoreductase (includes formate dehydrogenase)",
 }
 
 # searched with an E-value cutoff instead of the gathering threshold: the
@@ -180,7 +193,8 @@ def lifestyle_features(counts) -> np.ndarray:
 def energy_features(counts) -> np.ndarray:
     """Energy-metabolism inputs from a table of family counts, in ENERGY_FEATURES order.
 
-    Electron acceptor classes counted: oxygen (terminal oxidase), nitrate (NarG or NapB), nitrous oxide
+    Electron acceptor classes counted: oxygen (terminal oxidase), nitrate (NarG N-terminal or domain V,
+    or NapB), nitrous oxide
     (NosZ, the denitrification marker), sulfate (DsrD), metals outside the cell (Mtr/Omc), DMSO or TMAO, fumarate
     (E. coli-type reductase only) and CO2 (methyl-coenzyme M reductase or the Wood-Ljungdahl
     CO dehydrogenase/acetyl-CoA synthase). "Fermentation only" means fermentation genes and none of
@@ -192,9 +206,11 @@ def energy_features(counts) -> np.ndarray:
     denitrify nor respire nitrate (a common propeller fold and a generic membrane cytochrome); Na-NQR
     needs an NqrA-specific domain or NqrM besides the NqrA barrel, which E. coli's RnfC-like protein hits;
     the Wood-Ljungdahl call uses the acetyl-CoA synthase beta subunit (PF03598) only, since the delta
-    subunit family (PF03599) also hits Bacillus, Anabaena and Caldicellulosiruptor. Known misses: the NarG
-    of Mycobacterium tuberculosis lacks the N-terminal domain used for nitrate respiration, fumarate
-    reductases other than the E. coli type are not detected, and syntrophy has no single-gene marker
+    subunit family (PF03599) also hits Bacillus, Anabaena and Caldicellulosiruptor. NarG domain V (PF28599)
+    catches the NarG of actinobacteria such as Mycobacterium tuberculosis, which lacks the N-terminal
+    domain; it also catches the nitrite oxidoreductase of nitrite oxidizers (a NarG relative), which are
+    then counted as nitrate respirers. Known misses: fumarate reductases other than the E. coli type are
+    not detected (Pfam has no family specific to them), and syntrophy has no single-gene marker
     (the four syntrophs in the labeled set share no pattern that separates them from other anaerobes).
     """
     c = counts
@@ -203,7 +219,7 @@ def energy_features(counts) -> np.ndarray:
         return c[list(accs)].sum(axis=1) > 0
 
     oxygen = has("PF00115", "PF01654")
-    nitrate = has("PF14710", "PF03892")
+    nitrate = has("PF14710", "PF28599", "PF03892")
     denitrification = has("PF18764")
     sulfate = has("PF08679")
     eet = has("PF11854", "PF22111", "PF22112")
@@ -223,5 +239,39 @@ def energy_features(counts) -> np.ndarray:
         fermentation, fermentation & (acceptors == 0) & ~phototroph,
     ]
     out = np.column_stack([np.asarray(col, dtype=float) for col in cols])
+    out[c["n_genes"].isna().to_numpy()] = np.nan
+    return out
+
+
+def syntrophy_candidate(counts) -> np.ndarray:
+    """Genomes that look like syntrophic fatty-acid or propionate oxidizers, by a rule fixed from the
+    literature before it was evaluated (2026-10-15).
+
+    A candidate has the full beta-oxidation set (acyl-CoA dehydrogenase, enoyl-CoA hydratase,
+    3-hydroxyacyl-CoA dehydrogenase, thiolase) or the methylmalonyl-CoA route for propionate
+    (methylmalonyl-CoA mutase with a carboxyl transferase or a sodium-pumping decarboxylase), both
+    electron transfer flavoprotein domains, a hydrogenase or molybdopterin (formate dehydrogenase type)
+    enzyme to pass electrons on, and no oxygen, nitrate or nitrous oxide acceptor, no methanogenesis and
+    no phototrophy. Sulfate reduction is allowed (Syntrophobacter reduces sulfate). Syntrophic acetate
+    oxidizers, which run the Wood-Ljungdahl pathway backwards, are not covered. NaN without gene counts.
+
+    Evaluated (scripts/accuracy/evaluate_syntrophy_marker.py) and not used: it finds 3 of 6 known
+    syntrophs and calls 66 other genomes, mostly butyrate-producing clostridia and Thermotogales, which
+    carry the same enzymes run the other way; Syntrophus and Syntrophobacter are missed because they carry
+    a cytochrome bd oxidase, as many anaerobes do for oxygen tolerance.
+    """
+    c = counts
+
+    def has(*accs):
+        return c[list(accs)].sum(axis=1) > 0
+
+    beta_oxidation = has("PF00441") & has("PF00378") & has("PF00725", "PF02737") & has("PF00108")
+    propionate = has("PF01642") & has("PF01039", "PF03977")
+    etf = has("PF01012") & has("PF00766")
+    electron_out = has("PF02906", "PF00374", "PF00384")
+    acceptor = has("PF00115", "PF01654", "PF14710", "PF28599", "PF03892", "PF18764")
+    methanogen = has("PF02249", "PF02745", "PF02241")
+    phototroph = has("PF00124", "PF00223")
+    out = np.asarray((beta_oxidation | propionate) & etf & electron_out & ~acceptor & ~methanogen & ~phototroph, dtype=float)
     out[c["n_genes"].isna().to_numpy()] = np.nan
     return out

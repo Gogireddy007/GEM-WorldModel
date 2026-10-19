@@ -21,7 +21,11 @@ logger = get_logger(__name__)
 TRAITS = ["genome_size_bp", "gc_content", "trna_count"]
 KEEP = ["species", "gtdb_taxonomy", "doubling_time_hours", "doubling_time_hours_ref", "growth_temp_c"] + TRAITS
 # everything computed from the predicted proteins; a genome has all or none
-GENE_FEATURES = ["cub", "ivywrel"] + lifestyle_genes.FEATURES
+# the released gRodon's codon statistics (scripts/r/grodon_stats.R): codon usage bias of the highly
+# expressed genes, its consistency, codon pair bias, and gRodon's own doubling time (log); they beat our
+# single MILC value with every level of novelty held out (evaluate_grodon_and_temperature.py)
+GRODON_FEATURES = ["CUBHE", "ConsistencyHE", "CPB", "log_grodon_d"]
+GENE_FEATURES = ["cub", "ivywrel"] + lifestyle_genes.FEATURES + GRODON_FEATURES
 EXCLUSIONS = Path(__file__).resolve().parents[3] / "data/curated/label_exclusions.csv"
 GENOME_ROWS = {"madin_genome_extension.csv": "Madin genome extension", "literature_extension.csv": "literature"}
 
@@ -54,7 +58,7 @@ def species_group(df):
     return pd.Series([label[r] for r in roots], index=df.index)
 
 
-def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_rows: bool = True,
+def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_rows=True,
                         with_lifestyle: bool = False, with_energy: bool = False):
     """Return (table, X, names). Rows are the original corpus plus the Madin extension.
 
@@ -62,6 +66,11 @@ def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_r
     computed from the genome of the measured strain are added too: the Madin
     species with a genome accession but no traits in Madin's table, and the
     hand-checked literature rows (data/curated/literature_growth_rates.csv).
+    With `with_lifestyle=True` the gene features also include the lifestyle
+    genes and the released gRodon's statistics (GRODON_FEATURES; median-filled
+    where missing, `has_grodon` marks real values).
+    `genome_rows` can also be a collection of origin names from GENOME_ROWS
+    ("Madin genome extension", "literature") to add only those.
     The table has a `species_group` column (see species_group) for splits.
     Species listed in data/curated/label_exclusions.csv are dropped.
 
@@ -81,8 +90,9 @@ def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_r
     ext["accession"] = ext["species"].map(ext_acc)
     parts = [base[KEEP + ["origin", "accession"]], ext[KEEP + ["origin", "accession"]]]
     if genome_rows:
+        wanted = set(GENOME_ROWS.values()) if genome_rows is True else set(genome_rows)
         for name, origin in GENOME_ROWS.items():
-            if (processed / name).exists():
+            if origin in wanted and (processed / name).exists():
                 extra = pd.read_csv(processed / name)
                 extra["origin"] = origin
                 parts.append(extra[KEEP + ["origin", "accession", "cub", "ivywrel"]].rename(columns={"cub": "own_cub", "ivywrel": "own_ivywrel"}))
@@ -138,6 +148,12 @@ def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_r
         med = np.nanmedian(feats[df["has_lifestyle"].to_numpy()], axis=0)
         X = np.hstack([X, np.where(np.isnan(feats), med, feats)])
         names = names + lifestyle_genes.FEATURES
+        stats = pd.read_csv(processed / "labeled_grodon_stats.csv").drop_duplicates("genome_name").set_index("genome_name")
+        keys = df["accession"].map(lambda a: ("RS_" if str(a).startswith("GCF_") else "GB_") + str(a))
+        g = grodon_matrix(stats.reindex(keys).reset_index(drop=True))
+        df["has_grodon"] = ~np.isnan(g).any(axis=1)
+        X = np.hstack([X, np.where(np.isnan(g), np.nanmedian(g, axis=0), g)])
+        names = names + GRODON_FEATURES
         if with_energy:
             energy = lifestyle_genes.energy_features(table)
             med = np.nanmedian(energy[df["has_lifestyle"].to_numpy()], axis=0)
@@ -146,9 +162,15 @@ def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_r
     return df[keep].reset_index(drop=True), X[keep], names
 
 
+def grodon_matrix(stats) -> np.ndarray:
+    """GRODON_FEATURES from a table with gRodon's CUBHE, ConsistencyHE, CPB and grodon_d (NaN where missing)."""
+    return np.column_stack([stats["CUBHE"].to_numpy(float), stats["ConsistencyHE"].to_numpy(float),
+                            stats["CPB"].to_numpy(float), np.log(stats["grodon_d"].to_numpy(float))])
+
+
 def gene_feature_matrix(table) -> np.ndarray:
-    """GENE_FEATURES for new genomes, from a table with cub, ivywrel and the lifestyle family counts."""
-    return np.hstack([table[["cub", "ivywrel"]].to_numpy(float), lifestyle_genes.lifestyle_features(table)])
+    """GENE_FEATURES for new genomes, from a table with cub, ivywrel, the lifestyle family counts and gRodon's statistics."""
+    return np.hstack([table[["cub", "ivywrel"]].to_numpy(float), lifestyle_genes.lifestyle_features(table), grodon_matrix(table)])
 
 
 def coarsen(taxonomy, rank):

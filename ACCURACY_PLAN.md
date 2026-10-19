@@ -289,7 +289,8 @@ really are, a training-loss and label-distribution problem, not a feature or dat
 - [x] Test richer gene-content features within slow growers, controlling for lineage. Done 2026-10-15: energy
       features (electron acceptors, ATP synthase type, sodium energetics, fermentation only) built, checked against
       known organisms, tested with phylogenetic regression (no significant effect) and in the model (no consistent
-      gain, not deployed). Syntrophy has no reliable gene marker.
+      gain, not deployed). Syntrophy: a literature rule was tried and rejected (3 of 6 known syntrophs, 66 false
+      calls), since fermenters carry the same genes.
 - [ ] Find strain-matched growth rates for the thin regions, the largest remaining lever.
 - [x] Use the landmark phylogeny to bring back the Madin species that were dropped for lack of a tree match.
       Done 2026-10-05: 194 species added, log R2 and Spearman better in 7 of 7 seeds at every novelty level,
@@ -309,7 +310,14 @@ really are, a training-loss and label-distribution problem, not a feature or dat
       Phydon-style reimplementation (the earlier "Phydon" was a trait-GBM stand-in). The model beats Phydon-style in
       every seed at every level, and gRodon-style everywhere except a tie on typical error for new orders at the
       organism's own temperature, where it ranks far better.
-- [ ] Tune the model, try other learners and ensembling (the tree model has used fixed settings from the start).
+- [x] Compare with the released gRodon and Phydon. Done 2026-10-18 (`compare_released_tools.py`): on equal inputs our
+      model has the lower typical error (ranking about equal to released gRodon with temperature); released tools look
+      better only because they get the measured growth temperature.
+- [x] Add released gRodon's codon statistics to the deployed model. Done 2026-10-18: better at every level (new orders
+      2.29x to 2.18x, slow AUC 0.74 to 0.79), computed for all GEM genomes, deployed.
+- [x] Try predicted growth temperature as an input. Done 2026-10-18: no significant gain at any level; not used.
+- [x] Tune the model, try other learners and ensembling. Done 2026-10-19: average of tuned histogram boosting and
+      random forest, better at every level in nested tuning, deployed. (the tree model has used fixed settings from the start).
 - [ ] Extend the predictions beyond the HQ set, and test completeness-aware features for MAGs.
 - [x] Predictions are compressed toward the middle, so very slow growth is underestimated; look for a way to recover it.
       Tried 2026-10-13 (squared loss, stretching to the measured spread, weighting rare values, a slow-growth
@@ -324,6 +332,14 @@ really are, a training-loss and label-distribution problem, not a feature or dat
       tracing the methanotroph result to its source and by `screen_labels.py`. The screen cannot catch an error shared
       by a whole genus; a source-level check (every species from a suspect study) is still worth doing for the other
       large single-study sources in Corkrey et al.
+- [x] Check labels by source study, so an error shared by a whole genus is caught. Done 2026-10-16
+      (`screen_label_sources.py`, positive control passed, one more exclusion: Streptomyces coelicolor).
+- [x] Look at the false slow calls. Done 2026-10-16 (`false_slow_calls.py`): rare on clean labels; the model's problem is
+      that it almost never calls a new lineage slow.
+- [x] Decide whether to keep the genome-based Madin species and the literature strains. Done 2026-10-16 with ten seeds
+      (`evaluate_added_species.py`): the deployed set is not significantly different from leaving them out at any level;
+      the Madin genome species alone slightly worsen new-order predictions (p 0.014). Kept, since they also cover
+      lineages the original set lacks.
 - [ ] The 2026-10-13 order-level slow-growth gain did not survive clean labels. Slow growth for new lineages is still
       unsolved; richer energy features (next item) and more trustworthy slow labels are the remaining routes.
 - [ ] More measured slow growers from the literature, strain-matched, for lineages still missing (anammox and comammox

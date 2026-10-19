@@ -8,3 +8,4 @@ Flavobacterium weaverense,178,"recorded at 15.6 C; Bergey's Manual gives 2.9 h",
 Acidithiobacillus ferrooxidans,386,"about 70 times its genus relatives (median 5.5 h); other organisms from the same study look plausible, cause unknown",Franzmann et al. (temperature and iron/sulfur oxidation rates) via Corkrey et al.
 Acidithiobacillus thiooxidans,74,"about 13 times its genus relatives; same study as above",Franzmann et al. via Corkrey et al.
 Klebsiella oxytoca,11.7,"from a lag-phase study in meat; genus relatives median 0.3 h",Mellefont (meat industry predictive modelling) via Corkrey et al.
+Streptomyces coelicolor,0.5,"another source gives 2.04 h; MediaDB values are usually about 1.6 times slower than other sources (defined media), this one is 4 times faster, and 0.5 h is implausible for a filamentous Streptomyces",MediaDB (Richards et al. 2014) via Madin et al.; found by screen_label_sources.py
