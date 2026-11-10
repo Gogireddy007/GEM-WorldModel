@@ -418,6 +418,29 @@ def test_label_source_study_flags():
     assert mod.flag_studies(single).empty  # a study needs at least two comparable labels
 
 
+def test_label_source_check_traces_labels():
+    import pandas as pd
+
+    mod = _script_module("screen_label_sources")
+    tax = "d__Bacteria;o__O;f__F;g__G;s__"
+    df = pd.DataFrame({
+        "species": ["G a", "G b", "G c", "G d", "G e", "G f"],
+        "gtdb_taxonomy": [tax + n for n in ("a", "b", "c", "d", "e", "f")],
+        "doubling_time_hours": [40.0, 50.0, 2.0, 2.2, 1.8, 0.1],
+        "growth_temp_c": [30.0] * 6, "origin": ["original"] * 6,
+    })
+    recs = pd.DataFrame({
+        "species": ["G a", "G b", "G c", "G d", "G e", "G f"],
+        "doubling_h": [40.0, 50.0, 2.0, 2.2, 1.8, 2.4],
+        "reference": ["slow study", "slow study", "other", "other", "third", "fourth"],
+    })
+    lab, comp, studies, conflict, near = mod.check(df, recs, fold=3.0)
+    assert lab.loc["G a", "study"] == "slow study"  # traced by value
+    assert studies.set_index("study").loc["slow study", "flag"]  # 20x slower than relatives from other studies
+    assert list(near["species"]) == ["G f"]  # matches no record and is 24x from the closest one
+    assert conflict.empty
+
+
 def test_false_slow_call_classification():
     import numpy as np
 

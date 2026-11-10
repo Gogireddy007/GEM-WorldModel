@@ -150,8 +150,8 @@ def build(new, data_cfg, feat_cfg, out_path, workers, extra=()):
     jobs = [(s, a, "archaea" if t.startswith("d__Archaea") else "bacteria")
             for s, a, t in zip(new["species"], new["accession"], new["gtdb_taxonomy"], strict=True)]
     # traits already computed for an accession are reused (tRNAscan-SE is the slow step)
-    done = pd.read_csv(out_path) if out_path.exists() else pd.DataFrame(columns=["accession"])
     trait_cols = ["genome_size_bp", "gc_content", "trna_count", "cub", "ivywrel", "n_ribosomal"]
+    done = pd.read_csv(out_path) if out_path.exists() else pd.DataFrame(columns=["accession", *trait_cols])
     cached = done.drop_duplicates("accession").set_index("accession")
     todo = [j for j in jobs if j[1] not in cached.index]
     print(f"{len(jobs) - len(todo)} genomes reused from {out_path.name}, {len(todo)} to compute")

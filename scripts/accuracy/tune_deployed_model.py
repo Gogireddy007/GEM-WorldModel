@@ -29,7 +29,7 @@ def family_of(t):
     return m.group(0) if m else "none"
 
 
-def score(kind, params, X, y, family):
+def score(kind, params, X, y, family, n_jobs=8):
     errs = []
     for s in SPLITS:
         rng = np.random.default_rng(500 + s)
@@ -37,9 +37,23 @@ def score(kind, params, X, y, family):
         perm = dict(zip(ug, rng.permutation(len(ug)), strict=True))
         pred = np.full(len(y), np.nan)
         for tr, te in GroupKFold(3).split(X, y, np.array([perm[v] for v in family])):
-            pred[te] = deployed.make_member(kind, params, seed=0).fit(X[tr], y[tr]).predict(X[te])
+            pred[te] = deployed.make_member(kind, params, seed=0, n_jobs=n_jobs).fit(X[tr], y[tr]).predict(X[te])
         errs.append(np.median(np.abs(y - pred)))
     return float(np.mean(errs))
+
+
+def choose_settings(X, y, family, n_jobs=8):
+    """Best setting of each member by typical error; the whole tuning procedure, so it can also run nested."""
+    chosen, errors = {}, {}
+    for kind, grid in (("hist", deployed.HIST_GRID), ("forest", deployed.FOREST_GRID)):
+        best, best_err = None, np.inf
+        for params in ParameterSampler(grid, N_CANDIDATES, random_state=0):
+            err = score(kind, params, X, y, family, n_jobs)
+            if err < best_err:
+                best, best_err = params, err
+        chosen[kind] = {key: (float(v) if isinstance(v, float) else v) for key, v in best.items()}
+        errors[kind] = best_err
+    return chosen, errors
 
 
 def main():
@@ -54,15 +68,9 @@ def main():
         ok = df[col].notna().to_numpy()
         y = df.loc[ok, col].to_numpy(float)
         y = y if tname == "growth temperature" else np.log(y)
-        config[tname] = {}
-        for kind, grid in (("hist", deployed.HIST_GRID), ("forest", deployed.FOREST_GRID)):
-            best, best_err = None, np.inf
-            for params in ParameterSampler(grid, N_CANDIDATES, random_state=0):
-                err = score(kind, params, X[ok], y, family[ok])
-                if err < best_err:
-                    best, best_err = params, err
-            config[tname][kind] = {key: (float(v) if isinstance(v, float) else v) for key, v in best.items()}
-            print(f"{tname:20s} {kind:7s} inner error {best_err:.4f}  {best}", flush=True)
+        config[tname], errors = choose_settings(X[ok], y, family[ok])
+        for kind in ("hist", "forest"):
+            print(f"{tname:20s} {kind:7s} inner error {errors[kind]:.4f}  {config[tname][kind]}", flush=True)
     path = resolve_path("configs/deployed_model.yaml")
     header = "# Settings of the deployed model, chosen by scripts/accuracy/tune_deployed_model.py. Do not edit by hand.\n"
     path.write_text(header + yaml.safe_dump(config, sort_keys=False))

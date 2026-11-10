@@ -54,23 +54,25 @@ def flag_studies(comp, fold=FOLD):
     return out.sort_values("median_fold", key=lambda s: -np.abs(np.log(s)))
 
 
-def main():
-    processed = resolve_path(load_config("data")["paths"]["processed_dir"])
-    k = load_config("features")["rrna16s"]["kmer_k"]
-    df, _, _ = deploy_features.load_training_table(processed, k, with_cub=True)
+def check(df, recs, fold=FOLD):
+    """Trace every label of a training table to its source record and compare it with independent evidence.
+
+    Returns (lab, comp, studies, conflict, near): one row per labeled species, the label / evidence comparison,
+    the per-study summary (flag_studies), species at least `fold` from another source for the same species, and
+    labels that match no record but are at least `fold` from the closest one.
+    """
     lab = df.groupby("species").agg(label=("doubling_time_hours", "first"), tax=("gtdb_taxonomy", "first"),
                                     temp=("growth_temp_c", "first"), origin=("origin", "first"))
     lab["genus"] = lab["tax"].map(lambda t: rank(t, "g__"))
     lab["family"] = lab["tax"].map(lambda t: rank(t, "f__"))
 
-    recs = source_records()
+    recs = recs.copy()
     recs["study"] = recs["reference"].astype(str).str.replace(r"\s+", " ", regex=True).str.strip().str[:90]
     recs = recs[recs["doubling_h"] > 0]
     joined = recs.merge(lab[["label"]], left_on="species", right_index=True)
     joined["match"] = np.isclose(joined["doubling_h"], joined["label"], rtol=0.02)
     traced = joined[joined["match"]].drop_duplicates("species").set_index("species")["study"]
     lab["study"] = traced
-    print(f"{len(lab)} labeled species; {lab['study'].notna().sum()} traced to a source record")
 
     log_label = np.log(lab["label"])
     rows = []
@@ -87,8 +89,29 @@ def main():
                      "evidence_hours": np.exp(evidence) if kind else np.nan, "evidence": kind,
                      "log_ratio": log_label[sp] - evidence if kind else np.nan})
     comp = pd.DataFrame(rows)
+    studies = flag_studies(comp, fold)
+    conflict = comp[(comp["evidence"] == "other sources") & (comp["log_ratio"].abs() >= np.log(fold))]
 
-    studies = flag_studies(comp)
+    near = []
+    for sp, r in lab[lab["study"].isna()].iterrows():
+        v = recs.loc[recs["species"] == sp, ["doubling_h", "study"]]
+        if len(v):
+            i = (np.log(v["doubling_h"]) - np.log(r["label"])).abs().idxmin()
+            ratio = r["label"] / v.loc[i, "doubling_h"]
+            if abs(np.log(ratio)) >= np.log(fold):
+                near.append({"species": sp, "label": r["label"], "evidence_hours": v.loc[i, "doubling_h"], "study": v.loc[i, "study"],
+                             "log_ratio": np.log(ratio), "kind": "untraced"})
+    near = pd.DataFrame(near, columns=["species", "label", "evidence_hours", "study", "log_ratio", "kind"])
+    return lab, comp, studies, conflict, near
+
+
+def main():
+    processed = resolve_path(load_config("data")["paths"]["processed_dir"])
+    k = load_config("features")["rrna16s"]["kmer_k"]
+    df, _, _ = deploy_features.load_training_table(processed, k, with_cub=True)
+    lab, comp, studies, conflict, near = check(df, source_records())
+    print(f"{len(lab)} labeled species; {lab['study'].notna().sum()} traced to a source record")
+
     studies.to_csv(processed / "label_sources_studies.csv", index=False)
     print(f"{len(studies)} studies with at least two comparable labels; {int(studies['flag'].sum())} flagged "
           f"(median at least {FOLD:.0f}x off, 80% in one direction)")
@@ -98,23 +121,11 @@ def main():
             print(f"     {c.species:38s} label {c.label:8.3g} h at {c.temp} C, evidence {c.evidence_hours:8.3g} h ({c.evidence})")
 
     flags = [comp.assign(kind="study").merge(studies.loc[studies["flag"], ["study"]], on="study")]
-    conflict = comp[(comp["evidence"] == "other sources") & (comp["log_ratio"].abs() >= np.log(FOLD))]
     print(f"\nspecies at least {FOLD:.0f}x from another source for the same species: {len(conflict)}")
     for c in conflict.sort_values("log_ratio", key=np.abs, ascending=False).itertuples():
         print(f"  {c.species:38s} label {c.label:8.3g} h, other sources {c.evidence_hours:8.3g} h   label from: {c.study[:70]}")
     flags.append(conflict.assign(kind="other source"))
 
-    untraced = lab[lab["study"].isna()]
-    near = []
-    for sp, r in untraced.iterrows():
-        v = recs.loc[recs["species"] == sp, ["doubling_h", "study"]]
-        if len(v):
-            i = (np.log(v["doubling_h"]) - np.log(r["label"])).abs().idxmin()
-            ratio = r["label"] / v.loc[i, "doubling_h"]
-            if abs(np.log(ratio)) >= np.log(FOLD):
-                near.append({"species": sp, "label": r["label"], "evidence_hours": v.loc[i, "doubling_h"], "study": v.loc[i, "study"],
-                             "log_ratio": np.log(ratio), "kind": "untraced"})
-    near = pd.DataFrame(near)
     print(f"\nlabels that match no source record and are at least {FOLD:.0f}x from the closest one: {len(near)}")
     for c in near.itertuples() if len(near) else []:
         print(f"  {c.species:38s} label {c.label:8.3g} h, closest record {c.evidence_hours:8.3g} h   {c.study[:70]}")

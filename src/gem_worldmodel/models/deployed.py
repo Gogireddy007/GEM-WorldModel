@@ -17,22 +17,23 @@ HIST_GRID = {"learning_rate": [0.03, 0.05, 0.1], "max_iter": [200, 400, 800], "m
 FOREST_GRID = {"min_samples_leaf": [1, 3, 5, 10], "max_features": [0.2, 0.33, 0.5], "max_samples": [0.7, None]}
 
 
-def make_member(kind, params, seed=0):
+def make_member(kind, params, seed=0, n_jobs=8):
     if kind == "hist":
         return HistGradientBoostingRegressor(random_state=seed, loss="quantile", quantile=0.5, **params)
-    return RandomForestRegressor(random_state=seed, n_estimators=300, n_jobs=8, **params)
+    return RandomForestRegressor(random_state=seed, n_estimators=300, n_jobs=n_jobs, **params)
 
 
 class DeployedRegressor:
     """Average of the two members' predictions; `target` is a key of configs/deployed_model.yaml."""
 
-    def __init__(self, target="own temperature", seed=0, settings=None):
+    def __init__(self, target="own temperature", seed=0, settings=None, n_jobs=8):
         self.target = target
         self.seed = seed
         self.settings = settings if settings is not None else load_config("deployed_model")[target]
+        self.n_jobs = n_jobs
 
     def fit(self, X, y):
-        self.members_ = [make_member(kind, self.settings[kind], self.seed).fit(X, y) for kind in ("hist", "forest")]
+        self.members_ = [make_member(kind, self.settings[kind], self.seed, self.n_jobs).fit(X, y) for kind in ("hist", "forest")]
         return self
 
     def predict(self, X):

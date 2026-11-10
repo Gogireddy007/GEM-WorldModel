@@ -3,7 +3,7 @@
 literature before being run, against the known syntrophs in the labeled set.
 
 Reports how many known syntrophs it finds, how many other genomes it calls, and which orders those
-false calls come from. The rule was not adjusted after this evaluation (2026-10-15): with six known
+false calls come from, and writes the counts to syntrophy_marker.csv. The rule was not adjusted after this evaluation (2026-10-15): with six known
 syntrophs any rule tuned to them would only memorize them. Result: it is not used as a feature.
 """
 
@@ -31,7 +31,11 @@ def main():
     print(f"missed: {sorted(set(t.loc[known, 'species']) - set(found))}")
     print(f"candidates: {int((t['candidate'] == 1).sum())} of {len(t)}; not known syntrophs: {len(false)}; "
           f"share of candidates that are known syntrophs {len(found) / max(1, int((t['candidate'] == 1).sum())):.0%}")
-    print("false calls by order:", false["gtdb_taxonomy"].str.extract(r"o__([^;]+)")[0].value_counts().head(8).to_dict())
+    orders = false["gtdb_taxonomy"].str.extract(r"o__([^;]+)")[0].value_counts()
+    print("false calls by order:", orders.head(8).to_dict())
+    pd.DataFrame([{"known": int(known.sum()), "found": len(found), "candidates": int((t["candidate"] == 1).sum()),
+                   "false_calls": len(false), "species": len(t), "false_call_orders": orders.size,
+                   "top_order": orders.index[0], "top_order_calls": int(orders.iloc[0])}]).to_csv(processed / "syntrophy_marker.csv", index=False)
 
 
 if __name__ == "__main__":

@@ -28,6 +28,8 @@ GRODON_FEATURES = ["CUBHE", "ConsistencyHE", "CPB", "log_grodon_d"]
 GENE_FEATURES = ["cub", "ivywrel"] + lifestyle_genes.FEATURES + GRODON_FEATURES
 EXCLUSIONS = Path(__file__).resolve().parents[3] / "data/curated/label_exclusions.csv"
 GENOME_ROWS = {"madin_genome_extension.csv": "Madin genome extension", "literature_extension.csv": "literature"}
+# the external test set (build_external_features.py); added only when "external" is asked for by name, never by default
+EXTERNAL_ROWS = {"external_extension.csv": "external"}
 
 
 def species_group(df):
@@ -91,7 +93,7 @@ def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_r
     parts = [base[KEEP + ["origin", "accession"]], ext[KEEP + ["origin", "accession"]]]
     if genome_rows:
         wanted = set(GENOME_ROWS.values()) if genome_rows is True else set(genome_rows)
-        for name, origin in GENOME_ROWS.items():
+        for name, origin in {**GENOME_ROWS, **EXTERNAL_ROWS}.items():
             if origin in wanted and (processed / name).exists():
                 extra = pd.read_csv(processed / name)
                 extra["origin"] = origin
@@ -112,9 +114,19 @@ def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_r
     seqs = pd.read_csv(processed / "labeled_16s_sequences.csv").fillna("")
     profiles = {s: rrna16s.kmer_profile(q, kmer_k) for s, q in zip(seqs.species, seqs.sequence) if q}
     landmarks = [profiles[n] for n in np.load(processed / "labeled_16s_landmark_names.npy")]
+    # the 16S gene cut from the row's own genome with barrnap, as for GEM genomes, where there is one
+    # (labeled_16s_from_genomes.csv, evaluate_16s_source.py --extract); else the copy fetched by species name.
+    # Training on the fetched copies and predicting from genome copies cost 0.05 to 0.07 in typical error.
+    own = processed / "labeled_16s_from_genomes.csv"
+    own = pd.read_csv(own).fillna("").set_index("accession")["sequence"] if own.exists() else pd.Series(dtype=str)
+    own_profiles = {a: rrna16s.kmer_profile(q, kmer_k) for a, q in own.items() if q}
+
+    def profile(species, accession):
+        return own_profiles.get(accession, profiles.get(species))
+
     s16 = np.vstack([
-        np.array([rrna16s.kmer_cosine_distance(profiles[s], lp) for lp in landmarks]) if s in profiles else np.full(16, np.nan)
-        for s in df["species"]
+        np.array([rrna16s.kmer_cosine_distance(p, lp) for lp in landmarks]) if p is not None else np.full(16, np.nan)
+        for p in (profile(s, a) for s, a in zip(df["species"], df["accession"], strict=True))
     ])
 
     traits = df[TRAITS].to_numpy(float)
@@ -131,7 +143,7 @@ def load_training_table(processed, kmer_k: int, with_cub: bool = False, genome_r
         for out_col, orig_col, ext_col in (("cub", "cub_pipeline", "cub"), ("ivywrel", "ivywrel", "ivywrel")):
             vals = np.where(df["origin"] == "original", df["accession"].map(orig[orig_col]), df["species"].map(extn[ext_col])).astype(float)
             if f"own_{out_col}" in df:
-                vals = np.where(df["origin"].isin(GENOME_ROWS.values()), df[f"own_{out_col}"], vals).astype(float)
+                vals = np.where(df["origin"].isin([*GENOME_ROWS.values(), *EXTERNAL_ROWS.values()]), df[f"own_{out_col}"], vals).astype(float)
             df[out_col] = vals
         df["has_cub"] = df["cub"].notna() & df["ivywrel"].notna()
         for col in ("cub", "ivywrel"):
