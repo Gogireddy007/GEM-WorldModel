@@ -1,5 +1,146 @@
 # Research Log
 
+## 2026-11-09, external test and released tools with orders held out
+
+Released tools with orders held out. Phydon's training table was cut by GTDB order (99.6% of its 548 species mapped by
+accession or genus) and our model was rebuilt inside each order fold. Phydon falls from 1.85 to 2.84, as expected for a
+method that leans on relatives. gRodon given the temperature stays at 1.92. Our model given the temperature ties with it
+(1.96, p = 0.96), and without the temperature it is worse than gRodon given it (2.08, p = 0.007, 330 of 680 genomes). It still
+beats gRodon without the temperature (2.40, p < 1e-4). The abstract had said the model without temperature matches the tools
+given it; that only holds for new species, so the claim was narrowed in both papers.
+
+External test. 51 doubling times from species descriptions, found through PubMed abstracts and open PMC full texts (publisher
+pages were blocked), each kept only if stated as fastest, optimal or maximal growth in pure culture, its NCBI taxid is not
+among Madin's, the species is not in our labels, an assembly exists and no training genome shares its GTDB species. 49 were
+placed and built, 48 have gene features. A bug surfaced on the way: deploy_features only used a genome's own codon usage for
+GENOME_ROWS origins, so external rows got none; fixed by including EXTERNAL_ROWS. Results: model 2.53 (genus bootstrap 1.91
+to 3.30, Spearman 0.62) against 3.65 for the relatives' median and 3.42 for gRodon without temperature (p = 0.007 and 0.001).
+The bad part: new-order error is 4.69, far above cross-validation, the 80% ranges hold only 67% (p = 0.03), only 1 of 7 slow
+species is inside its range, and none of the 7 is predicted above a day even though the slow probability ranks them well
+(AUC 0.92). Worst misses are slow Chloroflexota and other lineages with no labeled order. Both papers now say this plainly.
+
+GEM ESM-2 embeddings are running (about 7 genomes a minute while other jobs ran, so about a day for 9,608); not used yet.
+
+## 2026-11-09, third pressure test: leakage, label robustness, ten splits
+
+gRodon's released doubling-time estimate is one of the inputs, and gRodon's coefficients were fitted on growth rates that
+include our test species. Dropping the input costs 0.04 (species held out) and 0.07 (orders held out) in typical error, which by
+itself cannot tell signal from leakage. Refitting a gRodon-style regression (log doubling time on CUBHE, ConsistencyHE and CPB)
+inside each split, on training rows only, gives 1.85 against 1.82 and 2.10 against 2.08: the released estimate is worth at most
+0.03, which bounds any leakage through it and is far below the margins the paper relies on.
+
+Ten splits instead of three: from the genus level on, the model beats the relatives' median in 10 of 10 splits (per genome p
+below 1e-4). With only the species held out the median is as good on typical error (1.79 against 1.82 for the fixed-settings
+model) and the model ranks better (0.74 against 0.67), as the paper already says. Removing the 25 labels of the eight studies
+the audit flagged but kept lowers the error slightly on the remaining genomes (2.02 against 2.05 with orders held out). One
+genome is listed twice under two spellings of its species; both rows fall in one species group and dropping one changes no
+headline score by more than 0.005.
+
+## 2026-11-01, panel review fixes, ESM-2 baseline, NeurIPS benchmark version
+
+A senior-panel style review scored the ISMB paper 44/100 for an ML main track and about 70 for ISMB. The checks behind it
+found three unreported weaknesses: the 80% ranges covered only 31 to 45% of slow growers and 73% of archaea from new orders,
+slow growers were predicted 4.5- to 6.3-fold too fast (97 to 99% of them toward faster growth), and archaea had a higher error
+than bacteria (2.43 against 2.02 with orders held out). Ranges set by novelty level and domain fix archaea (at least 78%) but
+cannot fix slow growers, because they are selected on the outcome; a cross-fitted probability of growing slower than a day
+(AUC 0.81 to 0.84, calibration error at most 0.012, top fifth 22 to 24% slow against 8%) is released for that question.
+Bootstrap intervals now resample genera; they widen and nothing changes.
+
+ESM-2 (35M) embeddings of all 741 labeled genome accessions (every ribosomal protein, at most 60, and 100 sampled proteins,
+mean of last-layer residue embeddings), computed on the laptop GPU and CPU in parallel (the two devices agree to 3e-6). On
+the paper's folds, a ridge probe alone is as accurate as the genome features (1.86 against 1.82 with species held out, 2.02
+against 2.08 with orders held out; per genome p 0.87 and 0.99) and ranks slightly better at every level; trees on 64
+components are worse; features plus 32 components are better than features at every level, per genome significantly at
+species (p 3.1e-4) and order (p 6.1e-5). The deployed model does not use embeddings yet; embedding the 9,139 GEM genomes would
+take most of a day on this laptop. A NeurIPS Datasets and Benchmarks version (GrowthBench) was written from the same results,
+with a tested interface that reproduces the paper's folds and baseline scores exactly.
+
+## 2026-11-01, pressure test of the paper
+
+Asked to pressure test the paper, we added baselines and intervals that the headline did not have. Two results changed
+claims. First, a taxonomy-only baseline that predicts each genome by the median label of its closest labeled relatives,
+scored on the headline's own folds, is close to the model when the species is held out (1.81x against 1.75x; the bootstrap
+interval of the difference, -0.19 to 0.04, includes zero), although the model ranks much better (Spearman 0.74 against
+0.66). With families or orders held out the baseline is far worse (2.59x and 2.45x against 2.06x and 2.08x). So the model
+earns its keep on distant lineages and on ranking, which is where the GEM genomes are; the Discussion now opens with this.
+Second, the paired per-genome test against the released tools: given the temperature our model wins clearly (p 1.5e-6
+against gRodon, 3.9e-4 against Phydon); without it, its typical error is lower in every seed but per genome it wins only 349
+of 680 against gRodon (p 0.07) and 347 of 665 against Phydon (p 0.11). The paper now says "as accurate as" for that case.
+The shuffled-label control is clean (2.91x, Spearman 0.00, against a median baseline of 2.73x). The released-tools rerun
+reproduced the earlier summary exactly before the per-genome predictions were saved.
+
+## 2026-11-01, paper phase 6: template, page limit and audit
+
+The ISMB 2026 proceedings call sets the rules we now build against: the OUP Bioinformatics template, nine pages including
+references, a structured abstract of at most 250 words with Motivation, Results, Availability and Implementation, Contact
+and Supplementary Information, alt text for every image, public code, and no double-blind review. The OUP class is in TeX
+Live, so nothing had to be downloaded. In the article layout the paper ran to 18 pages; in the template it was 11, then 10
+after fixing an over-wide table and figure, and 9 after cutting about 600 words of Methods and Results whose detail is in
+the supplement and dropping DOIs, ISSNs and long author lists from the references. The last page has some room left.
+
+A new audit script checks the rules of the paper on every build. It found no typed result numbers in the prose; the
+numbers it allows are definitions (the 10th and 90th percentiles of the 80% range, lambda fixed at 1) and figure layout
+settings. In the read-through, one alt text claimed that every energy interval crosses one with relatedness controlled;
+F-type ATP synthase does not (0.62, 0.39 to 0.99, adjusted p 0.34), so the alt text now says what is true. The
+released-tools comparison being at the species level only is now stated in Limitations.
+
+## 2026-10-28, paper phase 5: supplement, release table and archive
+
+Decisions on the three open claims. The independent-species test (trained on gRodon's growth table alone, tested on 294
+bacterial species from the other sources, 2.09x) goes in the supplement as a check that does not depend on how folds are
+drawn, with archaea shown apart because none are in its training set. The syntrophy rule was rerun and reproduces (3 of 6
+known syntrophs, 66 false calls, mostly clostridial orders and Thermotogae); it stays in the supplementary methods. The
+JEPA comparison is dropped from the paper: it was run on the 304-species corpus with a weak head, so it cannot be set
+against the current model without a rerun.
+
+The low-energy test was rerun on the rebuilt training table and is identical to the 2026-10-15 output. Looking at all
+three checks together: no energy input reaches adjusted p < 0.05 in any of them. Three other inputs move: with lambda
+fixed at 1, complex I and the number of terminal oxidases go with faster growth, and with only groups at their own GTDB
+species, catalase does. Regulator density holds in the main analysis and two of three checks, not with lambda at 1. All of
+this is now in a supplementary table.
+
+The deployed 80% ranges were checked for the two other targets on the nested predictions: 79 to 80% for the 20 C doubling
+time and 81 to 84% for growth temperature (slightly wide). So the release table gives ranges for all three targets. The
+old export script failed on a renamed column; it was rewritten to produce the release table.
+
+The archive was tested by unpacking it in an empty folder and rebuilding the numbers and tables from it alone; the output
+was identical. The HQ genome report folder still held the 2026-10-19 predictions from before the 16S rebuild and was
+regenerated; its prose is older than the paper and was not reviewed this time.
+
+## 2026-10-28, paper phase 3: 16S source fixed, nested headline, ablations
+
+Labeled species had their 16S gene fetched from NCBI by name, while GEM genomes get the gene cut from the genome with
+barrnap. Cutting the gene from the labeled genomes too (`evaluate_16s_source.py --extract`, 685 of 742 found) showed that
+the two copies differ for 540 genomes (median k-mer distance 0.036 against 0.158 to the closest other species; for 65
+the NCBI copy is farther from the genome's own gene than from another species). Training on NCBI copies and predicting
+from genome copies cost 1.76x to 1.79x with species held out and 1.98x to 2.03x with orders held out, in 3 of 3 seeds;
+training on genome copies removes it (1.75x, 1.97x). `load_training_table` now uses the genome copy where there is one,
+and everything was rebuilt (retuning, accuracy table, GEM predictions, MAGs, benchmarks, all paper experiments).
+
+The retuned settings differ a lot from the previous ones (smaller trees, more regularization), which says the random
+search is flat near the optimum. GEM predictions keep their order (Spearman 0.976 against the previous release; median
+change 1.15-fold, 90th percentile 1.45-fold); genomes predicted slower than a day fell from 72 to 39.
+
+Nested headline (`evaluate_paper_headline.py`, settings chosen inside each split, four placement copies, 3 seeds): own
+temperature 1.75x, 1.91x, 2.06x, 2.08x from same genus to new order (Spearman 0.74 to 0.66, slow AUC 0.85 to 0.82). The
+four copies are what help at the species and genus level (fixed single 1.82x, fixed with copies 1.75x); choosing
+settings inside the split changes nothing by more than 0.01. At 20 C the nested choice is slightly worse for new orders
+(1.94x against 1.91x), so the released table is slightly optimistic there. Slow calls: 9 of 52 slow groups predicted above
+a day with species held out (8 correct), none with orders held out. The deployed 80% ranges cover 80% to 81% of the nested
+held-out values, so they stay.
+
+Released tools, our model nested: without temperature 1.76x against gRodon 1.92x and Phydon 1.85x given it (3 of 3 seeds
+each); with temperature 1.70x, Spearman 0.76, AUC 0.87.
+
+Ablations against the final model (10 seeds): gRodon statistics and gene features carry the accuracy (orders 2.09x to
+2.39x and 2.64x without them); the added species help at both levels; the phylogeny helps only with a same-genus relative
+and slightly hurts with orders held out (2.07x without it, 8 of 10); 16S changes the typical error by nothing at either
+level (slow AUC 0.80 to 0.79 without it at the order level). Kept both: the gains are within noise and the paper states
+it. A predicted temperature as input gives a small gain (2.09x to 2.08x), not adopted.
+
+Audit checks (`audit_controls.py`): the study-level check finds 8 of the 9 earlier exclusions on its own; the four
+Kevbrina values alone make monooxygenase carriers look 5.16x slower (p 0.011), 1.49x (p 0.90) without them.
+
 ## 2026-10-19, tuning and a new learner
 
 The deployed learner had not changed since the start (gradient-boosted trees, 200 trees, depth 3, median loss).

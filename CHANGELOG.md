@@ -1,5 +1,79 @@
 # Changelog
 
+## 1.23.0, 2026-11-09
+
+External test and order-level comparison with the released tools. `data/curated/external_growth_rates.csv`: 51 doubling
+times from species descriptions (PubMed abstracts and open full texts, each with its PMID or PMC id) for species absent from
+the Madin compilation by NCBI taxonomy ID and from our labels; `build_external_features.py` computes their inputs with the
+labeled-genome code (append-only to the shared tables) and `evaluate_external.py` scores the released model on the 48 usable
+genomes. The model beats the relatives' median and gRodon there, but its ranges are too narrow (67% coverage) and it misses
+the slow growers; both papers say so. `compare_released_tools.py --level order` and `run_released_phydon.R ... order` repeat
+the released-tools comparison with orders held out, cutting Phydon's training table by GTDB order;
+`released_tools_order_test.py` adds the paired test. With orders held out our model trails gRodon given the temperature, so
+the abstract and introduction claims were narrowed to new species. Fix: `deploy_features` now uses a genome's own codon
+usage for external rows. `embed_gem_esm.py` (ESM-2 embeddings of the GEM genomes) is running and not yet used. New
+dependencies in `pyproject.toml`: pyrodigal, statsmodels, pyreadr, threadpoolctl, fair-esm.
+
+## 1.22.0, 2026-11-09
+
+Third pressure test and a prose rewrite of the ISMB paper. `pressure_tests_round2.py` (in `make paper-results`): ten splits
+for the model against the relatives' median, a leakage bound for gRodon's released estimate (refitted inside each split), the
+effect of the labels from flagged-but-kept studies, and the duplicate genome row. New supplementary table of these checks.
+The ISMB paper's abstract, introduction, results and discussion were rewritten in plainer prose with every number still a
+macro; still 9 pages, audit passes.
+
+## 1.21.0, 2026-11-01
+
+Panel fixes and a benchmark release. `calibrate_ranges.py`: 80% ranges by novelty level and domain (archaea now covered),
+coverage cross-fitted over genera and reported by group, and a calibrated probability of growing slower than a day, released
+as `prob_slower_than_a_day` with a `domain` column. Bootstrap intervals resample genera. `embed_proteins_esm.py` and
+`evaluate_esm_baseline.py`: ESM-2 (35M) embeddings of every labeled genome (ribosomal proteins plus 100 sampled proteins) as
+a learned-representation baseline on the paper's folds; a ridge probe matches the genome features and the combination is
+significantly better. New `gem_worldmodel.benchmark` (GrowthBench interface: load, official splits, scoring, required
+baseline), tested and checked fold by fold against the paper. New `paper_neurips/`: the NeurIPS Datasets and Benchmarks
+version with datasheet and checklist. 88 tests.
+
+## 1.20.0, 2026-11-01
+
+Pressure test of the paper. `scripts/accuracy/pressure_tests.py` scores a taxonomy baseline (median of the closest labeled
+relatives) and the training median on the headline folds, bootstrap intervals over species groups, a shuffled-label control,
+paired per-genome tests against the released tools (`compare_released_tools.py` now writes per-genome predictions) and MAG
+intervals. Findings that changed the paper: with species held out the taxonomy baseline is close on typical error (the
+model ranks better); without the measured temperature the model is comparable to, not significantly better than, the
+released tools given it. Methods rewritten with notation, equations and two algorithms; Figure 3 replaced by a table with
+the paired tests; Discussion rewritten; still 9 pages.
+
+## 1.19.0, 2026-11-01
+
+The manuscript is in the OUP *Bioinformatics* template (`oup-authoring-template`, as ISMB requires) and fits the 9-page
+limit with references; structured abstract of 226 words; alt text on every figure (Figure 1 now built as a standalone PDF);
+two-column ablation table; reference style `paper/gem-oup.bst`. New `paper/scripts/audit_paper.py`, run by `make` in
+`paper/`, fails on an undefined macro, a typed number in the prose, an em dash, a hype word, a placeholder, more than nine
+pages or an abstract over 250 words. Internal review in `paper/REVIEW.md`.
+
+## 1.18.0, 2026-10-28
+
+Release and reproduction for the paper. `scripts/pipeline/export_hq_table.py` (run by `make predict`) writes the released
+table `release/gem_growth_predictions.csv` with `release/COLUMNS.md`: each genome gets the error and 80% range of its
+model and novelty level for the doubling time, the 20 C doubling time and the growth temperature (the old script no longer
+ran). `paper/scripts/make_archive.py` assembles the Zenodo deposit in `dist/zenodo/` (ignored by git); unpacked in an empty
+folder it rebuilt every number and table. `make paper` runs everything from the downloaded data to the PDFs, and
+`paper-results` now includes the MAG check and the independent-species test. `evaluate_syntrophy_marker.py` writes
+`syntrophy_marker.csv`. The supplement has supplementary results and a data and code section, with new tables for the
+literature strains, all ablations, the independent-species test, MAGs by species, every input of the low-energy test,
+the release columns and the step behind each result. The HQ genome report was regenerated with the current predictions.
+
+## 1.17.0, 2026-10-28
+
+The training table uses the 16S gene cut from each labeled genome with barrnap, as for GEM genomes, and falls back to the
+NCBI copy only where barrnap finds none (`deploy_features.load_training_table`, `evaluate_16s_source.py`). Training on NCBI
+copies and predicting from genome copies had cost 0.03 to 0.05 in typical error. Everything was rebuilt: settings retuned,
+accuracy table, GEM predictions (39 genomes slower than a day, was 72), MAGs and benchmarks. New paper experiments, run by
+`make paper-results`: nested headline accuracy (`evaluate_paper_headline.py`), audit checks (`audit_controls.py`),
+ablations against the final model (`evaluate_ablations.py`) and released tools with our model built inside each split
+(`compare_released_tools.py --nested`). Paper figures and tables are generated by `paper/scripts/figures.py` and
+`make_tables.py`.
+
 ## 1.16.0, 2026-10-19
 
 New deployed learner: the average of histogram gradient boosting (median loss) and a random forest (`models/deployed.py`), with settings per target in `configs/deployed_model.yaml` (`tune_deployed_model.py`, `make tune`). Chosen by an untuned comparison (`evaluate_learners.py`) and nested tuning (`evaluate_tuning.py`), where it beat the old gradient-boosted trees at every level of novelty. All deployment scripts use it. Own-temperature error 1.81x to 2.12x from same genus to new order (was 1.86x to 2.21x), growth temperature 5.1 to 6.2 C (was 5.6 to 6.5 C).

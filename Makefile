@@ -1,4 +1,4 @@
-.PHONY: tune released-tools r-packages label-check lifestyle-test ribosomal-hmms landmarks fetch-16s madin-extension genome-rows labeled-genes gem-genes tune accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
+.PHONY: paper paper-results tune released-tools r-packages label-check lifestyle-test ribosomal-hmms landmarks fetch-16s madin-extension genome-rows labeled-genes gem-genes tune accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
 
 PYTHON ?= .venv/bin/python
 PIP ?= .venv/bin/pip
@@ -129,6 +129,8 @@ released-tools:
 	Rscript scripts/r/run_released_grodon.R
 	$(PYTHON) scripts/accuracy/compare_released_tools.py
 	$(PYTHON) scripts/accuracy/evaluate_grodon_and_temperature.py
+	$(PYTHON) scripts/accuracy/compare_released_tools.py --prepare --level order
+	Rscript scripts/r/run_released_phydon.R 0,1,2 order
 
 label-check:
 	$(PYTHON) scripts/accuracy/screen_labels.py
@@ -150,6 +152,7 @@ accuracy-table:
 
 predict:
 	$(PYTHON) scripts/pipeline/predict_gem_genomes_gbm.py
+	$(PYTHON) scripts/pipeline/export_hq_table.py
 
 report:
 	$(PYTHON) scripts/pipeline/make_report_charts.py
@@ -160,3 +163,30 @@ predict-all: ribosomal-hmms landmarks madin-extension genome-rows fetch-16s labe
 clean:
 	rm -rf checkpoints/ .pytest_cache/ .ruff_cache/
 	find . -name __pycache__ -exec rm -rf {} +
+
+# experiments behind the paper (after predict-all); long, several hours on 10 cores
+paper-results:
+	$(PYTHON) scripts/accuracy/evaluate_16s_source.py
+	$(PYTHON) scripts/accuracy/audit_controls.py
+	$(PYTHON) scripts/accuracy/evaluate_paper_headline.py --seeds 3 --workers 9
+	$(PYTHON) scripts/accuracy/compare_released_tools.py
+	$(PYTHON) scripts/accuracy/compare_released_tools.py --nested
+	$(PYTHON) scripts/accuracy/evaluate_ablations.py --seeds 10 --workers 9
+	$(PYTHON) scripts/accuracy/evaluate_tuning.py
+	$(PYTHON) scripts/accuracy/validate_on_gem_mags.py
+	$(PYTHON) scripts/accuracy/evaluate_independent_species.py
+	cd scripts/accuracy && ../../$(PYTHON) pressure_tests.py
+	cd scripts/accuracy && ../../$(PYTHON) pressure_tests_round2.py
+	$(PYTHON) scripts/accuracy/calibrate_ranges.py
+	$(PYTHON) scripts/accuracy/embed_proteins_esm.py
+	cd scripts/accuracy && ../../$(PYTHON) evaluate_esm_baseline.py
+	cd scripts/accuracy && ../../$(PYTHON) compare_released_tools.py --nested --level order --workers 8
+	$(PYTHON) scripts/accuracy/released_tools_order_test.py
+	$(PYTHON) scripts/accuracy/build_external_features.py
+	cd scripts/accuracy && ../../$(PYTHON) evaluate_external.py
+
+# everything behind the paper from the downloaded data, then the PDFs (paper/Makefile); many hours
+paper: predict-all released-tools label-check lifestyle-test paper-results
+	$(PYTHON) scripts/pipeline/export_hq_table.py
+	$(MAKE) -C paper
+	$(MAKE) -C paper_neurips

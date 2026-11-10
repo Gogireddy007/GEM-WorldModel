@@ -50,6 +50,54 @@ like testing a different model head or trying to patch a specific gap in the tra
 The older script `scripts/pipeline/predict_unlabeled_genomes.py` is kept for reference but its output should not
 be used, see `Test on HQ genomes/superseded/README.md` and the 2026-10-04 entries in `research_log.md`.
 
+## The paper and its data
+
+The manuscript is in `paper/` (`make` there builds both PDFs from the result files). Everything behind it, from the
+downloaded data to the PDFs, runs with `make paper` (many hours on ten cores). The GEM prediction table released with the
+paper is `release/gem_growth_predictions.csv`, with its columns described in `release/COLUMNS.md`; every prediction
+carries the error and 80% range measured at its novelty level for all three targets.
+
+`paper/scripts/make_archive.py` assembles the Zenodo deposit in `dist/zenodo/` (code, the derived tables and result files,
+the release table, the PDFs and a SHA-256 manifest). Unpacking `code.zip` and then `data.zip` inside it is enough to
+rebuild every number and table of the paper and to retrain every model without downloading genomes.
+
+Two versions of the manuscript are kept: `paper/` for ISMB (Bioinformatics template, 9 pages) and `paper_neurips/` for the
+NeurIPS Datasets and Benchmarks track (GrowthBench). Both list anonymous authors for review.
+
+## Where things stand (version 1.23.0, 2026-11-09)
+
+- Accuracy with whole lineages held out: 1.75-fold typical error with a labeled relative in the genus, 2.08-fold
+  with none in the order.
+- Against the released gRodon and Phydon: for a new species, our model without the measured temperature is as accurate as
+  they are with it. For a new order it trails gRodon given the temperature, ties with it when given the temperature too, and
+  clearly beats gRodon without it.
+- External test (`data/curated/external_growth_rates.csv`, species outside both training compilations): 2.53-fold against
+  3.65-fold for taxonomy alone, but the 80% ranges hold only 67% of values there and slow growers are missed.
+- ESM-2 embeddings match the hand-built features and improve them when combined; embeddings for the GEM genomes are being
+  computed (`scripts/pipeline/embed_gem_esm.py`) and are not yet used for the released predictions.
+
+`CHANGELOG.md` lists every version and `research_log.md` has the numbers behind each step.
+
+## GrowthBench: evaluating a new model
+
+The labeled genomes, the official lineage-held-out splits and the scores of the paper are available as a small interface,
+so a new model can be compared on exactly the same folds, together with the required taxonomy baseline:
+
+```python
+from gem_worldmodel import benchmark as gb
+
+data = gb.load()   # labeled genomes with gene features: data.table (taxonomy, targets), data.X (inputs)
+
+def fit_predict(train, test, X_train, X_test):
+    return my_model.fit(X_train, train["y"]).predict(X_test)   # natural log of the doubling time in hours
+
+results = gb.evaluate(fit_predict, data)   # species, genus, family and order held out; 3 seeds
+print(results.groupby(["held_out", "method"])[["typical error", "Spearman"]].mean())
+```
+
+The splits are identical to those of every result in the paper (`tests/test_benchmark.py`; checked fold by fold on the real
+data). Do not use the measured growth temperature unless you report the result separately.
+
 ## What's real and what's approximate
 
 The labeled corpus of species with a measured growth rate is small, 754 genomes from 669 species (bacteria and archaea),
@@ -77,8 +125,9 @@ annotation-based values at a correlation of 0.997). Gene content for energy meta
 sulfate reduction, ammonia oxidation, nitrogen fixation, photosynthesis, transporter density and others) comes from Pfam
 family searches on the same predicted genes, so it is a set of presence calls, not a full annotation. The model has been compared with the released gRodon and Phydon R
 packages on the same genes and splits (`scripts/accuracy/compare_released_tools.py`, R packages in a project library
-`.Rlib`): on the same inputs it has the lower typical error (released gRodon ranks about as well when both get the measured
-temperature), and the released tools look better only when they are given the measured growth temperature, which the model
-has to predict. Older comparisons in this repository used reimplementations
+`.Rlib`): given the same inputs it has the lower typical error and the higher Spearman correlation, and without the
+measured growth temperature, which it predicts itself, its typical error is still lower than either tool's given that
+temperature (`compare_released_tools.py --nested`), although per genome that difference is not significant
+(`pressure_tests.py`: p 0.07 against gRodon, 0.11 against Phydon). Older comparisons in this repository used reimplementations
 that were weaker than the real tools. Real 16S extraction from raw
 genome sequences is slow, so it only covers part of the large unlabeled genome catalog, not all of it.
