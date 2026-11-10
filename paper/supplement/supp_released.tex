@@ -1,0 +1,21 @@
+\begin{table}[ht]\centering\small
+\caption{Comparison with the released gRodon and Phydon on the same genomes and folds (species held out, mean of 3 seeds), with our model built inside each split as deployed.}\label{tab:released}
+\begin{tabular}{lcccc}
+\toprule
+& Genomes & Typical error ($\times$) & Spearman & AUC, slow \\
+\midrule
+\multicolumn{5}{l}{\textit{All genomes}} \\
+\quad This model & 680 & 1.76 & 0.72 & 0.85 \\
+\quad This model, given the temperature & 680 & 1.70 & 0.76 & 0.87 \\
+\quad gRodon & 680 & 2.40 & 0.52 & 0.75 \\
+\quad gRodon, given the temperature & 680 & 1.92 & 0.73 & 0.84 \\
+\quad Phydon, given the temperature & 665 & 1.85 & 0.70 & 0.81 \\
+\multicolumn{5}{l}{\textit{Phydon found the species on its tree}} \\
+\quad This model & 665 & 1.76 & 0.71 & 0.85 \\
+\quad This model, given the temperature & 665 & 1.70 & 0.76 & 0.87 \\
+\quad gRodon & 665 & 2.41 & 0.52 & 0.75 \\
+\quad gRodon, given the temperature & 665 & 1.92 & 0.73 & 0.84 \\
+\quad Phydon, given the temperature & 665 & 1.85 & 0.70 & 0.81 \\
+\bottomrule
+\end{tabular}
+\end{table}

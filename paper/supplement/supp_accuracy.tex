@@ -1,0 +1,23 @@
+\begin{table}[ht]\centering\small
+\caption{Accuracy by closest labeled relative, mean of 3 seeds. Error is the typical fold error for doubling times and the mean absolute error in \textdegree C for growth temperature; $\rho$ is the Spearman correlation. Nested: settings chosen inside each split, each training genome entered once per placement rank, as deployed (the estimates quoted in the main text). Fixed, coarsened: the deployed settings, chosen on all rows, with the deployed training scheme. Fixed, single: the deployed settings and each genome entered once.}\label{tab:accuracy}
+\begin{tabular}{lcccccccc}
+\toprule
+& \multicolumn{2}{c}{same genus} & \multicolumn{2}{c}{new genus} & \multicolumn{2}{c}{new family} & \multicolumn{2}{c}{new order} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-9}
+& Error & $\rho$ & Error & $\rho$ & Error & $\rho$ & Error & $\rho$ \\
+\midrule
+\multicolumn{9}{l}{\textit{Doubling time at the growth temperature}} \\
+\quad nested & 1.75 & 0.74 & 1.91 & 0.71 & 2.06 & 0.66 & 2.08 & 0.66 \\
+\quad fixed, coarsened & 1.75 & 0.74 & 1.92 & 0.71 & 2.07 & 0.67 & 2.08 & 0.66 \\
+\quad fixed, single & 1.82 & 0.74 & 1.96 & 0.71 & 2.07 & 0.67 & 2.08 & 0.67 \\
+\multicolumn{9}{l}{\textit{Doubling time at 20 \textdegree C}} \\
+\quad nested & 1.73 & 0.84 & 1.81 & 0.83 & 1.91 & 0.81 & 1.93 & 0.81 \\
+\quad fixed, coarsened & 1.73 & 0.84 & 1.81 & 0.83 & 1.88 & 0.82 & 1.93 & 0.81 \\
+\quad fixed, single & 1.75 & 0.84 & 1.79 & 0.83 & 1.88 & 0.82 & 1.91 & 0.81 \\
+\multicolumn{9}{l}{\textit{Growth temperature}} \\
+\quad nested & 4.96 & 0.86 & 5.74 & 0.83 & 5.81 & 0.83 & 5.99 & 0.81 \\
+\quad fixed, coarsened & 5.13 & 0.85 & 5.77 & 0.83 & 5.87 & 0.82 & 6.07 & 0.81 \\
+\quad fixed, single & 5.36 & 0.85 & 5.88 & 0.82 & 5.96 & 0.82 & 6.15 & 0.81 \\
+\bottomrule
+\end{tabular}
+\end{table}

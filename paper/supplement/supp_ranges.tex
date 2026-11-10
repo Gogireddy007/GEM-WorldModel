@@ -1,0 +1,33 @@
+\begin{table}[ht]\centering\small
+\caption{Coverage (\%) of the 80\% ranges for the doubling time at the growth temperature, cross-fitted over genera, by group of genomes, for ranges set by novelty level alone and by novelty level and domain (released). Groups by the true doubling time cannot be targeted by any range built from the inputs.}\label{tab:ranges}
+\begin{tabular}{llccccc}
+\toprule
+Held out & Ranges by & All & Bacteria & Archaea & Fast in truth & Slow in truth \\
+\midrule
+same genus & novelty & 80 & 80 & 79 & 83 & 44 \\
+ & novelty, domain & 80 & 80 & 79 & 83 & 45 \\
+new genus & novelty & 80 & 80 & 80 & 83 & 36 \\
+ & novelty, domain & 79 & 79 & 79 & 83 & 37 \\
+new family & novelty & 80 & 79 & 81 & 84 & 29 \\
+ & novelty, domain & 80 & 80 & 80 & 84 & 29 \\
+new order & novelty & 80 & 82 & 73 & 85 & 26 \\
+ & novelty, domain & 79 & 79 & 78 & 83 & 29 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]\centering\small
+\caption{The probability of a doubling time above 24 h (logistic model on the predicted log doubling time and the domain), cross-fitted over genera, by the closest labeled relative. Calibration error: mean absolute difference between predicted probability and observed share over fifths of the predicted probability.}\label{tab:slowprob}
+\begin{tabular}{lcccc}
+\toprule
+& same genus & new genus & new family & new order \\
+\midrule
+AUC & 0.84 & 0.83 & 0.79 & 0.81 \\
+Brier score & 0.057 & 0.060 & 0.066 & 0.065 \\
+Brier score of the base rate & 0.072 & 0.072 & 0.072 & 0.072 \\
+calibration error & 0.010 & 0.008 & 0.009 & 0.012 \\
+slow among the top fifth & 0.24 & 0.25 & 0.22 & 0.22 \\
+slow overall & 0.08 & 0.08 & 0.08 & 0.08 \\
+\bottomrule
+\end{tabular}
+\end{table}

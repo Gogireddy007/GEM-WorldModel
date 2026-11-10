@@ -1,0 +1,522 @@
+macro,value,source
+NGenomes,754,load_training_table rows
+NSpecies,669,load_training_table species
+NSlow,58,labels above 24 h
+NArchaea,156,archaeal rows
+NInputs,56,deployed feature count
+NLiterature,8,literature rows
+NGenomeExtension,161,Madin genome extension rows
+NOriginal,294,original corpus rows
+NMadinExtension,291,Madin extension rows (traits from the table)
+NExcluded,10,data/curated/label_exclusions.csv
+NExcludedKevbrina,4,"label_exclusions.csv, Kevbrina rows"
+NExcludedWord,ten,label_exclusions.csv (word)
+NExcludedKevbrinaWord,four,label_exclusions.csv (word)
+NExcludedSourcesWord,five,label_exclusions.csv sources (word)
+NLiteratureWord,eight,literature rows (word)
+ErrSameGenus,1.75,paper_headline_accuracy.csv nested own temperature
+RhoSameGenus,0.74,paper_headline_accuracy.csv nested own temperature
+AucSameGenus,0.85,paper_headline_accuracy.csv nested own temperature
+ErrRefSameGenus,1.73,paper_headline_accuracy.csv nested 20 C
+RhoRefSameGenus,0.84,paper_headline_accuracy.csv nested 20 C
+TempMAESameGenus,5.0,paper_headline_accuracy.csv nested growth temperature
+RhoTempSameGenus,0.86,paper_headline_accuracy.csv nested growth temperature
+FixedErrSameGenus,1.82,"paper_headline_accuracy.csv fixed, single"
+CoarseErrSameGenus,1.75,"paper_headline_accuracy.csv fixed, coarsened"
+FixedErrRefSameGenus,1.75,"paper_headline_accuracy.csv fixed, single, 20 C"
+ErrNewGenus,1.91,paper_headline_accuracy.csv nested own temperature
+RhoNewGenus,0.71,paper_headline_accuracy.csv nested own temperature
+AucNewGenus,0.84,paper_headline_accuracy.csv nested own temperature
+ErrRefNewGenus,1.81,paper_headline_accuracy.csv nested 20 C
+RhoRefNewGenus,0.83,paper_headline_accuracy.csv nested 20 C
+TempMAENewGenus,5.7,paper_headline_accuracy.csv nested growth temperature
+RhoTempNewGenus,0.83,paper_headline_accuracy.csv nested growth temperature
+FixedErrNewGenus,1.96,"paper_headline_accuracy.csv fixed, single"
+CoarseErrNewGenus,1.92,"paper_headline_accuracy.csv fixed, coarsened"
+FixedErrRefNewGenus,1.79,"paper_headline_accuracy.csv fixed, single, 20 C"
+ErrNewFamily,2.06,paper_headline_accuracy.csv nested own temperature
+RhoNewFamily,0.66,paper_headline_accuracy.csv nested own temperature
+AucNewFamily,0.81,paper_headline_accuracy.csv nested own temperature
+ErrRefNewFamily,1.91,paper_headline_accuracy.csv nested 20 C
+RhoRefNewFamily,0.81,paper_headline_accuracy.csv nested 20 C
+TempMAENewFamily,5.8,paper_headline_accuracy.csv nested growth temperature
+RhoTempNewFamily,0.83,paper_headline_accuracy.csv nested growth temperature
+FixedErrNewFamily,2.07,"paper_headline_accuracy.csv fixed, single"
+CoarseErrNewFamily,2.07,"paper_headline_accuracy.csv fixed, coarsened"
+FixedErrRefNewFamily,1.88,"paper_headline_accuracy.csv fixed, single, 20 C"
+ErrNewOrder,2.08,paper_headline_accuracy.csv nested own temperature
+RhoNewOrder,0.66,paper_headline_accuracy.csv nested own temperature
+AucNewOrder,0.82,paper_headline_accuracy.csv nested own temperature
+ErrRefNewOrder,1.93,paper_headline_accuracy.csv nested 20 C
+RhoRefNewOrder,0.81,paper_headline_accuracy.csv nested 20 C
+TempMAENewOrder,6.0,paper_headline_accuracy.csv nested growth temperature
+RhoTempNewOrder,0.81,paper_headline_accuracy.csv nested growth temperature
+FixedErrNewOrder,2.08,"paper_headline_accuracy.csv fixed, single"
+CoarseErrNewOrder,2.08,"paper_headline_accuracy.csv fixed, coarsened"
+FixedErrRefNewOrder,1.91,"paper_headline_accuracy.csv fixed, single, 20 C"
+NSeedsHeadline,3,paper_headline_accuracy.csv seeds
+NHeadlineRows,742,paper_headline_accuracy.csv rows
+SlowCalledSpecies,9,"paper_headline_predictions.csv nested, species held out"
+SlowCalledTrueSpecies,8,"paper_headline_predictions.csv nested, species held out"
+SlowTotalSpecies,52,"paper_headline_predictions.csv nested, species held out"
+SlowCalledOrder,0,"paper_headline_predictions.csv nested, order held out"
+SlowCalledTrueOrder,0,"paper_headline_predictions.csv nested, order held out"
+SlowTotalOrder,52,"paper_headline_predictions.csv nested, order held out"
+CoverSameGenus,80,deployed 80% ranges (final_accuracy_by_tier.csv) applied to nested held-out predictions
+CoverNewGenus,80,deployed 80% ranges (final_accuracy_by_tier.csv) applied to nested held-out predictions
+CoverNewFamily,80,deployed 80% ranges (final_accuracy_by_tier.csv) applied to nested held-out predictions
+CoverNewOrder,81,deployed 80% ranges (final_accuracy_by_tier.csv) applied to nested held-out predictions
+CoverRefMin,79,"deployed 80% ranges for 20 C on nested held-out predictions, lowest level"
+CoverRefMax,80,"deployed 80% ranges for 20 C on nested held-out predictions, highest level"
+CoverTempMin,81,"deployed 80% ranges for growth temperature on nested held-out predictions, lowest level"
+CoverTempMax,84,"deployed 80% ranges for growth temperature on nested held-out predictions, highest level"
+NGEMPredicted,"9,139",hq_predictions_gbm.csv
+GEMShareSameGenus,11,hq_predictions_gbm.csv tier shares
+GEMShareNewGenus,24,hq_predictions_gbm.csv tier shares
+GEMShareNewFamily,27,hq_predictions_gbm.csv tier shares
+GEMShareNewOrder,38,hq_predictions_gbm.csv tier shares
+GEMShareNoGenus,89,"hq_predictions_gbm.csv, no labeled relative in the same genus"
+GEMMedianHours,2.8,hq_predictions_gbm.csv
+GEMShareSlow,0.4,hq_predictions_gbm.csv
+GEMNSlow,39,hq_predictions_gbm.csv
+GEMSlowTopOrder,Anaerolineales,"hq_predictions_gbm.csv, order with most genomes slower than a day"
+GEMSlowTopOrderN,21,hq_predictions_gbm.csv
+GEMMedianHuman,1.6,hq_predictions_gbm.csv Human
+GEMNHuman,"3,747",hq_predictions_gbm.csv Human
+GEMNewOrderHuman,26,"hq_predictions_gbm.csv Human, share without a labeled relative in the order"
+GEMMedianAquatic,6.7,hq_predictions_gbm.csv Aquatic
+GEMNAquatic,"2,522",hq_predictions_gbm.csv Aquatic
+GEMNewOrderAquatic,58,"hq_predictions_gbm.csv Aquatic, share without a labeled relative in the order"
+GEMMedianBuilt,1.0,hq_predictions_gbm.csv Built environment
+GEMNBuilt,915,hq_predictions_gbm.csv Built environment
+GEMNewOrderBuilt,10,"hq_predictions_gbm.csv Built environment, share without a labeled relative in the order"
+GEMMedianTerrestrial,7.3,hq_predictions_gbm.csv Terrestrial
+GEMNTerrestrial,497,hq_predictions_gbm.csv Terrestrial
+GEMNewOrderTerrestrial,55,"hq_predictions_gbm.csv Terrestrial, share without a labeled relative in the order"
+GEMMedianWastewater,7.1,hq_predictions_gbm.csv Wastewater
+GEMNWastewater,492,hq_predictions_gbm.csv Wastewater
+GEMNewOrderWastewater,60,"hq_predictions_gbm.csv Wastewater, share without a labeled relative in the order"
+GEMSlowSecondOrder,Nitrososphaerales,hq_predictions_gbm.csv
+GEMSlowSecondOrderN,13,hq_predictions_gbm.csv
+RelOursErr,1.76,released_tools_comparison_nested.csv
+RelOursRho,0.72,released_tools_comparison_nested.csv
+RelOursAuc,0.85,released_tools_comparison_nested.csv
+RelOursTempErr,1.70,released_tools_comparison_nested.csv
+RelOursTempRho,0.76,released_tools_comparison_nested.csv
+RelOursTempAuc,0.87,released_tools_comparison_nested.csv
+RelGRodonErr,1.92,released_tools_comparison_nested.csv
+RelGRodonRho,0.73,released_tools_comparison_nested.csv
+RelGRodonAuc,0.84,released_tools_comparison_nested.csv
+RelGRodonNoTempErr,2.40,released_tools_comparison_nested.csv
+RelGRodonNoTempRho,0.52,released_tools_comparison_nested.csv
+RelGRodonNoTempAuc,0.75,released_tools_comparison_nested.csv
+RelPhydonErr,1.85,released_tools_comparison_nested.csv
+RelPhydonRho,0.70,released_tools_comparison_nested.csv
+RelPhydonAuc,0.81,released_tools_comparison_nested.csv
+RelN,680,released_tools_comparison_nested.csv
+RelNPhydon,665,released_tools_comparison_nested.csv
+RelNSeeds,3,released_tools_comparison_nested.csv seeds
+RelOursTempBeatsPhydon,3,"seeds, typical error"
+RelOursTempBeatsGRodon,3,"seeds, typical error"
+RelOursBeatsPhydon,3,"seeds, typical error"
+RelOursBeatsGRodon,3,"seeds, typical error"
+PosCtrlCaughtWord,eight,audit_controls.csv positive control (word)
+PosCtrlNWord,nine,audit_controls.csv positive control (word)
+KevFoldWith,5.2,audit_controls.csv
+KevLowWith,2.1,audit_controls.csv
+KevHighWith,12.7,audit_controls.csv
+KevPWith,0.01,audit_controls.csv
+KevNWith,11,audit_controls.csv
+KevFoldWithout,1.5,audit_controls.csv
+KevLowWithout,0.5,audit_controls.csv
+KevHighWithout,4.8,audit_controls.csv
+KevPWithout,0.90,audit_controls.csv
+KevNWithout,7,audit_controls.csv
+KevLabelMin,112,audit_controls.csv Kevbrina labels
+KevLabelMax,187,audit_controls.csv Kevbrina labels
+KevRecordMin,"2,717",audit_controls.csv Kevbrina source records
+KevRecordMax,"4,576",audit_controls.csv Kevbrina source records
+KevRatio,24,"audit_controls.csv record / label, median"
+NStudiesCompared,27,label_sources_studies.csv
+NStudiesFlagged,8,label_sources_studies.csv
+SixteenOwnDist,0.036,16s_source_evaluation.csv
+SixteenNearDist,0.158,16s_source_evaluation.csv
+SixteenN,540,16s_source_evaluation.csv
+SixteenFarther,65,16s_source_evaluation.csv
+SixteenShift,0.09,16s_source_evaluation.csv
+SixteenNGenomeCopy,685,"labeled_16s_from_genomes.csv, training rows with a genome copy"
+SixteenErrNcbiSpecies,1.76,16s_source_evaluation.csv
+SixteenErrGenomeSpecies,1.75,16s_source_evaluation.csv
+SixteenErrMixedSpecies,1.79,16s_source_evaluation.csv
+SixteenMixedWorseSpecies,3,16s_source_evaluation.csv
+SixteenErrNcbiOrder,1.98,16s_source_evaluation.csv
+SixteenErrGenomeOrder,1.97,16s_source_evaluation.csv
+SixteenErrMixedOrder,2.03,16s_source_evaluation.csv
+SixteenMixedWorseOrder,3,16s_source_evaluation.csv
+SixteenNSeeds,3,16s_source_evaluation.csv
+NSeedsAblation,10,ablation_evaluation.csv seeds
+AblFinalErrSpecies,1.82,ablation_evaluation.csv species
+AblFinalRhoSpecies,0.74,ablation_evaluation.csv species
+AblFinalAucSpecies,0.84,ablation_evaluation.csv species
+AblGStatErrSpecies,1.93,ablation_evaluation.csv species - gRodon statistics
+AblGStatRhoSpecies,0.70,ablation_evaluation.csv species - gRodon statistics
+AblGStatAucSpecies,0.83,ablation_evaluation.csv species - gRodon statistics
+AblGStatWorseSpecies,10,"ablation_evaluation.csv species - gRodon statistics, seeds"
+AblLifeErrSpecies,1.82,ablation_evaluation.csv species - lifestyle genes
+AblLifeRhoSpecies,0.74,ablation_evaluation.csv species - lifestyle genes
+AblLifeAucSpecies,0.84,ablation_evaluation.csv species - lifestyle genes
+AblLifeWorseSpecies,6,"ablation_evaluation.csv species - lifestyle genes, seeds"
+AblGenesErrSpecies,2.09,ablation_evaluation.csv species - all gene features
+AblGenesRhoSpecies,0.66,ablation_evaluation.csv species - all gene features
+AblGenesAucSpecies,0.81,ablation_evaluation.csv species - all gene features
+AblGenesWorseSpecies,10,"ablation_evaluation.csv species - all gene features, seeds"
+AblSixteenErrSpecies,1.82,ablation_evaluation.csv species - 16S
+AblSixteenRhoSpecies,0.74,ablation_evaluation.csv species - 16S
+AblSixteenAucSpecies,0.84,ablation_evaluation.csv species - 16S
+AblSixteenWorseSpecies,3,"ablation_evaluation.csv species - 16S, seeds"
+AblPhyloErrSpecies,1.84,ablation_evaluation.csv species - phylogeny
+AblPhyloRhoSpecies,0.73,ablation_evaluation.csv species - phylogeny
+AblPhyloAucSpecies,0.84,ablation_evaluation.csv species - phylogeny
+AblPhyloWorseSpecies,9,"ablation_evaluation.csv species - phylogeny, seeds"
+AblAddedErrSpecies,1.86,ablation_evaluation.csv species - added species
+AblAddedRhoSpecies,0.73,ablation_evaluation.csv species - added species
+AblAddedAucSpecies,0.84,ablation_evaluation.csv species - added species
+AblAddedWorseSpecies,10,"ablation_evaluation.csv species - added species, seeds"
+AblEnergyErrSpecies,1.82,ablation_evaluation.csv species + energy features
+AblEnergyRhoSpecies,0.74,ablation_evaluation.csv species + energy features
+AblEnergyAucSpecies,0.84,ablation_evaluation.csv species + energy features
+AblEnergyWorseSpecies,6,"ablation_evaluation.csv species + energy features, seeds"
+AblPredTempErrSpecies,1.80,ablation_evaluation.csv species + predicted temperature
+AblPredTempRhoSpecies,0.74,ablation_evaluation.csv species + predicted temperature
+AblPredTempAucSpecies,0.84,ablation_evaluation.csv species + predicted temperature
+AblPredTempWorseSpecies,4,"ablation_evaluation.csv species + predicted temperature, seeds"
+AblFinalErrOrder,2.09,ablation_evaluation.csv order
+AblFinalRhoOrder,0.65,ablation_evaluation.csv order
+AblFinalAucOrder,0.80,ablation_evaluation.csv order
+AblGStatErrOrder,2.39,ablation_evaluation.csv order - gRodon statistics
+AblGStatRhoOrder,0.57,ablation_evaluation.csv order - gRodon statistics
+AblGStatAucOrder,0.76,ablation_evaluation.csv order - gRodon statistics
+AblGStatWorseOrder,10,"ablation_evaluation.csv order - gRodon statistics, seeds"
+AblLifeErrOrder,2.07,ablation_evaluation.csv order - lifestyle genes
+AblLifeRhoOrder,0.66,ablation_evaluation.csv order - lifestyle genes
+AblLifeAucOrder,0.81,ablation_evaluation.csv order - lifestyle genes
+AblLifeWorseOrder,4,"ablation_evaluation.csv order - lifestyle genes, seeds"
+AblGenesErrOrder,2.64,ablation_evaluation.csv order - all gene features
+AblGenesRhoOrder,0.46,ablation_evaluation.csv order - all gene features
+AblGenesAucOrder,0.73,ablation_evaluation.csv order - all gene features
+AblGenesWorseOrder,10,"ablation_evaluation.csv order - all gene features, seeds"
+AblSixteenErrOrder,2.09,ablation_evaluation.csv order - 16S
+AblSixteenRhoOrder,0.65,ablation_evaluation.csv order - 16S
+AblSixteenAucOrder,0.79,ablation_evaluation.csv order - 16S
+AblSixteenWorseOrder,4,"ablation_evaluation.csv order - 16S, seeds"
+AblPhyloErrOrder,2.07,ablation_evaluation.csv order - phylogeny
+AblPhyloRhoOrder,0.66,ablation_evaluation.csv order - phylogeny
+AblPhyloAucOrder,0.81,ablation_evaluation.csv order - phylogeny
+AblPhyloWorseOrder,2,"ablation_evaluation.csv order - phylogeny, seeds"
+AblAddedErrOrder,2.13,ablation_evaluation.csv order - added species
+AblAddedRhoOrder,0.65,ablation_evaluation.csv order - added species
+AblAddedAucOrder,0.80,ablation_evaluation.csv order - added species
+AblAddedWorseOrder,10,"ablation_evaluation.csv order - added species, seeds"
+AblEnergyErrOrder,2.11,ablation_evaluation.csv order + energy features
+AblEnergyRhoOrder,0.65,ablation_evaluation.csv order + energy features
+AblEnergyAucOrder,0.80,ablation_evaluation.csv order + energy features
+AblEnergyWorseOrder,7,"ablation_evaluation.csv order + energy features, seeds"
+AblPredTempErrOrder,2.08,ablation_evaluation.csv order + predicted temperature
+AblPredTempRhoOrder,0.66,ablation_evaluation.csv order + predicted temperature
+AblPredTempAucOrder,0.80,ablation_evaluation.csv order + predicted temperature
+AblPredTempWorseOrder,2,"ablation_evaluation.csv order + predicted temperature, seeds"
+TuneErrBefore,2.14,tuning_evaluation.csv order deployed
+TuneErrAfter,2.13,tuning_evaluation.csv order hist + forest tuned
+TuneRhoBefore,0.63,tuning_evaluation.csv order deployed
+TuneRhoAfter,0.65,tuning_evaluation.csv order hist + forest tuned
+TuneAucBefore,0.79,tuning_evaluation.csv order deployed
+TuneAucAfter,0.80,tuning_evaluation.csv order hist + forest tuned
+TuneBetter,4,"tuning_evaluation.csv order, seeds"
+TuneNSeeds,5,"tuning_evaluation.csv order, seeds"
+MagErr,1.86,mag_validation.csv
+MagIsoErr,1.70,mag_validation.csv
+MagNSpecies,47,mag_validation.csv
+MagNGenomes,717,mag_validation.csv
+MagGap,1.08,mag_validation.csv median |MAG - isolate prediction|
+MagGapMax,2.2,mag_validation.csv largest |MAG - isolate prediction|
+MagGapSmaller,41,mag_validation.csv species where the gap is below the isolate error
+IndepErr,2.09,independent_test.csv
+IndepN,294,independent_test.csv
+BaseRelErrSameGenus,1.81,pressure_tests.csv baseline
+BaseRelRhoSameGenus,0.66,pressure_tests.csv baseline
+BaseRelAucSameGenus,0.80,pressure_tests.csv baseline
+BaseMedErrSameGenus,2.72,pressure_tests.csv baseline
+CIErrLoSameGenus,1.67,pressure_tests.csv bootstrap 2.5%
+CIErrHiSameGenus,1.86,pressure_tests.csv bootstrap 97.5%
+CIRhoLoSameGenus,0.68,pressure_tests.csv bootstrap 2.5%
+CIRhoHiSameGenus,0.78,pressure_tests.csv bootstrap 97.5%
+CIDiffLoSameGenus,$-$0.21,pressure_tests.csv bootstrap 2.5%
+CIDiffHiSameGenus,0.05,pressure_tests.csv bootstrap 97.5%
+BaseRelErrNewGenus,2.12,pressure_tests.csv baseline
+BaseRelRhoNewGenus,0.57,pressure_tests.csv baseline
+BaseRelAucNewGenus,0.79,pressure_tests.csv baseline
+BaseMedErrNewGenus,2.74,pressure_tests.csv baseline
+CIErrLoNewGenus,1.81,pressure_tests.csv bootstrap 2.5%
+CIErrHiNewGenus,2.02,pressure_tests.csv bootstrap 97.5%
+CIRhoLoNewGenus,0.66,pressure_tests.csv bootstrap 2.5%
+CIRhoHiNewGenus,0.76,pressure_tests.csv bootstrap 97.5%
+CIDiffLoNewGenus,$-$0.42,pressure_tests.csv bootstrap 2.5%
+CIDiffHiNewGenus,$-$0.02,pressure_tests.csv bootstrap 97.5%
+BaseRelErrNewFamily,2.59,pressure_tests.csv baseline
+BaseRelRhoNewFamily,0.40,pressure_tests.csv baseline
+BaseRelAucNewFamily,0.72,pressure_tests.csv baseline
+BaseMedErrNewFamily,2.86,pressure_tests.csv baseline
+CIErrLoNewFamily,1.93,pressure_tests.csv bootstrap 2.5%
+CIErrHiNewFamily,2.24,pressure_tests.csv bootstrap 97.5%
+CIRhoLoNewFamily,0.59,pressure_tests.csv bootstrap 2.5%
+CIRhoHiNewFamily,0.72,pressure_tests.csv bootstrap 97.5%
+CIDiffLoNewFamily,$-$0.84,pressure_tests.csv bootstrap 2.5%
+CIDiffHiNewFamily,$-$0.21,pressure_tests.csv bootstrap 97.5%
+BaseRelErrNewOrder,2.45,pressure_tests.csv baseline
+BaseRelRhoNewOrder,0.41,pressure_tests.csv baseline
+BaseRelAucNewOrder,0.72,pressure_tests.csv baseline
+BaseMedErrNewOrder,2.78,pressure_tests.csv baseline
+CIErrLoNewOrder,1.96,pressure_tests.csv bootstrap 2.5%
+CIErrHiNewOrder,2.23,pressure_tests.csv bootstrap 97.5%
+CIRhoLoNewOrder,0.57,pressure_tests.csv bootstrap 2.5%
+CIRhoHiNewOrder,0.72,pressure_tests.csv bootstrap 97.5%
+CIDiffLoNewOrder,$-$0.74,pressure_tests.csv bootstrap 2.5%
+CIDiffHiNewOrder,$-$0.16,pressure_tests.csv bootstrap 97.5%
+ShuffleErrSpecies,2.91,pressure_tests.csv shuffled labels
+ShuffleRhoSpecies,0.00,pressure_tests.csv shuffled labels
+ShuffleMedErrSpecies,2.73,pressure_tests.csv shuffled labels
+ShuffleErrOrder,2.89,pressure_tests.csv shuffled labels
+ShuffleRhoOrder,$-$0.04,pressure_tests.csv shuffled labels
+ShuffleMedErrOrder,2.72,pressure_tests.csv shuffled labels
+PairGRodonN,680,pressure_tests.csv paired
+PairGRodonBetter,349,"pressure_tests.csv paired, genomes where ours has the smaller error"
+PairGRodonP,0.07,pressure_tests.csv paired Wilcoxon
+PairGRodonDiffLo,$-$0.26,pressure_tests.csv paired bootstrap 2.5%
+PairGRodonDiffHi,$-$0.04,pressure_tests.csv paired bootstrap 97.5%
+PairTempGRodonN,680,"pressure_tests.csv paired, with temperature"
+PairTempGRodonBetter,383,"pressure_tests.csv paired, with temperature"
+PairTempGRodonP,$1.5\times10^{-6}$,"pressure_tests.csv paired Wilcoxon, with temperature"
+PairPhydonN,665,pressure_tests.csv paired
+PairPhydonBetter,347,"pressure_tests.csv paired, genomes where ours has the smaller error"
+PairPhydonP,0.11,pressure_tests.csv paired Wilcoxon
+PairPhydonDiffLo,$-$0.26,pressure_tests.csv paired bootstrap 2.5%
+PairPhydonDiffHi,0.05,pressure_tests.csv paired bootstrap 97.5%
+PairTempPhydonN,665,"pressure_tests.csv paired, with temperature"
+PairTempPhydonBetter,355,"pressure_tests.csv paired, with temperature"
+PairTempPhydonP,$3.9\times10^{-4}$,"pressure_tests.csv paired Wilcoxon, with temperature"
+CIMagErrLo,1.60,pressure_tests.csv MAGs
+CIMagErrHi,2.20,pressure_tests.csv MAGs
+CIMagDiffLo,$-$0.16,pressure_tests.csv MAGs
+CIMagDiffHi,0.32,pressure_tests.csv MAGs
+CovNovAllSpecies,80,range_evaluation.csv species novelty all
+CovNovArchSpecies,79,range_evaluation.csv species novelty archaea
+CovNovSlowSpecies,44,range_evaluation.csv species novelty slow in truth
+CovNovFastSpecies,83,range_evaluation.csv species novelty fast in truth
+CovDomAllSpecies,80,range_evaluation.csv species novelty and domain all
+CovDomArchSpecies,79,range_evaluation.csv species novelty and domain archaea
+CovDomSlowSpecies,45,range_evaluation.csv species novelty and domain slow in truth
+CovDomFastSpecies,83,range_evaluation.csv species novelty and domain fast in truth
+CovNovAllOrder,80,range_evaluation.csv order novelty all
+CovNovArchOrder,73,range_evaluation.csv order novelty archaea
+CovNovSlowOrder,26,range_evaluation.csv order novelty slow in truth
+CovNovFastOrder,85,range_evaluation.csv order novelty fast in truth
+CovDomAllOrder,79,range_evaluation.csv order novelty and domain all
+CovDomArchOrder,78,range_evaluation.csv order novelty and domain archaea
+CovDomSlowOrder,29,range_evaluation.csv order novelty and domain slow in truth
+CovDomFastOrder,83,range_evaluation.csv order novelty and domain fast in truth
+CovDomArchMin,78,"range_evaluation.csv, archaea, lowest level"
+CovDomSlowMin,29,"range_evaluation.csv, slow, lowest level"
+CovDomSlowMax,45,"range_evaluation.csv, slow, highest level"
+SlowProbAucSpecies,0.84,range_evaluation.csv slow probability
+SlowProbTopSpecies,24,range_evaluation.csv slow probability
+SlowProbBrierSpecies,0.057,range_evaluation.csv slow probability
+SlowProbBrierBaseSpecies,0.072,range_evaluation.csv slow probability
+SlowProbAucOrder,0.81,range_evaluation.csv slow probability
+SlowProbTopOrder,22,range_evaluation.csv slow probability
+SlowProbBrierOrder,0.065,range_evaluation.csv slow probability
+SlowProbBrierBaseOrder,0.072,range_evaluation.csv slow probability
+SlowProbECEMax,0.012,"range_evaluation.csv slow probability, largest over levels"
+SlowBaseRate,8,range_evaluation.csv slow probability
+ErrSlowSpecies,4.5,"paper_headline_predictions.csv nested, slow"
+ErrArchSpecies,1.87,"paper_headline_predictions.csv nested, archaea"
+ErrBactSpecies,1.72,"paper_headline_predictions.csv nested, bacteria"
+ErrSlowOrder,6.3,"paper_headline_predictions.csv nested, slow"
+ErrArchOrder,2.43,"paper_headline_predictions.csv nested, archaea"
+ErrBactOrder,2.02,"paper_headline_predictions.csv nested, bacteria"
+GEMNArchaea,183,hq_predictions_gbm.csv archaea
+EsmN,742,esm_baseline.csv genomes with an embedding
+EsmFeatErrSameGenus,1.82,esm_baseline.csv
+EsmFeatRhoSameGenus,0.74,esm_baseline.csv
+EsmProbeErrSameGenus,1.86,esm_baseline.csv
+EsmProbeRhoSameGenus,0.75,esm_baseline.csv
+EsmTreesErrSameGenus,2.03,esm_baseline.csv
+EsmTreesRhoSameGenus,0.71,esm_baseline.csv
+EsmCombErrSameGenus,1.78,esm_baseline.csv
+EsmCombRhoSameGenus,0.76,esm_baseline.csv
+EsmFeatErrNewGenus,1.96,esm_baseline.csv
+EsmFeatRhoNewGenus,0.71,esm_baseline.csv
+EsmProbeErrNewGenus,1.90,esm_baseline.csv
+EsmProbeRhoNewGenus,0.73,esm_baseline.csv
+EsmTreesErrNewGenus,2.11,esm_baseline.csv
+EsmTreesRhoNewGenus,0.67,esm_baseline.csv
+EsmCombErrNewGenus,1.91,esm_baseline.csv
+EsmCombRhoNewGenus,0.74,esm_baseline.csv
+EsmFeatErrNewFamily,2.07,esm_baseline.csv
+EsmFeatRhoNewFamily,0.67,esm_baseline.csv
+EsmProbeErrNewFamily,2.00,esm_baseline.csv
+EsmProbeRhoNewFamily,0.69,esm_baseline.csv
+EsmTreesErrNewFamily,2.19,esm_baseline.csv
+EsmTreesRhoNewFamily,0.62,esm_baseline.csv
+EsmCombErrNewFamily,2.03,esm_baseline.csv
+EsmCombRhoNewFamily,0.70,esm_baseline.csv
+EsmFeatErrNewOrder,2.08,esm_baseline.csv
+EsmFeatRhoNewOrder,0.67,esm_baseline.csv
+EsmProbeErrNewOrder,2.02,esm_baseline.csv
+EsmProbeRhoNewOrder,0.68,esm_baseline.csv
+EsmTreesErrNewOrder,2.23,esm_baseline.csv
+EsmTreesRhoNewOrder,0.61,esm_baseline.csv
+EsmCombErrNewOrder,2.05,esm_baseline.csv
+EsmCombRhoNewOrder,0.70,esm_baseline.csv
+EsmProbePSameGenus,0.87,esm_baseline_genomes.csv paired Wilcoxon
+EsmProbeBetterSameGenus,368,esm_baseline_genomes.csv genomes with the smaller error
+EsmCombPSameGenus,$3.1\times10^{-4}$,esm_baseline_genomes.csv paired Wilcoxon
+EsmCombBetterSameGenus,426,esm_baseline_genomes.csv genomes with the smaller error
+EsmPairNSameGenus,741,esm_baseline_genomes.csv genomes
+EsmProbePNewOrder,0.99,esm_baseline_genomes.csv paired Wilcoxon
+EsmProbeBetterNewOrder,357,esm_baseline_genomes.csv genomes with the smaller error
+EsmCombPNewOrder,$6.1\times10^{-5}$,esm_baseline_genomes.csv paired Wilcoxon
+EsmCombBetterNewOrder,423,esm_baseline_genomes.csv genomes with the smaller error
+EsmPairNNewOrder,741,esm_baseline_genomes.csv genomes
+TenNSeeds,10,pressure_tests_round2.csv
+TenModelErrSpecies,1.82,pressure_tests_round2.csv
+TenBaseErrSpecies,1.79,pressure_tests_round2.csv
+TenModelRhoSpecies,0.74,pressure_tests_round2.csv
+TenBaseRhoSpecies,0.67,pressure_tests_round2.csv
+TenModelWinsSpecies,3,pressure_tests_round2.csv
+TenPGenomeSpecies,0.02,pressure_tests_round2.csv
+TenModelWinsDeepMin,10,pressure_tests_round2.csv genus to order
+TenPGenomeDeepMax,"$<$\,10$^{-4}$",pressure_tests_round2.csv genus to order
+RefitErrSpecies,1.85,pressure_tests_round2.csv
+RefitFullErrSpecies,1.82,pressure_tests_round2.csv
+FlagErrSpecies,1.79,pressure_tests_round2.csv
+FlagFullErrSpecies,1.81,pressure_tests_round2.csv
+RefitErrOrder,2.10,pressure_tests_round2.csv
+RefitFullErrOrder,2.08,pressure_tests_round2.csv
+FlagErrOrder,2.02,pressure_tests_round2.csv
+FlagFullErrOrder,2.05,pressure_tests_round2.csv
+RefitMaxDiff,0.03,pressure_tests_round2.csv largest increase
+FlagNLabels,25,pressure_tests_round2.csv labels from flagged studies
+DupMaxChange,0.005,"paper_headline_predictions.csv, duplicate row removed"
+RelOrdOursErr,2.08,released_tools_comparison_nested_order.csv
+RelOrdOursRho,0.64,released_tools_comparison_nested_order.csv
+RelOrdOursAuc,0.82,released_tools_comparison_nested_order.csv
+RelOrdOursTempErr,1.96,released_tools_comparison_nested_order.csv
+RelOrdOursTempRho,0.70,released_tools_comparison_nested_order.csv
+RelOrdOursTempAuc,0.83,released_tools_comparison_nested_order.csv
+RelOrdGRodonErr,1.92,released_tools_comparison_nested_order.csv
+RelOrdGRodonRho,0.73,released_tools_comparison_nested_order.csv
+RelOrdGRodonAuc,0.84,released_tools_comparison_nested_order.csv
+RelOrdGRodonNoTempErr,2.40,released_tools_comparison_nested_order.csv
+RelOrdGRodonNoTempRho,0.52,released_tools_comparison_nested_order.csv
+RelOrdGRodonNoTempAuc,0.75,released_tools_comparison_nested_order.csv
+RelOrdPhydonErr,2.84,released_tools_comparison_nested_order.csv
+RelOrdPhydonRho,0.58,released_tools_comparison_nested_order.csv
+RelOrdPhydonAuc,0.76,released_tools_comparison_nested_order.csv
+PairOrdGRodonN,680,released_tools_order_paired.csv
+PairOrdGRodonBetter,330,released_tools_order_paired.csv genomes where ours is closer
+PairOrdGRodonP,0.007,released_tools_order_paired.csv Wilcoxon
+PairOrdPhydonN,665,released_tools_order_paired.csv
+PairOrdPhydonBetter,433,released_tools_order_paired.csv genomes where ours is closer
+PairOrdPhydonP,"$<$\,10$^{-4}$",released_tools_order_paired.csv Wilcoxon
+PairOrdGRodonNoTempN,680,released_tools_order_paired.csv
+PairOrdGRodonNoTempBetter,406,released_tools_order_paired.csv genomes where ours is closer
+PairOrdGRodonNoTempP,"$<$\,10$^{-4}$",released_tools_order_paired.csv Wilcoxon
+PairOrdTempGRodonN,680,released_tools_order_paired.csv
+PairOrdTempGRodonBetter,351,released_tools_order_paired.csv genomes where ours is closer
+PairOrdTempGRodonP,0.96,released_tools_order_paired.csv Wilcoxon
+ExtNCurated,51,data/curated/external_growth_rates.csv
+NSeedsExternal,5,evaluate_external.py SEEDS
+PhydonOrderMapped,99.6,"phydon_rep_orders.csv, Phydon species with a GTDB order"
+ExtNSources,51,data/curated/external_growth_rates.csv distinct sources
+ExtN,48,external_test.csv
+ExtNSlow,7,external_test.csv slower than a day
+ExtNArchaea,3,external_test.csv
+ExtNSameGenus,7,external_test.csv same genus
+ExtNNewGenus,18,"external_test.csv same family, new genus"
+ExtNNewFamily,9,"external_test.csv same order, new family"
+ExtNNewOrder,14,external_test.csv new order
+ExtModelErr,2.53,external_summary.csv
+ExtModelLo,1.91,external_summary.csv genus bootstrap
+ExtModelHi,3.30,external_summary.csv genus bootstrap
+ExtModelRho,0.62,external_summary.csv
+ExtBaseErr,3.65,external_summary.csv
+ExtBaseLo,2.35,external_summary.csv genus bootstrap
+ExtBaseHi,4.95,external_summary.csv genus bootstrap
+ExtBaseRho,0.34,external_summary.csv
+ExtGRodonErr,3.42,external_summary.csv
+ExtGRodonLo,2.64,external_summary.csv genus bootstrap
+ExtGRodonHi,4.72,external_summary.csv genus bootstrap
+ExtGRodonRho,0.34,external_summary.csv
+ExtModelErrSameGenus,1.15,external_summary.csv same genus
+ExtBaseErrSameGenus,1.57,external_summary.csv same genus
+ExtModelErrNewGenus,2.42,"external_summary.csv same family, new genus"
+ExtBaseErrNewGenus,3.63,"external_summary.csv same family, new genus"
+ExtModelErrNewFamily,2.71,"external_summary.csv same order, new family"
+ExtBaseErrNewFamily,3.64,"external_summary.csv same order, new family"
+ExtModelErrNewOrder,4.69,external_summary.csv new order
+ExtBaseErrNewOrder,5.33,external_summary.csv new order
+ExtBetterBase,32,"external_summary.csv paired, genomes where the model is closer"
+ExtPBase,0.007,external_summary.csv paired Wilcoxon
+ExtBetterGRodon,34,"external_summary.csv paired, genomes where the model is closer"
+ExtPGRodon,0.001,external_summary.csv paired Wilcoxon
+ExtCoverage,67,external_summary.csv 80% ranges
+ExtCoverageP,0.03,binomial test against 80%
+ExtCoverageSlowIn,1,external_test.csv slow genomes inside the range
+ExtSlowAuc,0.92,external_summary.csv
+ExtBias,1.16,external_test.csv median measured / predicted
+PglsLambda,0.73,lifestyle_phylogenetic_test.csv
+PglsNGroups,592,lifestyle_phylogenetic_test.csv
+PglsRegFold,0.80,lifestyle_phylogenetic_test.csv
+PglsRegP,0.042,lifestyle_phylogenetic_test.csv
+PglsEnergyMinP,0.34,lifestyle_phylogenetic_test.csv energy inputs
+SlowTransporterOR,0.27,lifestyle_phylogenetic_checks.txt
+SlowTransporterP,$9.4\times10^{-5}$,lifestyle_phylogenetic_checks.txt
+KmerK,6,configs/features.yaml
+EaKJ,65,configs/features.yaml
+TRefC,20,configs/features.yaml
+NLandmarks,16,build_gtdb_landmark_features.py
+MinContig,200,cub_pipeline.py
+MinTrainKb,100,cub_pipeline.py
+MinRibosomal,10,cub_pipeline.py
+NRibosomalFamilies,75,data/raw/ribosomal_pfam.hmm
+NLifestyleFamilies,34,lifestyle_genes.lifestyle_features source
+NLifestyleFeatures,14,lifestyle_genes.FEATURES
+NEnergyFamilies,27,"energy_features source, families not in lifestyle_features"
+NEnergyFeatures,15,lifestyle_genes.ENERGY_FEATURES
+NGRodonFeatures,4,deploy_features.GRODON_FEATURES
+NGRodonFeaturesWord,four,deploy_features.GRODON_FEATURES (word)
+DriftSD,3,deploy_features.drift_report
+NSeedsTable,3,evaluate_final_model.py SEEDS
+NSeedsMag,5,validate_on_gem_mags.py SEEDS
+GTDBRelease,232,data/raw/*_taxonomy.tsv.gz byte-identical to GTDB R232 (checked 2026-10-27)
+NGrowthTable,928,gRodon2 GrowthRates_Madin.rda
+NGEMTotal,"52,515",gem_genome_metadata.tsv
+NGEMHQ,"9,143",hq_genome_ids_all.csv
+ScreenFoldWord,five,screen_labels.py FOLD
+StudyFoldWord,three,screen_label_sources.py FOLD
+StudyFold,3,screen_label_sources.py FOLD
+NBootDraws,"2,000",pressure_tests.py DRAWS
+TraceTolPct,2,screen_label_sources.py rtol
+KEigen,20,check_lifestyle_phylogenetic.py K_EIGEN
+NForestTrees,300,models/deployed.py
+EsmNRibosomal,60,embed_proteins_esm.py
+EsmNOther,100,embed_proteins_esm.py
+EsmPCTrees,64,evaluate_esm_baseline.py
+EsmPCComb,32,evaluate_esm_baseline.py
+NTuneCandidates,20,tune_deployed_model.py
+NTuneShuffles,3,tune_deployed_model.py SPLITS
+NTuneFolds,3,tune_deployed_model.py
+NFolds,5,evaluate_paper_headline.py
+SynKnownWord,six,syntrophs with a genome (word)
+SynFoundWord,three,syntrophs found (word)
+SynFalse,66,syntrophy false calls

@@ -1,0 +1,83 @@
+\section{Supplementary results}
+
+\subsection{Accuracy by target and scheme}
+Table~\ref{tab:accuracy} gives the accuracy for all three targets at each level of novelty, with the settings chosen inside
+each split (nested, the estimates of the main text) and with the deployed settings. The 80\% ranges released with the
+predictions were set from the held-out residuals of the deployed scheme. On the nested held-out predictions they contain
+\CoverSameGenus\% to \CoverNewOrder\% of the measured doubling times at the growth temperature, \CoverRefMin\% to
+\CoverRefMax\% of the doubling times at \TRefC\,\textdegree C and \CoverTempMin\% to \CoverTempMax\% of the growth
+temperatures, depending on the level, so they can be read as 80\% ranges; the range for the growth temperature is
+slightly wide.
+
+\input{supplement/supp_accuracy}
+
+\subsection{Ranges by group and the probability of slow growth}
+Table~\ref{tab:ranges} gives the coverage of the 80\% ranges by group of genomes, and Table~\ref{tab:slowprob} the
+probability of growing slower than a day (Methods). The released ranges are those by novelty level and domain.
+
+\input{supplement/supp_ranges}
+
+\subsection{Pressure tests}
+Table~\ref{tab:pressure} compares the nested model with two baselines scored on the same folds, gives bootstrap intervals,
+and reports the shuffled-label control (Methods).
+
+\input{supplement/supp_pressure}
+
+\subsection{Leakage, label and split robustness}
+Table~\ref{tab:robust} reports three further checks: the model against the relatives' median over \TenNSeeds seeds instead
+of three, the effect of gRodon's released estimate (whose coefficients saw our species) against a refit inside each split,
+and the effect of the labels from studies that the study-level check flagged but that we kept.
+
+\input{supplement/supp_robustness}
+
+\subsection{External test}
+Table~\ref{tab:external} lists the \ExtN species of the external test with their measured and predicted doubling times and
+the source of each value. With orders held out, the comparison with the released tools gives the errors in the main text;
+the per-genome predictions are released with the data.
+
+\input{supplement/supp_external}
+
+\subsection{Comparison with released gRodon and Phydon}
+\input{supplement/supp_released}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{fig3_released_tools}
+\caption{The released gRodon and Phydon against this model on the same \RelN genomes, genes and species-held-out folds
+(\RelNSeeds seeds; small marks are seeds, large marks their mean). Both released tools take the measured growth
+temperature, which an uncultured genome does not come with; this model is shown without it and with it added as an input.
+(a) Typical fold error. (b) Spearman correlation. (c) Area under the curve for a doubling time above one day.}
+\label{fig:released}
+\end{figure}
+
+\subsection{Ablations at each level}
+Table~\ref{tab:ablationsfull} gives the absolute values behind the ablation table of the main text, and the family level,
+which the main text leaves out.
+
+\input{supplement/supp_ablations}
+
+\subsection{A learned-representation baseline}
+Table~\ref{tab:esm} compares protein language-model embeddings with the genome features on the folds of the headline
+(Methods of the main text).
+
+\input{supplement/supp_esm}
+
+\subsection{Species from other sources}
+As a check that does not depend on how the folds are drawn, the final model was trained on gRodon's growth table alone and
+tested on every labeled species of the other sources whose species group is not in that table (Table~\ref{tab:independent}).
+The typical error over the \IndepN bacterial species is \IndepErr-fold. The archaeal rows show what happens with no archaea
+in training and are not a fair test of the deployed model, which is trained on archaea.
+
+\input{supplement/supp_independent}
+
+\subsection{Metagenome-assembled genomes by species}
+\input{supplement/supp_mags}
+
+\subsection{The low-energy test, every input}
+Table~\ref{tab:pgls} gives every input of the low-energy test with the three checks described in the Methods. No input that
+describes how an organism makes energy reaches an adjusted $p<0.05$ in the main analysis or in any of these three checks. With $\lambda$
+fixed at 1, complex I and the number of terminal oxidases go with faster growth; with only the groups placed at their own
+GTDB species, catalase does. Regulator density goes with faster growth in the main analysis and in two of the three checks,
+but not with $\lambda$ fixed at 1.
+
+\input{supplement/supp_pgls}

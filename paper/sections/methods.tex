@@ -1,0 +1,187 @@
+\section{Methods}
+
+\subsection{Problem and notation}
+Let $\mathcal{D}=\{(g_i,d_i,T_i,t_i)\}_{i=1}^{n}$ be the labeled genomes, with maximal doubling time $d_i$ (hours) at the
+optimal growth temperature $T_i$ and GTDB taxonomy $t_i$. From the sequence of $g_i$ alone we compute an input vector
+$\mathbf{x}_i$ (Section~\ref{sec:features}) and learn three predictors: of $y_i=\log d_i$, of $T_i$, and of
+$y^{\mathrm{ref}}_i=\log d^{\mathrm{ref}}_i$, the doubling time moved to $T_{\mathrm{ref}}=\TRefC$\,\textdegree C with an
+Arrhenius factor as in earlier predictors \citep{weissman2021,xu2025},
+\begin{equation}
+\mu^{\mathrm{ref}}=\mu\exp\!\left[-\frac{E_a}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right],\qquad \mu=\frac{\ln 2}{d},
+\end{equation}
+with $E_a=\EaKJ$\,kJ\,mol$^{-1}$. We judge models mainly on $y$, because the correction multiplies the doubling time of a
+hot-growing organism by a large factor and a model can look accurate on $y^{\mathrm{ref}}$ partly by recognizing that an
+organism grows hot. For a new genome $g$, its novelty level $\ell(g)$ is the lowest rank (genus, family, order) at which
+it shares a taxon with a labeled genome, or ``new order''. Each prediction is reported with the error and range measured
+at its level. Accuracy is summarized by the typical fold error, the Spearman correlation $\rho$, and the area under the
+receiver operating curve (AUC) for $d>24$\,h:
+\begin{equation}
+E=\exp\Big(\operatorname*{median}_i\,|y_i-\hat y_i|\Big),\qquad
+\hat y_g\pm=\big[\hat y_g+q^{\ell,\delta}_{0.1},\ \hat y_g+q^{\ell,\delta}_{0.9}\big],
+\label{eq:metrics}
+\end{equation}
+where $q^{\ell,\delta}_{p}$ is the $p$-quantile of the nested held-out residuals $y_i-\hat y_i$ at level $\ell$ in
+domain $\delta$ (bacteria or archaea), which gives an 80\% range. Its coverage is checked by cross-fitting: the quantiles
+are estimated on four fifths of the genera and applied to the rest. Because a range cannot target organisms selected by
+their true doubling time, each genome also gets a probability of $d>24$\,h from a logistic model on $\hat y$ and the
+domain, cross-fitted in the same way.
+
+\subsection{Training labels and their audit}
+\paragraph{Labels.} The core is the growth-rate table distributed with gRodon (\NGrowthTable species, derived from the
+compilation of \citet{madin2020}), used in three ways: species whose genome we placed and processed ourselves; species for
+which only the trait table gives genome size, GC content and tRNA count; and species with a genome accession but no traits,
+for which every input was computed from that genome. We added \NLiteratureWord strains from lineages the compilation lacks,
+each checked in the primary paper and paired with the genome of the measured strain
+\citep{konneke2005,stieglmeier2014,palatinszky2015,nowka2015,mohammadi2017,lehtovirtamorley2014}. Names are mapped to
+GTDB R\GTDBRelease \citep{parks2022}, and rows are joined into species groups (any two names sharing a GTDB species, and
+any two GTDB species sharing a name), so that synonyms never fall on both sides of a split. One genome is listed under two spellings of its species; both rows fall in one species group, and dropping one changes
+no headline error or correlation by more than \DupMaxChange.
+
+\paragraph{Audit.} A label is meant to be a maximal rate at the stated temperature. We screened labels at three levels.
+(i) Species: a label at least \ScreenFoldWord-fold from both its held-out prediction and the median of its labeled genus
+relatives was traced to its source records. (ii) Study (Algorithm~\ref{alg:audit}): because one study can shift a whole
+genus and leave no outlier among relatives, every label was traced to its study and each study was compared with evidence
+from other studies only. (iii) Records: labels matching no source record but far from the closest one were listed, to
+catch unit slips. A flag is not a removal: a label was removed only when a second source or the study itself showed that
+it was not a maximal rate (Supplementary Table~\ref{S-tab:exclusions}).
+
+\begin{algorithm}[t]
+\caption{Study-level label check}\label{alg:audit}
+\footnotesize
+\begin{algorithmic}[1]
+\Require labels $d_i$ with species; source records $(v_r,\mathrm{study}_r)$ of the compilation
+\For{each label $i$}
+  \State $s_i\gets$ study of the record with $|v_r-d_i|\le\TraceTolPct\%\cdot d_i$, if any
+  \State $e_i\gets$ median of other studies' values for the species, else median label of $\ge 2$ genus (or family)
+  relatives labeled by other studies
+\EndFor
+\For{each study $s$ with $\ge 2$ labels that have evidence}
+  \State $r_i\gets\log(d_i/e_i)$ for its labels; $\tilde r\gets\operatorname{median}_i r_i$
+  \If{$|\tilde r|\ge\log\StudyFold$ \textbf{and} $\ge 80\%$ of $r_i$ share the sign of $\tilde r$} flag $s$ \EndIf
+\EndFor
+\State list untraced labels $\ge\StudyFold$-fold from the closest record (unit or conversion slips)
+\State \Return flags, each reviewed against a second source before any removal
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Genome inputs}\label{sec:features}
+All inputs come from the genome sequence, so they are computed in the same way for an isolate and for a
+metagenome-assembled genome.
+
+\paragraph{Codon usage.} Genes are predicted with Prodigal through pyrodigal \citep{hyatt2010,larralde2022} on contigs of
+at least \MinContig\,bp, trained on the genome when it is at least \MinTrainKb\,kb long and in metagenomic mode otherwise.
+Ribosomal protein genes, the usual proxy for highly expressed genes, are found with \NRibosomalFamilies Pfam families
+\citep{mistry2021} using HMMER \citep{eddy2011} and the gathering thresholds. Codon usage bias is the median MILC distance
+\citep{supek2005} of the ribosomal protein genes from the codon usage of the whole genome, required to rest on at least
+\MinRibosomal genes. On the same genes we run the released gRodon \citep{weissman2021} without a temperature and keep its
+\NGRodonFeaturesWord statistics (codon usage bias of the highly expressed genes, its consistency, codon pair bias and gRodon's
+own doubling time). The share of the amino acids IVYWREL in all proteins, which rises with growth temperature
+\citep{zeldovich2007}, signals the temperature.
+
+\paragraph{Lifestyle genes.} The model has \NLifestyleFeatures inputs from \NLifestyleFamilies Pfam families with their
+gathering thresholds (Supplementary Table~\ref{S-tab:pfam}) that describe how a genome makes a living: terminal oxidases, complex I,
+hydrogenases, methyl-coenzyme M reductase, DsrD, nitrogenase, RuBisCO, ammonia or methane monooxygenase, photosynthetic
+reaction centres, catalase, flagellin, and the densities of transporter and regulator genes per thousand genes. Each call
+was checked against well-known organisms before use.
+
+\paragraph{Phylogeny and 16S.} A taxon's place on the tree is its vector of distances to \NLandmarks landmark tips of the
+GTDB R\GTDBRelease bacterial or archaeal tree, chosen once by farthest-point sampling, so that the vector of a genome does
+not depend on which other genomes are analyzed; a genome takes the mean vector of the tips of its GTDB species, or of its
+genus, family or order when the species is not on the tree. The 16S rRNA gene is described in the same way, by cosine
+distances between \KmerK-mer profiles and \NLandmarks reference sequences. The 16S gene is cut from the genome with barrnap
+\citep{barrnap} for metagenome-assembled and labeled genomes alike (\SixteenNGenomeCopy of the \NGenomes labeled genomes);
+a labeled genome without a full-length copy uses a 16S sequence of its species from NCBI. The other inputs are genome size,
+GC content, tRNA genes (tRNAscan-SE \citep{chan2021}) and a flag for archaea.
+
+\subsection{Model}
+Each target is predicted by
+\begin{equation}
+f(\mathbf{x})=\tfrac12\big[f_{H}(\mathbf{x};\theta_H)+f_{R}(\mathbf{x};\theta_R)\big],
+\end{equation}
+the average of histogram gradient boosting with absolute (median) loss \citep{friedman2001} and a random forest of
+\NForestTrees trees \citep{breiman2001} (scikit-learn, \citealp{pedregosa2011}). The settings $\theta_H$ and $\theta_R$
+are chosen separately, each as the best of \NTuneCandidates random draws from a grid (Supplementary
+Table~\ref{S-tab:settings}) by typical error in a \NTuneFolds-fold split grouped by GTDB family, averaged over
+\NTuneShuffles shuffles. Most new genomes are placed on the tree only to genus or a coarser rank, while a labeled genome is
+placed at its species; each labeled genome therefore enters training four times,
+$\mathcal{D}^{\mathrm{aug}}=\bigcup_{r}\{(\mathbf{x}^{(r)}_i,y_i)\}$ for $r\in\{\text{species},\text{genus},\text{family},\text{order}\}$,
+where $\mathbf{x}^{(r)}_i$ carries the tree vector of its taxon at rank $r$. A genome lacking a 16S gene or a place on the
+tree is predicted by the model trained without that block.
+
+\subsection{Evaluation}
+\paragraph{Lineage-held-out splits.} A random split puts close relatives of every test genome in training, which most
+environmental genomes do not have. We therefore hold out whole species groups, genera, families or orders
+(Algorithm~\ref{alg:nested}) among the \NHeadlineRows labeled genomes whose genes could be predicted, and the whole
+procedure of the previous section, including the choice of settings, is
+repeated inside every split, so that held-out genomes take no part in any choice. The held-out error at level $\ell$ is the
+error attached to a new genome whose nearest labeled relative sits at that level. For comparison we also run the model
+with the settings chosen on all labeled genomes and each genome entered once, the scheme behind the error table released
+with the predictions.
+
+\begin{algorithm}[t]
+\caption{Nested lineage-held-out evaluation}\label{alg:nested}
+\footnotesize
+\begin{algorithmic}[1]
+\Require labeled set $\mathcal{D}$; held-out rank $L\in\{$species group, genus, family, order$\}$; seeds $s=1..\NSeedsHeadline$
+\For{each seed $s$}
+  \State shuffle the taxa at rank $L$ with seed $s$; split them into \NFolds folds (no taxon in two folds)
+  \For{each fold $k$ with training rows $\mathcal{T}$ and test rows $\mathcal{V}$}
+    \State $\theta_H,\theta_R\gets$ settings search on $\mathcal{T}$ only (as in the deployed model)
+    \State fit $f$ on $\mathcal{T}^{\mathrm{aug}}$ (four placements per genome)
+    \State $\hat y_i\gets f(\mathbf{x}^{(\text{species})}_i)$ for $i\in\mathcal{V}$
+  \EndFor
+  \State $E_s,\rho_s,\mathrm{AUC}_s$ over all held-out $\hat y_i$; residual quantiles $q_{0.1},q_{0.9}$
+\EndFor
+\State \Return means over seeds
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Controls and uncertainty.} On the same folds we score two baselines: the median training label, and the median
+label of the training genomes that share the closest rank with the test genome (genus, family, order, class, phylum or domain),
+which is what a reader could do with the taxonomy and the training table alone. Intervals are 95\% bootstrap intervals over
+genera, or over the held-out families or orders (\NBootDraws draws), since species of one genus are not independent, with each statistic averaged over seeds in every draw. As a negative control the model is
+trained on labels shuffled across genomes; it should then be no better than the median. Three robustness checks use the deployed settings over \TenNSeeds splits: the model against the relatives' median, the model with
+gRodon's estimate (whose coefficients were fitted on data that include our species) replaced by a regression of the log
+doubling time on gRodon's codon statistics fitted on the training rows of each split, and the model without the labels of
+studies the audit flagged but kept. Each input group was removed in
+turn, and rejected inputs added in turn, on the same genomes and folds over \NSeedsAblation seeds with the deployed settings
+and each genome entered once (paired Wilcoxon tests across seeds).
+
+\paragraph{Metagenome-assembled genomes.} For GEM genomes whose GTDB species has a measured growth rate, that species was
+held out of training, and the prediction from each assembled genome was compared with the prediction from the isolate
+genome and with the measured value (\MagNGenomes genomes, \MagNSpecies species, \NSeedsMag seeds).
+
+\paragraph{Released tools.} gRodon \citep{weissman2021} and Phydon \citep{xu2025} were run as released on the same genes
+and species-held-out folds. Phydon's distance to the nearest training relative still counted the held-out species itself,
+so before each fold we removed that fold's species from Phydon's training table, without changing its code. Both tools take
+the measured growth temperature; our model is compared without it and with it added as an input, built inside each split
+as in Algorithm~\ref{alg:nested}. Per-genome absolute log errors, averaged over seeds, are compared with a paired Wilcoxon
+test. The comparison was repeated with orders held out, removing every training species of the held-out orders from Phydon's
+table (GTDB orders, matched by accession or genus for \PhydonOrderMapped\% of its species).
+
+\paragraph{External test.} We searched PubMed abstracts and open full texts of species descriptions for doubling times
+stated as the fastest, optimal or maximal growth in pure culture, and kept a value only if the species' NCBI taxonomy
+identifier is absent from the compilation of \citet{madin2020}, the species is not in our labels, a genome assembly exists, and
+its GTDB species has no training genome. Inputs were computed with the same code as for the labeled genomes, and the model was
+trained once on all labeled genomes (\NSeedsExternal seeds averaged). As for GEM genomes, it predicts the doubling time at
+its own predicted growth temperature, which is compared with the value as stated.
+
+\subsection{Testing the low-energy explanation of slow growth}
+Each lifestyle and energy input was tested against $y$ with growth temperature and domain as covariates, one row per
+species group, by phylogenetic generalized least squares \citep{pagel1999,freckleton2002},
+\begin{equation}
+\mathbf{y}=\mathbf{Z}\boldsymbol\beta+\boldsymbol\varepsilon,\qquad
+\boldsymbol\varepsilon\sim\mathcal{N}\big(\mathbf{0},\sigma^2[\lambda\mathbf{C}+(1-\lambda)\operatorname{diag}(\mathbf{C})]\big),
+\end{equation}
+where $\mathbf{C}$ holds the shared branch lengths on the GTDB trees and Pagel's $\lambda$ is estimated by maximum
+likelihood. We also compared carriers and non-carriers within families and modeled the chance of $d>24$\,h by logistic
+regression with \KEigen phylogenetic eigenvectors as covariates \citep{dinizfilho1998}. P values were adjusted for the
+number of inputs \citep{benjamini1995}. The results were checked by leaving out one lineage or one species at a time,
+excluding the literature strains, restricting to species at their own GTDB representative, and fixing $\lambda$ at 1.
+
+\subsection{Application to the GEM catalog}
+We predicted all \NGEMHQ high-quality genomes \citep{bowers2017} of the Genomes from Earth's Microbiomes catalog
+\citep{nayfach2021} (\NGEMTotal genomes in total). Their GTDB taxonomy comes from the catalog and uses an older release, so
+a renamed taxon looks more distant than it is and the novelty level is a worst case. Before predicting, the run stops if
+the mean of any phylogeny or 16S input over the catalog genomes differs from the training mean by more than \DriftSD
+training standard deviations, which guards against inputs computed in a different way.

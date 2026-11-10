@@ -1,0 +1,43 @@
+{\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}{p{4.6cm}rrlrrrrr}
+\caption{The low-energy test, every input, 592 species groups. Effects are fold changes in doubling time for carrying the gene, per standard deviation of a count or density, or per doubling of genome size, with growth temperature and domain as covariates. With: groups carrying the gene (presence inputs). Across: without control for relatedness. PGLS: phylogenetic generalized least squares with Pagel's $\lambda$ estimated; $p_{\mathrm{adj}}$ is Benjamini-Hochberg adjusted over the inputs. Families: of the families with both carriers and non-carriers, those in which the median carrier is slower. The last three columns give the adjusted PGLS $p$ with $\lambda$ fixed at 1, with only the groups placed at their own GTDB species, and without the eight literature strains.}\label{tab:pgls}\\
+\toprule
+Input & With & Across & PGLS (95\% CI) & $p_{\mathrm{adj}}$ & Families & $\lambda=1$ & Own sp. & No lit. \\
+\midrule
+\endfirsthead
+\caption[]{(continued)}\\
+\toprule
+Input & With & Across & PGLS (95\% CI) & $p_{\mathrm{adj}}$ & Families & $\lambda=1$ & Own sp. & No lit. \\
+\midrule
+\endhead
+aerobic respiration (terminal oxidase) & 393 & 1.14 & 1.01 (0.70--1.45) & 0.992 & 4/8 & 0.601 & 0.904 & 0.993 \\
+complex I & 502 & 1.58 & 0.97 (0.72--1.31) & 0.992 & 6/18 & $<$0.001 & 0.886 & 0.993 \\
+methanogenesis & 39 & 0.74 & 0.75 (0.27--2.06) & 0.913 & -- & 0.962 & 0.846 & 0.971 \\
+sulfate reduction & 24 & 2.84 & 1.33 (0.64--2.78) & 0.852 & 0/2 & 0.962 & 0.846 & 0.754 \\
+nitrogen fixation & 128 & 1.52 & 1.18 (0.93--1.50) & 0.595 & 13/26 & 0.385 & 0.846 & 0.435 \\
+RuBisCO (carbon fixation) & 172 & 1.21 & 1.15 (0.90--1.46) & 0.700 & 12/26 & 0.332 & 0.846 & 0.697 \\
+ammonia or methane oxidation & 7 & 3.76 & 1.49 (0.47--4.77) & 0.901 & -- & 0.962 & 0.846 & 0.993 \\
+phototrophy & 31 & 2.51 & 0.92 (0.52--1.65) & 0.992 & 3/6 & 0.962 & 0.904 & 0.993 \\
+flagellar motility & 320 & 0.90 & 1.07 (0.80--1.43) & 0.913 & 4/17 & 0.962 & 0.904 & 0.971 \\
+catalase & 184 & 0.48 & 0.74 (0.59--0.92) & 0.094 & 16/37 & 0.601 & 0.038 & 0.074 \\
+nitrate respiration & 135 & 0.51 & 0.94 (0.72--1.21) & 0.913 & 10/23 & 0.962 & 0.846 & 0.971 \\
+denitrification (NosZ) & 63 & 0.95 & 1.04 (0.79--1.38) & 0.992 & 10/24 & 0.962 & 0.886 & 0.971 \\
+DMSO/TMAO respiration & 62 & 0.88 & 0.99 (0.73--1.34) & 0.992 & 4/13 & 0.339 & 0.904 & 0.993 \\
+fumarate respiration (E. coli type) & 46 & 0.56 & 0.88 (0.55--1.40) & 0.913 & 4/7 & 0.810 & 0.904 & 0.971 \\
+metal reduction outside the cell & 16 & 0.47 & 0.64 (0.39--1.06) & 0.393 & 3/8 & 0.339 & 0.505 & 0.435 \\
+Wood-Ljungdahl pathway & 66 & 1.29 & 1.19 (0.83--1.72) & 0.763 & 3/9 & 0.962 & 0.886 & 0.697 \\
+F-type ATP synthase & 442 & 0.68 & 0.62 (0.39--0.99) & 0.340 & 1/7 & 0.601 & 0.251 & 0.321 \\
+V/A-type ATP synthase & 203 & 1.17 & 1.21 (0.92--1.60) & 0.595 & 9/18 & 0.719 & 0.792 & 0.511 \\
+Na$^+$-NQR & 67 & 0.42 & 0.76 (0.51--1.15) & 0.595 & 5/9 & 0.859 & 0.792 & 0.624 \\
+Rnf complex & 241 & 0.76 & 0.96 (0.77--1.18) & 0.943 & 20/34 & 0.589 & 0.904 & 0.993 \\
+Na$^+$-pumping decarboxylase & 171 & 1.03 & 1.15 (0.89--1.48) & 0.713 & 9/17 & 0.339 & 0.846 & 0.697 \\
+fermentation only & 122 & 1.04 & 0.98 (0.68--1.39) & 0.992 & 7/11 & 0.962 & 0.846 & 0.993 \\
+transporter density (per SD) & -- & 0.83 & 0.88 (0.77--1.00) & 0.340 & -- & 0.478 & 0.085 & 0.435 \\
+regulator density (per SD) & -- & 0.78 & 0.80 (0.70--0.92) & 0.042 & -- & 0.408 & 0.018 & 0.049 \\
+number of terminal oxidases (per SD) & -- & 0.93 & 0.92 (0.81--1.05) & 0.595 & -- & 0.022 & 0.846 & 0.435 \\
+number of hydrogenases (per SD) & -- & 1.20 & 1.13 (1.00--1.27) & 0.340 & -- & 0.962 & 0.792 & 0.321 \\
+number of electron acceptor classes (per SD) & -- & 0.92 & 0.99 (0.87--1.13) & 0.992 & -- & 0.601 & 0.904 & 0.993 \\
+number of sodium pumps (per SD) & -- & 0.87 & 1.00 (0.88--1.13) & 0.992 & -- & 0.962 & 0.904 & 0.993 \\
+genome size (per doubling) & -- & 0.90 & 0.91 (0.75--1.12) & 0.814 & -- & 0.332 & 0.846 & 0.697 \\
+\bottomrule
+\end{longtable}}

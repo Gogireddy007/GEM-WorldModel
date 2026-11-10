@@ -1,0 +1,113 @@
+\section{Supplementary methods}
+
+\subsection{Training data}
+The training data come from four sources, all mapped to GTDB R\GTDBRelease \citep{parks2022}.
+\begin{itemize}
+\item \textbf{Species with a processed reference genome} (\NOriginal rows). Species from the growth-rate table distributed
+  with gRodon \citep{weissman2021}, which derives from the compilation of \citet{madin2020}, for which we downloaded a
+  genome assembly from NCBI and computed every feature ourselves.
+\item \textbf{Madin extension} (\NMadinExtension rows). Species of the same table that had no exact match on the reference
+  tree in an earlier version of the pipeline. Genome size, GC content and tRNA count are taken from Madin's species
+  table; the gene features come from the genome of the accession Madin's accession table gives for the species.
+\item \textbf{Madin genome extension} (\NGenomeExtension rows). Species of the same table with a genome accession but no
+  traits in Madin's table. Every feature is computed from that genome: size and GC exactly, tRNA genes with tRNAscan-SE
+  \citep{chan2021} using the bacterial or archaeal model, and the gene features as for all genomes. Names such as
+  ``\textit{Dictyoglomus} sp.'' are skipped, because the value belongs to an unnamed strain. When the RefSeq record of an
+  assembly is suppressed, the GenBank copy is used.
+\item \textbf{Literature strains} (\NLiterature rows). Strains from lineages the compilation lacks, each with a doubling
+  time read from the primary paper and paired with the genome of the measured strain
+  \citep{konneke2005,stieglmeier2014,palatinszky2015,nowka2015,mohammadi2017,lehtovirtamorley2014}. Values that could not
+  be confirmed in the primary source, came from enrichment cultures, or described something other than population growth
+  (for example a budding cycle) were not used.
+\end{itemize}
+Each row is placed in GTDB by its genome accession where possible, else by species name, else by genus name. Rows are
+grouped into species groups: two rows are in the same group when they share a species name or a GTDB species, followed
+transitively, so that a renamed species and the same name placed in two GTDB species stay together in every split.
+Table~\ref{tab:literature} lists the literature strains.
+
+\input{supplement/supp_literature}
+
+\subsection{Label audit}
+\paragraph{Species-level screen.} A label is flagged when it is at least \ScreenFoldWord-fold away from both its prediction with the
+species held out and the median label of at least two other labeled species in its genus. The source records of every
+flagged label are then read in the per-source files of the compilation, which give each record with its temperature and
+reference.
+
+\paragraph{Study-level check.} Each training label is traced to the record it came from by matching the value (within
+\TraceTolPct\%). Each traced label is compared with evidence that does not come from the same study: the median of other studies'
+values for the same species, or, failing that, the median label of at least two relatives in the same genus (or family)
+whose labels come from other studies. A study is flagged when at least two of its labels can be compared, their median
+ratio to the evidence is at least \StudyFoldWord-fold in either direction, and at least 80\% point the same way. Labels that match no
+record but are at least \StudyFoldWord-fold from the closest record are listed separately, since a unit or conversion step leaves
+that signature.
+
+\paragraph{Decisions.} A flag is not a removal. A label was removed only when a second source for the same species, or the
+study itself, showed that the value is not a maximal growth rate at the stated temperature. Flags with a biological
+explanation were kept, for example rich-medium rates of haloarchaea at their optimum, real differences between species of
+one genus, and slow species such as \textit{Mycobacterium leprae}. Table~\ref{tab:exclusions} lists the \NExcludedWord
+removed values from \NExcludedSourcesWord sources.
+
+\input{supplement/supp_exclusions}
+
+\subsection{Features}
+\paragraph{Codon usage.} Codon counts of each gene are compared with the codon usage of all genes of the genome by the MILC
+distance \citep{supek2005}; the codon usage bias of a genome is the median distance over its ribosomal protein genes. The
+released gRodon statistics are computed by \texttt{predictGrowth} in full mode without a temperature, on the same genes,
+with the ribosomal protein genes marked as highly expressed; we keep \texttt{CUBHE}, \texttt{ConsistencyHE}, \texttt{CPB}
+and the logarithm of gRodon's doubling time.
+
+\paragraph{Lifestyle inputs.} Presence inputs are 1 when at least one protein hits the family (or families) above the
+cutoff: aerobic respiration (a heme-copper or cytochrome \textit{bd} oxidase), complex I, methanogenesis (methyl-coenzyme
+M reductase), sulfate reduction (DsrD), nitrogen fixation (NifH and at least two NifD/K members beyond those of chlorophyll
+synthesis: two in cyanobacteria, which have both reaction centre types, four in other phototrophs), RuBisCO, ammonia or
+methane monooxygenase (subunit A, or subunit C by E-value), phototrophy (a reaction centre or photosystem I), flagellar
+motility and catalase. Count inputs are the number of terminal oxidases and of hydrogenases. Density inputs are the
+numbers of transporter and of regulator genes per thousand genes (Table~\ref{tab:pfam}).
+
+\paragraph{Energy inputs.} For the low-energy test only, \NEnergyFeatures further inputs describe how a genome makes
+energy: nitrate respiration (NarG, by its N-terminal domain or domain V, or NapB), denitrification (NosZ), DMSO or TMAO
+respiration, fumarate respiration (the \textit{E.~coli} type only), metal reduction outside the cell, the Wood--Ljungdahl
+pathway (acetyl-CoA synthase), the number of electron acceptor classes, F-type and V/A-type ATP synthase, Na$^+$-NQR
+(the NqrA barrel together with an NqrA-specific domain or NqrM), the Rnf complex, sodium-pumping decarboxylases, the number
+of sodium pumps, and fermentation only (fermentation genes and none of the acceptors). Four families were tightened or
+dropped after hitting organisms known to lack the function. Nitrite oxidizers are counted as nitrate respirers, because their
+nitrite oxidoreductase is a NarG relative. Syntrophy was not used: a rule fixed from the literature before evaluation found
+\SynFoundWord of \SynKnownWord known syntrophs and called \SynFalse other genomes, mostly fermenters that carry the same genes.
+
+\input{supplement/supp_pfam}
+
+\paragraph{Phylogeny and 16S.} Landmark tips are chosen by farthest-point sampling on each GTDB tree, starting from a tip
+drawn with a fixed seed; the vector of a taxon is the mean distance vector of its tips. The 16S reference sequences are
+chosen in the same way among the labeled species, and a 16S input is the cosine distance between \KmerK-mer count
+profiles. Missing inputs of a labeled row are filled with the median of the bacterial rows; models for genomes that lack a
+whole block (the tree position or the 16S gene) are trained without that block.
+
+\paragraph{Input drift check.} Before predicting new genomes, the mean of each input over the new genomes is compared with
+the training mean in units of the training standard deviation, separately for bacteria and archaea, and the run stops if
+any phylogeny or 16S input has moved by more than \DriftSD standard deviations. This check caught an early version of the
+pipeline in which the tree and 16S inputs of the GEM genomes had been computed in a different coordinate system.
+
+\subsection{Model settings}
+\input{supplement/supp_settings}
+
+\subsection{Comparison with released gRodon and Phydon}
+Gene files were written in the layout Phydon expects (nucleotide genes, the ribosomal protein genes named ``ribosomal
+protein'', and a list of gene identifiers), so gRodon, Phydon and our model see the same genes. Genome names were given as
+GTDB accessions so that Phydon finds each species on its own tree (GTDB R220). For each fold, the species representatives
+of the fold's genomes were removed from Phydon's built-in training table before the call, which makes both its
+phylogenetic estimate and its distance to the nearest training relative leave the test species out. Phydon was run in its
+default geometric-mean mode with gRodon in full mode. Two advantages of the released tools remain: gRodon's regression and
+Phydon's weighting model were fitted on data that include our species, and Phydon's training table contains species that
+ours does not. The results are in Table~\ref{tab:released}.
+
+\subsection{Phylogenetic tests}
+Each species group is placed at the tip of its GTDB species representative, or, when the group is placed only to genus, at
+an unused tip of the same genus. The covariance matrix has one block per domain, each the shared root-to-ancestor path
+length of the tips, scaled to a mean diagonal of one. Pagel's $\lambda$ multiplies the off-diagonal elements and is
+estimated by maximum likelihood in $[0,1]$. The model for slow growth is a logistic regression on the input, growth
+temperature and domain, with the leading eigenvectors of the covariance matrix as covariates; we use \KEigen and report fewer and more
+as a check, because with half as many the single slow clade of Anaerolineales was not absorbed and an input it happened to carry looked
+strongly linked to slow growth.
+
+\subsection{Software}
+\input{supplement/supp_software}

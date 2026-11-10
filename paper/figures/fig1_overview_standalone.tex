@@ -1,0 +1,61 @@
+% Figure 1, built on its own (make in paper/) so that the manuscript can include it with alt text. Numbers are macros.
+\documentclass[border=1pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xspace}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\definecolor{ink}{HTML}{0B0B0B}
+\definecolor{ink2}{HTML}{52514E}
+\definecolor{auditfill}{HTML}{FCEDE6}
+\definecolor{gemfill}{HTML}{E9F1FB}
+\input{../numbers.tex}
+\xspaceaddexceptions{\%}
+\begin{document}
+\begin{tikzpicture}[
+  font=\sffamily\scriptsize, >=Stealth, node distance=4mm,
+  box/.style={draw=ink2, rounded corners=2pt, line width=0.5pt, align=left, inner sep=4pt, fill=white, text width=#1,
+    execute at begin node={\hyphenpenalty=10000\exhyphenpenalty=10000}},
+  box/.default=4.0cm,
+  head/.style={font=\sffamily\scriptsize\bfseries, text=ink},
+  flow/.style={->, line width=0.6pt, draw=ink2},
+]
+% column 1: data and audit
+\node[head, anchor=west] (h1) at (0,0) {a\quad Training data};
+\node[box, below=1.5mm of h1.south west, anchor=north west] (src) {Doubling times from the Madin~et~al.\ compilation (via gRodon) and from primary papers, paired with genomes};
+\node[box, below=of src, fill=auditfill] (audit) {Label audit\\[1pt]
+  \textbullet against relatives and held-out prediction\\
+  \textbullet study by study, against other studies\\
+  \textbullet against the source records\\[1pt]
+  \NExcluded values removed};
+\node[box, below=of audit] (train) {\NGenomes genomes, \NSpecies species\\ \NArchaea archaeal, \NSlow slower than a day};
+\draw[flow] (src) -- (audit);
+\draw[flow] (audit) -- (train);
+
+% column 2: features and model
+% columns at fixed offsets: box width plus inner sep plus a 6 mm gap for the arrows
+\node[head, anchor=west] (h2) at (4.9cm,0) {b\quad Genome to prediction};
+\node[box=4.5cm, below=1.5mm of h2.south west, anchor=north west] (feat) {Inputs from the genome alone\\[1pt]
+  \textbullet codon usage of ribosomal protein genes, gRodon statistics\\
+  \textbullet lifestyle genes (\NLifestyleFamilies Pfam families)\\
+  \textbullet place on the GTDB tree (\NLandmarks landmark distances)\\
+  \textbullet 16S rRNA gene (\NLandmarks reference distances)\\
+  \textbullet genome size, GC content, tRNA genes};
+\node[box=4.5cm, below=of feat] (model) {Average of histogram boosting and a random forest, trained once per placement rank};
+\node[box=4.5cm, below=of model] (out) {Doubling time at the growth temperature and at \TRefC\,\textdegree C; growth temperature; an error and an 80\% range};
+\draw[flow] (feat) -- (model);
+\draw[flow] (model) -- (out);
+
+% column 3: evaluation and application
+\node[head, anchor=west] (h3) at (10.3cm,0) {c\quad Evaluation and use};
+\node[box, below=1.5mm of h3.south west, anchor=north west] (eval) {Whole species, genera, families or orders held out; settings chosen inside each split};
+\node[box, below=of eval] (cmp) {Released gRodon and Phydon on the same genes and folds; metagenome-assembled genomes against isolates};
+\node[box, below=of cmp, fill=gemfill] (gem) {\NGEMPredicted GEM genomes predicted; \GEMShareNewOrder\% have no labeled relative in their order};
+\draw[flow] (eval) -- (cmp);
+\draw[flow] (cmp) -- (gem);
+
+\draw[flow] (train.east) -- ++(2.5mm,0) |- (model.west);
+\draw[flow] (out.east) -- ++(2.5mm,0) |- (eval.west);
+\end{tikzpicture}
+\end{document}

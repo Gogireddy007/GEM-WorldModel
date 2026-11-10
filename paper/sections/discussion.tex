@@ -1,0 +1,35 @@
+\section{Discussion}
+\paragraph{Where the model earns its keep.} When a relative in the same genus has a measured growth rate, simply taking the
+median of the relatives gets close to the model, which then adds mostly a better ranking. The model pulls ahead as the
+relatives get further away, and that is where most environmental genomes sit: \GEMShareNoGenus\% of the high-quality GEM
+genomes have no labeled relative in their genus and \GEMShareNewOrder\% none in their order. In that regime the accuracy comes
+from the genes, through gRodon's codon statistics and the gene features, while the tree position and the 16S gene add
+little. We would use the predictions to compare and rank genomes rather than to quote a single doubling time, and for
+comparisons across habitats we would use the doubling time at \TRefC\,\textdegree C, which removes the part of the difference
+that temperature explains. Slow growth remains the weak point. Slow growers are ranked well but rarely predicted above a day,
+so the \GEMNSlow slow GEM genomes are a short list rather than a count, and the slow-growth probability is the better guide.
+The clearest next gain is to add protein language-model embeddings to the features.
+
+\paragraph{Labels and inputs.} The \NExcludedKevbrinaWord values from a single study were enough to produce a \KevFoldWith-fold effect, significant
+with relatedness controlled, that would have read as support for an attractive biological idea. The values agreed with each
+other, so no comparison with relatives could have flagged them; only tracing them back to their source did. We would check
+values from studies that contribute several species, or that differ from their source record, before using them. The 16S
+result is the same trap on the input side: copies retrieved by name and copies cut from the genome were similar enough to pass
+our drift check and different enough to cost accuracy. Finally, the measured temperature lowers gRodon's error from
+\RelGRodonNoTempErr- to \RelGRodonErr-fold \citep{corkrey2016}, an advantage an uncultured genome does not have. Predictors meant
+for metagenome-assembled genomes should be judged without it, and with whole lineages held out.
+
+\paragraph{Slow growth and energy.} Organisms in energy-poor environments are often thought to grow slowly because their
+energy supply is thin \citep{hoehler2013,lever2015}. Across species, several energy-related genes do track doubling time, but
+none survives control for relatedness and for the number of inputs tested, in the main analysis or in the three checks of
+Supplementary Table~\ref{S-tab:pgls}. These associations follow the tree. What remains is that slow growers carry fewer
+transporter genes, in line with what is known about oligotrophic and copiotrophic marine bacteria \citep{lauro2009}. Our
+labeled organisms all grow in culture and few live on the thinnest energy budgets, so this argues against the simplest form
+of the low-energy explanation among cultured organisms, not against it in general.
+
+\paragraph{Limitations.} The labels are maximal rates in culture, which can be far above rates in the environment
+\citep{gibson2018,brown2016}. The training set is small (\NGenomes genomes, \NSlow slower than a day), and predictions shrink
+toward the middle of the range. Some labels are surely still wrong after the audit. The GEM taxonomy comes from an older GTDB
+release, so the novelty levels we report are worst cases. On species outside both compilations the ranges held fewer values
+than they should, and missed most slow growers, so for a new lineage the true uncertainty is larger than the range suggests. In our tests, adding labeled species helped more than changing the learner, so new growth measurements for lineages
+without cultured members would probably improve the predictions most.

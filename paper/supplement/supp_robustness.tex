@@ -1,0 +1,19 @@
+\begin{table}[ht]\centering\footnotesize\setlength{\tabcolsep}{3pt}
+\caption{Robustness checks, deployed settings and each genome once, 10 seeds on the official splits. Errors are typical fold errors of the first and second method (a, b); seeds and genomes: how many favour a; $p$: paired Wilcoxon test over genomes (absolute log errors averaged over seeds). The refit replaces gRodon's released estimate, whose coefficients were fitted on data that include our species, with a regression of the log doubling time on gRodon's codon statistics fitted on the training rows of each split. The flagged-study test removes the labels of the studies flagged by the study-level check but kept, and scores both models on the remaining genomes.}\label{tab:robust}
+\begin{tabular}{llcccccccc}
+\toprule
+Comparison (a vs b) & Held out & Genomes & Error a & Error b & $\rho$ a & $\rho$ b & Seeds & Genomes & $p$ \\
+\midrule
+model vs relatives' median & species & 741 & 1.822 & 1.793 & 0.74 & 0.67 & 3/10 & 392 & 0.018 \\
+without gRodon's estimate vs full & species & 741 & 1.863 & 1.822 & 0.72 & 0.74 & 1/10 & 328 & 0.003 \\
+gRodon refitted in each split vs full & species & 741 & 1.851 & 1.822 & 0.73 & 0.74 & 0/10 & 357 & 0.086 \\
+without flagged-study labels vs full & species & 716 & 1.790 & 1.807 & 0.75 & 0.74 & 7/10 & 381 & 0.038 \\
+model vs relatives' median & genus & 741 & 1.912 & 2.152 & 0.71 & 0.55 & 10/10 & 431 & $<$0.001 \\
+model vs relatives' median & family & 741 & 2.025 & 2.597 & 0.68 & 0.40 & 10/10 & 496 & $<$0.001 \\
+model vs relatives' median & order & 741 & 2.081 & 2.412 & 0.66 & 0.40 & 10/10 & 444 & $<$0.001 \\
+without gRodon's estimate vs full & order & 741 & 2.154 & 2.081 & 0.63 & 0.66 & 0/10 & 303 & $<$0.001 \\
+gRodon refitted in each split vs full & order & 741 & 2.104 & 2.081 & 0.64 & 0.66 & 3/10 & 328 & $<$0.001 \\
+without flagged-study labels vs full & order & 716 & 2.023 & 2.046 & 0.68 & 0.67 & 8/10 & 392 & 0.003 \\
+\bottomrule
+\end{tabular}
+\end{table}

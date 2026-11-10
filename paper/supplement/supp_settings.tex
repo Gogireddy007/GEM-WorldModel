@@ -1,0 +1,15 @@
+\begin{table}[ht]\centering\small
+\caption{Settings of the two members of the deployed model for each target, chosen by \texttt{tune\_deployed\_model.py}. Settings not listed are scikit-learn defaults; the random forest has \NForestTrees trees.}\label{tab:settings}
+\begin{tabular}{llp{9.5cm}}
+\toprule
+Target & Member & Settings \\
+\midrule
+own temperature & histogram boosting & min\_samples\_leaf = 20, max\_leaf\_nodes = 7, max\_iter = 200, max\_features = 1.0, learning\_rate = 0.05, l2\_regularization = 5.0 \\
+own temperature & random forest & min\_samples\_leaf = 5, max\_samples = 0.7, max\_features = 0.5 \\
+20 C & histogram boosting & min\_samples\_leaf = 5, max\_leaf\_nodes = 7, max\_iter = 400, max\_features = 1.0, learning\_rate = 0.05, l2\_regularization = 0.0 \\
+20 C & random forest & min\_samples\_leaf = 5, max\_samples = 0.7, max\_features = 0.2 \\
+growth temperature & histogram boosting & min\_samples\_leaf = 20, max\_leaf\_nodes = 7, max\_iter = 200, max\_features = 1.0, learning\_rate = 0.05, l2\_regularization = 5.0 \\
+growth temperature & random forest & min\_samples\_leaf = 10, max\_samples = None, max\_features = 0.5 \\
+\bottomrule
+\end{tabular}
+\end{table}

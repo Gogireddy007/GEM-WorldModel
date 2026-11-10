@@ -1,0 +1,18 @@
+\begin{table}[ht]\centering\small
+\caption{Species that are not in gRodon's growth table, predicted by the final model trained on that table alone (294 genomes, no archaea), averaged over five seeds. Error is the typical fold error; $\rho$ the Spearman correlation. The training set is less than half of the full one, so these errors are higher than those of the deployed model; the test shows how the model carries to species from other sources.}\label{tab:independent}
+\begin{tabular}{lccccc}
+\toprule
+& & \multicolumn{2}{c}{At the growth temperature} & \multicolumn{2}{c}{At 20 \textdegree C} \\
+\cmidrule(lr){3-4} \cmidrule(lr){5-6}
+& Species & Error & $\rho$ & Error & $\rho$ \\
+\midrule
+\multicolumn{6}{l}{\textit{Bacteria, by closest relative in gRodon's growth table}} \\
+\quad same genus & 44 & 1.85 & 0.31 & 1.58 & 0.81 \\
+\quad same family, new genus & 76 & 1.82 & 0.66 & 1.91 & 0.75 \\
+\quad same order, new family & 68 & 1.91 & 0.51 & 1.78 & 0.83 \\
+\quad new order & 106 & 2.65 & 0.39 & 2.09 & 0.63 \\
+\quad all bacteria & 294 & 2.09 & 0.61 & 1.87 & 0.78 \\
+Archaea (none in training) & 150 & 2.46 & 0.57 & 2.54 & 0.43 \\
+\bottomrule
+\end{tabular}
+\end{table}

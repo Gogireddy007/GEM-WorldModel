@@ -1,0 +1,38 @@
+\begin{longtable}{p{5.9cm}p{9.9cm}}
+\caption{Columns of the released prediction table for the GEM genomes, \texttt{gem\_growth\_predictions.csv}.}\label{tab:columns}\\
+\toprule
+Column & Meaning \\
+\midrule
+\endfirsthead
+\caption[]{(continued)}\\
+\toprule
+Column & Meaning \\
+\midrule
+\endhead
+\texttt{genome\_id} & GEM genome identifier (Nayfach et al. 2021) \\
+\texttt{gtdb\_taxonomy} & GTDB taxonomy from the GEM metadata (an older GTDB release than the training data, so the novelty level is a worst case) \\
+\texttt{nearest\_labeled\_relative} & closest rank shared with a labeled training species: same genus, same family, new genus, same order, new family, or new order \\
+\texttt{doubling\_time\_h} & predicted maximal doubling time at the predicted growth temperature, hours \\
+\texttt{doubling\_time\_low\_h} & lower end of the 80\% range, hours \\
+\texttt{doubling\_time\_high\_h} & upper end of the 80\% range, hours \\
+\texttt{doubling\_time\_fold\_error} & typical fold error at this novelty level (median of measured/predicted or its inverse) \\
+\texttt{doubling\_time\_20C\_h} & predicted doubling time standardized to 20 C, hours \\
+\texttt{doubling\_time\_20C\_low\_h} & lower end of the 80\% range, hours \\
+\texttt{doubling\_time\_20C\_high\_h} & upper end of the 80\% range, hours \\
+\texttt{doubling\_time\_20C\_fold\_error} & typical fold error at this novelty level \\
+\texttt{growth\_temp\_c} & predicted optimal growth temperature, C \\
+\texttt{growth\_temp\_low\_c} & lower end of the 80\% range, C \\
+\texttt{growth\_temp\_high\_c} & upper end of the 80\% range, C \\
+\texttt{growth\_temp\_error\_c} & mean absolute error at this novelty level, C \\
+\texttt{slower\_than\_a\_day} & predicted doubling time above 24 hours \\
+\texttt{prob\_slower\_than\_a\_day} & calibrated probability that the doubling time is above 24 hours (useful for ranking; the model rarely predicts above a day for a new lineage) \\
+\texttt{model\_used} & inputs available for this genome, and so the model used \\
+\texttt{domain} & bacteria or archaea \\
+\texttt{phylogeny\_rank\_used} & GTDB rank at which the genome was placed for the phylogeny input; empty when the genome could not be placed \\
+\texttt{completeness} & CheckM completeness, \% (GEM metadata) \\
+\texttt{contamination} & CheckM contamination, \% (GEM metadata) \\
+\texttt{ecosystem\_category} & GEM metadata \\
+\texttt{ecosystem\_type} & GEM metadata \\
+\texttt{habitat} & GEM metadata \\
+\bottomrule
+\end{longtable}

@@ -1,0 +1,48 @@
+\section{Data, code and reproduction}
+
+\subsection{What is released}
+The repository and its Zenodo archive hold the code, the curated labels (\texttt{data/curated}), the prediction table for
+the GEM genomes (\texttt{release/gem\_growth\_predictions.csv}, Table~\ref{tab:columns}), and the derived tables and result
+files of \texttt{data/processed} that the paper is built from. With the archive unpacked in the repository, the numbers,
+tables and figures of the paper are rebuilt from the result files by \texttt{make} in \texttt{paper/}, and every model is
+retrained and evaluated from the derived tables without downloading genomes. We checked this by unpacking the archive in
+an empty folder: every number and table rebuilt from it was identical to those printed here, apart from
+Table~\ref{tab:software}, which is read from the installed software, and retraining the models from it gave the same GEM
+predictions.
+
+Each prediction in the table carries the error and the 80\% range measured for its model and novelty level, for the
+doubling time at the growth temperature, the doubling time at \TRefC\,\textdegree C and the growth temperature. The
+novelty level is computed from the GTDB names in the GEM metadata, which come from an older GTDB release than the training
+data, so it is a worst case.
+
+\input{supplement/supp_columns}
+
+\subsection{Reproducing the results}
+From the downloaded data, \texttt{make paper} runs the whole chain and builds both PDFs; it takes many hours on ten cores,
+most of them in the gene predictions for the GEM genomes and in the nested evaluation. Table~\ref{tab:reproduce} gives the
+step behind each result. Every number in the text is a macro in \texttt{paper/numbers.tex}, written by
+\texttt{paper/scripts/make\_numbers.py}, and \texttt{paper/numbers\_sources.csv} gives the file each comes from.
+
+\begin{table}[ht]\centering\footnotesize
+\caption{The step behind each result. Make targets are run from the repository root; scripts are in
+\texttt{scripts/accuracy} unless a folder is given; outputs are in \texttt{data/processed} unless a folder is given.}\label{tab:reproduce}
+\begin{tabular}{>{\raggedright}p{3.4cm}>{\raggedright}p{2.7cm}>{\raggedright\arraybackslash}p{9.6cm}}
+\toprule
+Result & Make target & Script $\to$ output \\
+\midrule
+Training data and labels & \texttt{predict-all} & \texttt{src/.../deploy\_features.py} \newline $\to$ read at run time \\
+Label audit and its controls & \texttt{label-check, paper-results} & \texttt{screen\_label\_sources.py, audit\_controls.py} \newline $\to$ \texttt{label\_sources\_studies.csv, audit\_controls.csv} \\
+Accuracy by novelty & \texttt{paper-results} & \texttt{evaluate\_paper\_headline.py} \newline $\to$ \texttt{paper\_headline\_accuracy.csv, paper\_headline\_predictions.csv} \\
+Deployed errors and ranges & \texttt{accuracy-table} & \texttt{evaluate\_final\_model.py} \newline $\to$ \texttt{final\_accuracy\_by\_tier.csv} \\
+Released gRodon and Phydon & \texttt{released-tools, paper-results} & \texttt{compare\_released\_tools.py, scripts/r/*.R} \newline $\to$ \texttt{released\_tools\_comparison\_nested.csv} \\
+Ablations and learner & \texttt{paper-results} & \texttt{evaluate\_ablations.py, evaluate\_tuning.py} \newline $\to$ \texttt{ablation\_evaluation.csv, tuning\_evaluation.csv} \\
+16S source & \texttt{paper-results} & \texttt{evaluate\_16s\_source.py} \newline $\to$ \texttt{16s\_source\_evaluation.csv} \\
+Baselines, intervals, shuffled labels, paired tests & \texttt{paper-results} & \texttt{pressure\_tests.py} \newline $\to$ \texttt{pressure\_tests.csv} \\
+Metagenome-assembled genomes & \texttt{paper-results} & \texttt{validate\_on\_gem\_mags.py} \newline $\to$ \texttt{mag\_validation.csv} \\
+Species from other sources & \texttt{paper-results} & \texttt{evaluate\_independent\_species.py} \newline $\to$ \texttt{independent\_test.csv} \\
+Low-energy test and syntrophy & \texttt{lifestyle-test} & \texttt{test\_lifestyle\_phylogenetic.py, check\_lifestyle\_phylogenetic.py, evaluate\_syntrophy\_marker.py} \newline $\to$ \texttt{lifestyle\_phylogenetic\_test.csv, lifestyle\_phylogenetic\_checks.txt, syntrophy\_marker.csv} \\
+GEM predictions & \texttt{predict} & \texttt{scripts/pipeline/predict\_gem\_genomes\_gbm.py, scripts/pipeline/export\_hq\_table.py} \newline $\to$ \texttt{hq\_predictions\_gbm.csv, release/gem\_growth\_predictions.csv} \\
+Numbers, tables, figures & \texttt{make} in \texttt{paper/} & \texttt{paper/scripts/*.py} \newline $\to$ \texttt{paper/numbers.tex}, tables, figures \\
+\bottomrule
+\end{tabular}
+\end{table}

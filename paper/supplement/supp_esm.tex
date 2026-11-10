@@ -1,0 +1,15 @@
+\begin{table}[ht]\centering\small\setlength{\tabcolsep}{4pt}
+\caption{A learned-representation baseline: ESM-2 (35M) protein embeddings of 742 genomes (mean of all ribosomal proteins and of 100 other proteins per genome) against the genome features, on the folds of the headline, deployed settings, each genome once, mean of 3 seeds. Error: typical fold error of the doubling time at the growth temperature; $\rho$: Spearman correlation.}\label{tab:esm}
+\begin{tabular}{lcccccccc}
+\toprule
+& \multicolumn{2}{c}{same genus} & \multicolumn{2}{c}{new genus} & \multicolumn{2}{c}{new family} & \multicolumn{2}{c}{new order} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-9}
+& Error & $\rho$ & Error & $\rho$ & Error & $\rho$ & Error & $\rho$ \\
+\midrule
+genome features & 1.82 & 0.74 & 1.96 & 0.71 & 2.07 & 0.67 & 2.08 & 0.67 \\
+ESM-2, ridge probe & 1.86 & 0.75 & 1.90 & 0.73 & 2.00 & 0.69 & 2.02 & 0.68 \\
+ESM-2, trees on 64 PCs & 2.03 & 0.71 & 2.11 & 0.67 & 2.19 & 0.62 & 2.23 & 0.61 \\
+genome features + 32 ESM-2 PCs & 1.78 & 0.76 & 1.91 & 0.74 & 2.03 & 0.70 & 2.05 & 0.70 \\
+\bottomrule
+\end{tabular}
+\end{table}

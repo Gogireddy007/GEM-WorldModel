@@ -1,0 +1,15 @@
+\abstract{\rmfamily\fontseries{m}\selectfont\textbf{Motivation:} Most microbes are known only from genomes assembled out of
+environmental DNA, so how fast they grow has to be read from those genomes. Most such genomes have no close relative with a
+measured growth rate, and none comes with the measured growth temperature that current predictors need.\\
+\textbf{Results:} We predict the maximal doubling time, the growth temperature and a temperature-standardized doubling time
+from the genome alone, and test every prediction with whole lineages held out. Predictions are typically within
+\ErrSameGenus-fold of the measured value with a labeled relative in the same genus, and within \ErrNewOrder-fold with none in
+the same order. Metagenome-assembled genomes give much the same predictions as isolates. Without the measured temperature,
+the model is as accurate as gRodon and Phydon given it for new species (\RelOursErr- against \RelGRodonErr- and
+\RelPhydonErr-fold) but trails gRodon given it for new orders. On \ExtN species absent from both training compilations it is
+off by \ExtModelErr-fold, against \ExtBaseErr-fold from taxonomy alone.
+Auditing the training labels, we found \NExcludedKevbrinaWord values from one study that on their own produced an apparent
+effect of methane oxidation on growth rate. Once the labels were cleaned and relatedness controlled, no energy-metabolism input
+was associated with doubling time, but slow growers carried fewer transporter genes. We release predictions with errors and
+80\% ranges for the \NGEMPredicted high-quality genomes of the Genomes from Earth's Microbiomes catalog, \GEMShareNewOrder\% of
+which have no labeled relative in their order.}

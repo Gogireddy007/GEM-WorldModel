@@ -1,0 +1,16 @@
+\begin{table}[t]\centering\footnotesize\setlength{\tabcolsep}{3pt}
+\caption{The released gRodon and Phydon against this model on the same 680 genomes, genes and species-held-out folds (mean of 3 seeds; this model built inside each split as in Algorithm~\ref{alg:nested}). T: the measured growth temperature is given as an input. Error: typical fold error; $\rho$: Spearman correlation; AUC: for a doubling time above a day. Wins: genomes, of those both methods predict, for which this model (without or with the temperature) has the smaller absolute log error, averaged over seeds, with the paired Wilcoxon $p$. Phydon placed 665 genomes.}\label{tab:released}
+\begin{tabular}{@{}lccccc@{\hspace{4pt}}c@{}}
+\toprule
+& & & & & \multicolumn{2}{c}{Wins of this model} \\
+\cmidrule(lr){6-7}
+Method & T & Error & $\rho$ & AUC & without T & with T \\
+\midrule
+This model & no & 1.76 & 0.72 & 0.85 & -- & -- \\
+This model & yes & 1.70 & 0.76 & 0.87 & -- & -- \\
+gRodon & no & 2.40 & 0.52 & 0.75 & 424/680 ($<$0.001) & 453/680 ($<$0.001) \\
+gRodon & yes & 1.92 & 0.73 & 0.84 & 349/680 (0.07) & 383/680 ($<$0.001) \\
+Phydon & yes & 1.85 & 0.70 & 0.81 & 347/665 (0.11) & 355/665 ($<$0.001) \\
+\bottomrule
+\end{tabular}
+\end{table}

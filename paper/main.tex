@@ -1,0 +1,62 @@
+% Manuscript for the ISMB 2027 proceedings (Bioinformatics). OUP authoring template, contemporary large layout.
+% Build with make (from paper/): numbers, tables and figures come from the result files.
+\documentclass[webpdf,contemporary,large,namedate]{oup-authoring-template}
+
+\usepackage{xspace}
+\usepackage{booktabs}
+\usepackage{xr-hyper}
+% Supplementary references (S-<label>) are read from supplement.aux, so the supplement is built first (Makefile)
+\externaldocument[S-]{supplement}
+\usetikzlibrary{positioning,arrows.meta}
+\definecolor{ink}{HTML}{0B0B0B}
+\definecolor{ink2}{HTML}{52514E}
+\definecolor{auditfill}{HTML}{FCEDE6}
+\definecolor{gemfill}{HTML}{E9F1FB}
+\graphicspath{{figures/}}
+
+
+% no dotted rules above and below the abstract
+\renewcommand{\dhorline}[3][0]{}
+
+% every number in the paper comes from here (paper/scripts/make_numbers.py)
+\input{numbers.tex}
+\xspaceaddexceptions{\%}
+
+\begin{document}
+
+\journaltitle{Bioinformatics}
+\pubyear{2027}
+\copyrightyear{2027}
+\firstpage{1}
+
+\title[How fast do uncultured microbes grow?]{How fast do uncultured microbes grow?}
+
+% anonymized for review
+\author{Anonymous Authors}
+
+\input{sections/abstract}
+
+\keywords{microbial growth rate, metagenome-assembled genomes, codon usage bias, phylogenetic comparative methods, label curation}
+
+% title, authors and abstract in the body font (the class sets them in its sans-serif family)
+{\let\sfdefault\rmdefault\maketitle}
+% Submission version: no journal header, article type, subject or production placeholders; page numbers only.
+% Fonts, sizes and spacing are the class's own.
+\makeatletter
+\def\ps@headings{%
+  \let\@oddfoot\@empty\let\@evenfoot\@empty
+  \def\@evenhead{\hbox to \textwidth{\sffamily\fontseries{m}\fontsize{9bp}{10bp}\selectfont\thepage\hfill}}%
+  \def\@oddhead{\hbox to \textwidth{\hfill\sffamily\fontseries{m}\fontsize{9bp}{10bp}\selectfont\thepage}}%
+  \def\titlemark##1{\markboth{##1}{##1}}}
+\def\ps@opening{\let\@oddhead\@empty\let\@evenhead\@empty\let\@oddfoot\@empty\let\@evenfoot\@empty}
+\makeatother
+\pagestyle{headings}
+
+\input{sections/introduction}
+\input{sections/methods}
+\input{sections/results}
+\input{sections/discussion}
+
+\bibliographystyle{gem-oup}
+\bibliography{refs}
+\end{document}
