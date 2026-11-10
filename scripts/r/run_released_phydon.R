@@ -5,13 +5,19 @@
 # if Phydon had been trained without the test species. Phydon's code itself is not changed.
 # Input: data/processed/released_tools_folds.csv (compare_released_tools.py --prepare).
 # Output: data/processed/released_tools_predictions.csv (appends; finished folds are skipped).
+# With a second argument "order", the folds hold out whole GTDB orders (released_tools_folds_order.csv) and every species
+# of Phydon's training table whose GTDB order is held out (phydon_rep_orders.csv) is removed as well; output goes to
+# released_tools_predictions_order.csv.
 # Run from the repository root; packages are in the project library .Rlib.
 .libPaths(c(normalizePath(".Rlib"), .libPaths()))
 suppressPackageStartupMessages({library(Phydon)})
 args <- commandArgs(trailingOnly = TRUE)
 seeds <- if (length(args)) as.integer(strsplit(args[1], ",")[[1]]) else 0:2
-folds <- read.csv("data/processed/released_tools_folds.csv", stringsAsFactors = FALSE)
-out_file <- "data/processed/released_tools_predictions.csv"
+level <- if (length(args) >= 2) args[2] else "species"
+sfx <- if (level == "order") "_order" else ""
+folds <- read.csv(paste0("data/processed/released_tools_folds", sfx, ".csv"), stringsAsFactors = FALSE)
+out_file <- paste0("data/processed/released_tools_predictions", sfx, ".csv")
+rep_orders <- if (level == "order") read.csv("data/processed/phydon_rep_orders.csv", stringsAsFactors = FALSE) else NULL
 ns <- asNamespace("Phydon")
 train_name <- c(bacteria = "GTDB_tax_trait_repGenome_in_tree_expanded", archaea = "GTDB_tax_trait_repGenome_in_tree_expanded_archaea")
 cluster_name <- c(bacteria = "sp_clusters_bac", archaea = "sp_clusters_arc")
@@ -41,7 +47,14 @@ for (s in seeds) {
       if (nrow(sub) == 0) next
       held_out <- unique(na.omit(rep_of[[dom]][sub$genome_name]))
       table <- original[[dom]]
-      set_training(dom, table[!(table$Representative.genome %in% held_out), ])
+      drop <- table$Representative.genome %in% held_out
+      if (level == "order") {
+        orders <- unique(sub$order)
+        out_reps <- rep_orders$Representative.genome[!is.na(rep_orders$order) & rep_orders$order %in% orders]
+        drop <- drop | table$Representative.genome %in% out_reps
+        held_out <- unique(table$Representative.genome[drop])
+      }
+      set_training(dom, table[!drop, ])
       info <- data.frame(gene_location = sub$gene_location, genome_name = sub$genome_name,
                          temperature = sub$growth_temp_c, stringsAsFactors = FALSE)
       ok <- tryCatch({

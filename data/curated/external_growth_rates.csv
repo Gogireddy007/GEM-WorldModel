@@ -1,0 +1,52 @@
+species,accession,doubling_time_hours,growth_temp_c,how_measured,source,genome_from_type_material
+Aggregatilinea lenta,GCF_003569045.1,456.0,,doubling time under optimum conditions about 19 days,PMID 30775966,True
+Aminomonas paucivorans,GCF_000165795.1,16.0,35.0,optimum growth at 35 C with generation time 16 h,PMID 10425753,True
+Anaerobium acetethylicum,GCF_900096945.1,1.0,30.0,"generation time under optimal conditions 60 min, optimum 30 C",PMID 26297346,True
+Anaeromicrobium sediminis,GCF_002270055.1,1.267,37.0,generation time 76 min at optimum 37 C,PMID 27974087,True
+Anoxybacter fermentans,GCF_003991135.1,0.45,60.0,"shortest generation time 27 min under optimal conditions (60 C, 20 MPa)",PMID 25505345,True
+Atrimonas thermophila,GCF_045864955.1,11.4,72.5,doubling time under optimal conditions (optimum 70-75 C),PMID 38776610,True
+Aureliella helgolandensis,GCF_007752135.1,41.0,,maximal growth rate 0.017 per h (generation time 41 h),PMID 32219667,True
+Brockia lithotrophica,GCF_003633725.1,6.0,62.5,optimal growth (doubling time 6.0 h) at 60-65 C,PMID 22493174,True
+Caldanaerovirga acetigignens,GCF_900142995.1,3.4,,shortest doubling time (xylose),PMID 19625440,True
+Calderihabitans maritimus,GCF_002207765.1,3.7,65.0,optimum growth at 65 C with doubling time 3.7 h,PMID 23606483,True
+Caldifarcimen microaerophilum,GCF_055387105.1,10.0,75.0,"doubling time at optimum (75 C, pH 6.0, 3.5% NaCl)",PMID 42397696,True
+Caloramator quimbayensis,GCF_900167605.1,2.0,50.0,doubling time 2 h under optimal conditions (50 C),PMID 22843719,False
+Carboxydocella thermautotrophica,GCF_003054495.1,1.1,,generation time under optimal conditions (chemolithotrophic),PMID 12508854,True
+Carboxydothermus islandicus,GCF_001950325.1,2.0,,generation time on CO under optimal conditions,PMID 21131500,False
+Carboxydothermus pertinax,GCF_001950255.1,1.5,,doubling time under optimum conditions on CO with ferric citrate,PMID 21908679,True
+Deferribacter autotrophicus,GCF_008362905.1,1.0,,generation time under optimal conditions 60 min,PMID 19502344,True
+Deferribacter desulfuricans,GCF_000010985.1,0.667,,40 min doubling time at optimum temperature,PMID 12807210,True
+Deferrisoma palaeochoriense,GCF_054656955.1,2.5,,generation time under optimal conditions,PMID 26610851,True
+Defluviitalea raffinosedens,GCF_016908775.1,1.195,50.0,maximum growth rate 0.58 per h under optimum conditions (full text),PMC5817277,True
+Desulfobacca acetoxidans,GCF_000195295.1,48.0,37.0,"optimum growth around 37 C, doubling time 1.7-2.2 d",PMID 10319454,True
+Desulfocarbo indianensis,GCF_001184205.1,64.8,30.0,doubling time under optimal conditions 2.7 days,PMID 24876241,False
+Desulfovulcanus ferrireducens,GCF_018704065.1,7.1,65.0,"minimum doubling time, optimum 65 C",PMID 35190935,True
+Fervidicoccus fontis,GCF_000258425.1,6.1,67.5,doubling time 6.1 h at optimum 65-70 C,PMID 19837732,True
+Halanaerocella petrolearia,GCF_054657875.1,3.5,,doubling time in optimized growth conditions,PMID 21761211,True
+Hydrogenimonas urashimensis,GCF_016593255.1,3.0,,180 min doubling time at optimum temperature,PMID 33340909,True
+Lentimicrobium saccharophilum,GCF_001192835.1,24.0,,doubling time under optimal conditions about 1 day,PMID 27098854,True
+Mariprofundus micogutta,GCF_001895085.1,24.0,25.0,doubling time 24 h at optimum 25 C,PMID 27766355,True
+Methanospirillum purgamenti,GCF_018502485.1,10.0,35.0,"generation time 10 h (full text, PLOS ONE)",PMID 39186748,True
+Methanothermococcus jasoni,GCF_049075655.1,0.533,73.0,"minimum doubling time 32 min, optimum 73 C",PMID 41773501,True
+Methylacidiphilum kamchatkense,GCF_007475525.1,6.3,55.0,"maximal growth rate 0.11 per h, doubling time about 6.3 h, optimum 55 C",PMID 37755432,True
+Ornatilinea apprima,GCF_001306115.1,6.0,,doubling time under optimal conditions,PMID 22328612,True
+Paracoccus solventivorans,GCF_900142875.1,12.0,,doubling time at optimal pH and temperature on acetone,PMID 8863446,True
+Persephonella hydrogeniphila,GCF_900215515.1,0.667,,40 min doubling time at optimum temperature,PMID 12807214,True
+Phorcysia thermohydrogeniphila,GCF_004339575.1,0.433,,generation time under optimal conditions 26 min,PMID 22140151,True
+Phosphitispora fastidiosa,GCF_019008365.1,72.0,30.0,optimal growth at 30 C with doubling time of 3 days,PMID 34878375,True
+Spiroplasma corruscae,GCF_002237575.1,1.5,32.0,optimal growth at 32 C (doubling time 1.5 h),PMID 8863421,True
+Spiroplasma eriocheiris,GCF_002028345.1,24.0,,doubling time at optimal temperature,PMID 20418415,True
+Spiroplasma platyhelix,GCF_021496725.1,6.4,30.0,doubling time at optimum 30 C,PMID 9226909,True
+Spiroplasma poulsonii,GCF_022569815.1,15.8,30.0,optimum growth at 30 C with doubling time 15.8 h,PMID 10319483,False
+Spiroplasma syrphidicola,GCF_000400955.1,1.0,,doubling time at the optimal temperature,PMID 8782692,True
+Sporanaerobium hydrogeniformans,GCF_002735925.1,5.0,,generation time under optimised conditions,PMID 37572166,True
+Sterolibacterium denitrificans,GCF_001586935.1,45.0,31.0,"optimal growth at 30-32 C, doubling time 44-46 h on cholesterol",PMID 12892131,True
+Stratiformator vulcanicus,GCF_007744515.1,102.0,,generation time at maximal growth rate (mu max 0.0068 per h),PMID 37584762,True
+Sulfurimonas hongkongensis,GCF_000445475.1,6.1,30.0,generation time under optimal conditions (full text),PMC4149026,True
+Sulfurovum aggregans,GCF_055385215.1,3.2,,3.2 h doubling time at optimum temperature,PMID 24966202,True
+Sulfurovum riftiae,GCF_001595645.1,3.0,,generation time under optimal conditions,PMID 27116914,True
+Tautonia plasticadhaerens,GCF_007752535.1,29.0,,generation time at mu max 0.024 per h,PMID 32399714,True
+Thermincola carboxydiphila,GCF_056856095.1,1.3,,generation time under optimal conditions,PMID 16166711,True
+Thermocrinis jamiesonii,GCF_000702425.1,1.3,,doubling time under optimal conditions,PMID 26419502,True
+Thermocrinis minervae,GCF_900142435.1,4.5,75.0,doubling time 4.5 h at optimum 75 C,PMID 19651724,True
+Varunaivibrio sulfuroxidans,GCF_029318635.1,8.0,,generation time under optimal conditions,PMID 27298285,True
