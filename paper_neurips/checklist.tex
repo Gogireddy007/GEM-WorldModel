@@ -1,0 +1,32 @@
+\section*{NeurIPS paper checklist}
+\begin{enumerate}
+\item \textbf{Claims.} Yes. The abstract and introduction state the data, protocol, baselines and the three findings, each
+backed by a table or figure in Section~\ref{sec:results}; the claim about released tools is stated with its per-genome test
+(comparable without the temperature, better with it).
+\item \textbf{Limitations.} Yes, Section 7: culture-based maximal rates, species-level labels, small data, residual label
+errors, species-level comparison with released tools, older GEM taxonomy.
+\item \textbf{Theory.} NA: no theoretical results.
+\item \textbf{Reproducibility.} Yes. Algorithms~\ref{alg:audit} and~\ref{alg:nested}, Section~\ref{sec:baselines} and
+Appendix~\ref{app:compute} describe every step; one command rebuilds every number and table from the released result files.
+\item \textbf{Open access to data and code.} Yes: code and curated labels in a public repository; derived tables and result files in an
+archive for Zenodo; raw genomes are downloaded by the released scripts from NCBI.
+\item \textbf{Experimental details.} Yes: splits, settings search, inputs and baselines in Sections~\ref{sec:data}
+to~\ref{sec:baselines}; settings of the deployed model are in the repository.
+\item \textbf{Statistical significance.} Yes: bootstrap intervals over genera (\NBootDraws draws), paired Wilcoxon tests
+across seeds and across genomes; the paper states that seeds reshuffle the same genomes, so tests across seeds measure
+consistency rather than independent replication.
+\item \textbf{Compute.} Yes, Appendix~\ref{app:compute}: one laptop; hours, not GPU-days.
+\item \textbf{Code of ethics.} Yes.
+\item \textbf{Broader impacts.} Yes, Section 7: no data about people; the main risk is reading maximal rates in culture as
+rates in the environment.
+\item \textbf{Safeguards.} NA: no model or data with a high risk of misuse.
+\item \textbf{Licenses of existing assets.} Yes: the growth-rate compilation \citep{madin2020} and the gRodon table
+\citep{weissman2021}, GTDB \citep{parks2022}, the GEM catalog \citep{nayfach2021}, gRodon and Phydon (MIT), ESM-2 (MIT),
+pyrodigal (GPL-3.0), scikit-learn (BSD-3-Clause); upstream data keep their terms.
+\item \textbf{New assets.} Yes: curated labels, exclusions with evidence, splits, inputs and predictions, documented in the
+datasheet (Appendix~\ref{app:datasheet}); code under Apache-2.0, data under CC BY 4.0.
+\item \textbf{Crowdsourcing and human subjects.} NA.
+\item \textbf{IRB approval.} NA.
+\item \textbf{Use of large language models.} NA: no language model is part of the methods; ESM-2 is a protein model used as
+a baseline representation.
+\end{enumerate}

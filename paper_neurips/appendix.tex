@@ -1,0 +1,34 @@
+\section{Extended results}\label{app:extra}
+
+\paragraph{Accuracy by target and evaluation scheme.} Table~\ref{tab:accuracy} gives all three targets at the four levels,
+with settings chosen inside each split (nested) and with the deployed settings. Table~\ref{tab:pressure} gives the
+baselines with bootstrap intervals and the shuffled-label control.
+
+\input{../paper/supplement/supp_accuracy}
+\input{../paper/supplement/supp_pressure}
+
+\paragraph{Ranges and the slow-growth probability.} Table~\ref{tab:ranges} gives the coverage of the 80\% ranges by group,
+cross-fitted over genera, and Table~\ref{tab:slowprob} the probability of a doubling time above a day.
+
+\input{../paper/supplement/supp_ranges}
+
+\paragraph{Ablations.} Table~\ref{tab:ablations} removes one input group at a time from the feature model (deployed
+settings, each genome once, \NSeedsAblation seeds).
+
+\input{tables/ablations}
+
+\paragraph{Excluded labels.} Table~\ref{tab:exclusions} lists the removed labels with their evidence.
+
+\input{tables/exclusions}
+
+\paragraph{External test set.} Table~\ref{tab:external} lists the external species with their measured and predicted
+doubling times and the source of each value.
+
+\input{../paper/supplement/supp_external}
+
+\section{Implementation and compute}\label{app:compute}
+All experiments ran on one laptop (Apple silicon, 10 CPU cores, 16 GB memory). Gene prediction and the HMM searches for the
+labeled genomes take under an hour on eight cores; ESM-2 (35M) embeddings of the sampled proteins of all labeled genomes ran
+on the laptop GPU in about an hour; the nested evaluation at four levels and three seeds takes several hours on nine cores.
+Software versions are listed in the repository. Splits are defined by the seed and the GTDB taxonomy of each genome, and the
+released code regenerates them exactly.

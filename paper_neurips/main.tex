@@ -1,0 +1,329 @@
+% NeurIPS Datasets and Benchmarks version of the GEM-WorldModel paper. Every number is a macro from ../paper/numbers.tex
+% (paper/scripts/make_numbers.py); tables come from make_neurips_tables.py. Style: neurips_2025.sty until the 2027 file is out.
+\documentclass{article}
+\usepackage[dandb]{neurips_2025}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{amsfonts,amsmath}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{xspace}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\graphicspath{{../paper/figures/}}
+\input{../paper/numbers.tex}
+\xspaceaddexceptions{\%}
+
+\title{GrowthBench: An Audited, Lineage-Held-Out Benchmark\\for Predicting Microbial Growth Rates from Genomes}
+
+\author{Anonymous Authors}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Most microbial lineages are known only from genomes assembled out of environmental DNA, and predicting their phenotypes is
+a learning problem under taxonomic distribution shift: most such genomes have no labeled relative in their genus. We
+release GrowthBench, a benchmark for predicting the maximal doubling time, the growth temperature and a
+temperature-standardized doubling time from the genome alone. It contains \NGenomes genomes of \NSpecies species (\NHeadlineRows with gene
+features form the evaluation set) whose labels were audited study by study, a protocol that holds out whole species, genera, families or orders with every model choice
+made inside each split, metrics for accuracy and for the coverage of prediction ranges by group, and baselines from a
+taxonomy-only median to released domain tools and protein language-model embeddings. Three findings shape how the task
+should be evaluated. First, a taxonomy-only baseline is nearly as accurate as a tuned model when a same-genus relative is
+labeled (\BaseRelErrSameGenus- against \ErrSameGenus-fold typical error) and falls far behind for new families and orders
+(\BaseRelErrNewOrder- against \ErrNewOrder-fold), so random or species-level splits hide where models matter. Second,
+released tools rely on the measured growth temperature, which uncultured genomes lack, while a ridge probe on generic
+ESM-2 protein embeddings is as accurate as hand-crafted genome features and improves them when combined. Third, \NExcludedKevbrinaWord
+mis-scaled labels from one study were enough to produce a significant, phylogenetically controlled biological effect, and
+range estimates that are calibrated overall cover only \CovDomSlowMin to \CovDomSlowMax\% of slow growers, and \ExtCoverage\%
+of the values in an external set of \ExtN newly compiled species. We release the
+data, splits, code and predictions for the \NGEMPredicted high-quality genomes of the Genomes from Earth's Microbiomes
+catalog.
+\end{abstract}
+
+\section{Introduction}
+Metagenomics has turned microbial ecology into a genome-first science: the Genomes from Earth's Microbiomes (GEM) catalog
+alone holds \NGEMTotal genomes assembled from environmental DNA \citep{nayfach2021}, most from organisms that have never been
+grown. Their physiology has to be predicted from sequence, and the maximal growth rate is among the first traits needed,
+since it separates organisms that respond quickly to resources from those that persist at low activity and is used to
+interpret abundance and replication measurements \citep{vieirasilva2010,roller2016,kirchman2016}. Codon usage bias of
+highly expressed genes predicts growth rate \citep{vieirasilva2010}, and the tools gRodon \citep{weissman2021} and Phydon
+\citep{xu2025} turn it into a predicted doubling time.
+
+For machine learning this is a small-data regression problem under strong, structured distribution shift, with three properties that an evaluation has to respect. (i) \emph{The shift is taxonomic and its size is known.}
+\GEMShareNoGenus\% of high-quality GEM genomes have no labeled relative in their genus and \GEMShareNewOrder\% none in their
+order, so the quantity of interest is accuracy as a function of the distance to the closest labeled relative, as in
+benchmarks of in-the-wild shift \citep{koh2021}. (ii) \emph{A privileged input.} Released tools take the measured growth
+temperature, which a metagenome-assembled genome does not come with. (iii) \emph{Label noise with structure.} Labels come
+from compilations in which an error shared by every value of one study moves a whole clade, so no comparison with relatives
+can detect it, and it can masquerade as biology.
+
+\paragraph{Contributions.} We release \textbf{GrowthBench} (Figure~\ref{fig:overview}):
+\begin{itemize}
+\item \textbf{Data.} \NGenomes genomes of \NSpecies species (\NArchaea archaeal; \NHeadlineRows with gene features
+are evaluated) with three targets, after a study-level
+label audit (Algorithm~\ref{alg:audit}) that removed \NExcluded values with written evidence (Section~\ref{sec:data}).
+\item \textbf{Protocol.} Whole species, genera, families or orders held out, with model selection repeated inside every
+split (Algorithm~\ref{alg:nested}); metrics for accuracy, ranking of slow growers, and coverage of prediction ranges by
+group (Section~\ref{sec:protocol}).
+\item \textbf{Baselines.} From a training median and a taxonomy-only median to released domain tools, gradient-boosted
+trees on genome features, and ESM-2 protein language-model embeddings \citep{lin2023} (Section~\ref{sec:baselines}).
+\item \textbf{Findings.} Where models add value over taxonomy, that generic protein embeddings match task-specific
+features, what a privileged input is worth, how a few structured label errors create a spurious effect, and where
+calibrated ranges fail (Section~\ref{sec:results}).
+\item \textbf{Resource.} Predictions with errors, ranges and a slow-growth probability for \NGEMPredicted GEM genomes.
+\end{itemize}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth,alt={Three-column flow diagram: training data and label audit; inputs computed from the genome and the model; lineage-held-out evaluation, comparison with released tools and metagenome-assembled genomes, and predictions for the GEM catalog.}]{fig1_overview_standalone}
+\caption{GrowthBench. (a) Growth rates from a compilation and the primary literature, audited for values that are not
+maximal rates. (b) Every input is computed from the genome, so isolates and metagenome-assembled genomes are treated alike.
+(c) Whole lineages are held out, which is the situation of most environmental genomes.}
+\label{fig:overview}
+\end{figure}
+
+\section{Related work}
+\paragraph{Growth from genomes.} Codon usage bias of ribosomal protein genes is the classic predictor of maximal growth
+rate \citep{vieirasilva2010}. gRodon fits a regression on codon usage statistics and the measured temperature
+\citep{weissman2021} and has been used on whole metagenomes \citep{weissman2022}; Phydon adds the growth rates of close
+relatives on the GTDB tree \citep{xu2025,parks2022}. gRodon's training labels come from the compilation of
+\citet{madin2020}. We evaluate
+both as released, on equal genes and folds, with and without the temperature they require.
+\paragraph{Benchmarks under distribution shift.} WILDS \citep{koh2021} made the case for evaluating under the shift a model
+meets in deployment. Here the shift is defined by taxonomy and can be set to four levels. Unlike most shift benchmarks, the
+labels themselves are curated from a compilation, and we show that label curation changes scientific conclusions.
+\paragraph{Protein language models.} ESM-2 \citep{lin2023} embeddings are the standard learned representation of
+proteins; we use them as a genome-level baseline by averaging ribosomal and other proteins.
+\paragraph{Uncertainty.} Our ranges are split-conformal-style residual quantiles \citep{lei2018} computed per novelty
+level and domain; we report their coverage by group, which marginal guarantees do not control.
+
+\section{Dataset}\label{sec:data}
+\paragraph{Labels.} The core is the growth-rate table distributed with gRodon (\NGrowthTable species), used in three ways
+(Table~\ref{tab:data}): species whose genome we processed, species whose genome size, GC content and tRNA count come from
+the trait table, and species with a genome but no traits. We added \NLiteratureWord strains from lineages the compilation
+lacks, each checked in the primary paper \citep{konneke2005,stieglmeier2014,palatinszky2015,nowka2015,mohammadi2017,lehtovirtamorley2014}.
+Names are mapped to GTDB R\GTDBRelease \citep{parks2022}, and rows are joined into species groups so that synonyms never fall
+on both sides of a split. Each genome has three targets: $y=\log d$ for the maximal doubling time $d$ at its optimal
+temperature $T$, $T$ itself, and $\log d$ moved to \TRefC\,\textdegree C with an Arrhenius factor
+($E_a=\EaKJ$\,kJ\,mol$^{-1}$) as in gRodon.
+
+\paragraph{Audit.} A label is meant to be a maximal rate at the stated temperature. Labels were screened against their
+held-out prediction and their genus relatives, traced to their source records, and compared study by study with evidence
+from other studies only (Algorithm~\ref{alg:audit}); values matching no record but far from the closest one were listed as
+unit slips. A label was removed only when a second source or the study showed it was not a maximal rate. Run with the
+removals switched off, the study-level check finds \PosCtrlCaughtWord of the \PosCtrlNWord values removed before it existed.
+
+\begin{algorithm}[t]
+\caption{Study-level label check}\label{alg:audit}
+\small
+\begin{algorithmic}[1]
+\Require labels $d_i$ with species; source records $(v_r,\mathrm{study}_r)$ of the compilation
+\For{each label $i$}
+  \State $s_i\gets$ study of the record with $|v_r-d_i|\le\TraceTolPct\%\cdot d_i$, if any
+  \State $e_i\gets$ median of other studies' values for the species, else of $\ge 2$ genus (or family) relatives labeled by other studies
+\EndFor
+\For{each study $s$ with $\ge 2$ labels that have evidence}
+  \State $r_i\gets\log(d_i/e_i)$; $\tilde r\gets\operatorname{median}_i r_i$
+  \If{$|\tilde r|\ge\log\StudyFold$ \textbf{and} $\ge 80\%$ of $r_i$ share the sign of $\tilde r$} flag $s$ \EndIf
+\EndFor
+\State list untraced labels $\ge\StudyFold$-fold from the closest record; review every flag against a second source
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Inputs.} Everything is computed from the genome sequence. Genes are predicted with pyrodigal
+\citep{hyatt2010,larralde2022}; ribosomal proteins are found with \NRibosomalFamilies Pfam families \citep{mistry2021,eddy2011};
+codon usage bias is the median MILC distance \citep{supek2005} of ribosomal protein genes, and gRodon's \NGRodonFeaturesWord
+codon statistics are computed without a temperature. The \NLifestyleFeatures lifestyle inputs come from \NLifestyleFamilies Pfam
+families (oxidases, nitrogenase, RuBisCO, transporter and regulator densities and others); the GTDB tree position is a
+vector of distances to \NLandmarks landmark tips; the 16S gene, cut from the genome, is described by distances to
+\NLandmarks reference sequences; genome size, GC content, tRNA genes and a domain flag complete the input. Protein
+language-model embeddings are provided as an alternative input (Section~\ref{sec:baselines}).
+
+\input{tables/data}
+
+\section{Protocol}\label{sec:protocol}
+\paragraph{Splits.} For held-out rank $L\in\{$species group, genus, family, order$\}$, the taxa at rank $L$ are shuffled
+with a seed and divided into \NFolds folds, so every test genome has its closest labeled relative at a known level; we use
+\NSeedsHeadline seeds. Model selection must be repeated inside each split (Algorithm~\ref{alg:nested}).
+
+\begin{algorithm}[t]
+\caption{Nested lineage-held-out evaluation}\label{alg:nested}
+\small
+\begin{algorithmic}[1]
+\Require labeled set $\mathcal{D}$; held-out rank $L$; seeds $s=1..\NSeedsHeadline$
+\For{each seed $s$}
+  \State shuffle the taxa at rank $L$ with seed $s$; split them into \NFolds folds
+  \For{each fold with training rows $\mathcal{T}$ and test rows $\mathcal{V}$}
+    \State choose all settings on $\mathcal{T}$ only (here: \NTuneCandidates random draws per learner, \NTuneFolds-fold family-grouped split)
+    \State fit on $\mathcal{T}$; predict $\mathcal{V}$
+  \EndFor
+  \State metrics over all held-out predictions; residual quantiles by level and domain
+\EndFor
+\State \Return means over seeds, with 95\% bootstrap intervals resampling genera (\NBootDraws draws)
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Metrics.} Typical fold error $E=\exp(\operatorname{median}_i|y_i-\hat y_i|)$, Spearman $\rho$, and the area
+under the ROC curve (AUC) for $d>24$\,h, the slow growers (\SlowBaseRate\% of genomes). An 80\% range
+$[\hat y+q_{0.1},\hat y+q_{0.9}]$ uses residual quantiles from held-out predictions at the genome's novelty level and
+domain; its coverage is cross-fitted over genera and reported overall and for archaea, slow and fast growers.
+\paragraph{Privileged input.} The measured growth temperature may be used only in a separately reported setting.
+\paragraph{Controls.} Every submission should report the taxonomy-only median (the median label of the training genomes at
+the closest shared rank) on the same folds, and a run on labels shuffled across genomes, which must not beat the median.
+
+\paragraph{Using GrowthBench.} The package loads the genomes, makes the official splits and scores a model together with the
+required baseline; the splits it generates are identical to those of every result in this paper (checked fold by fold):
+\begin{verbatim}
+from gem_worldmodel import benchmark as gb
+data = gb.load()          # genomes with gene features
+def fit_predict(train, test, X_train, X_test):
+    return model.fit(X_train, train["y"]).predict(X_test)
+res = gb.evaluate(fit_predict, data)  # 4 levels x 3 seeds
+\end{verbatim}
+
+\section{Baselines}\label{sec:baselines}
+\textbf{Training median} and \textbf{relatives' median} (above). \textbf{gRodon} and \textbf{Phydon}, run as released on
+our predicted genes with species and with orders held out; we removed each fold's species (or orders) from Phydon's own
+training table, since its distance to the nearest relative otherwise counted the held-out lineage. \textbf{Features + trees}: the average of
+histogram gradient boosting with median loss \citep{friedman2001} and a random forest \citep{breiman2001}, with every
+labeled genome entered once per tree placement (species to order) so the model learns coarse placements; we report it with
+settings chosen inside each split (nested) and with fixed settings. \textbf{ESM-2}: each genome is the mean ESM-2 (35M)
+embedding \citep{lin2023} of its ribosomal proteins (up to \EsmNRibosomal) and of \EsmNOther other proteins sampled with a
+fixed seed, concatenated ($2\times 480$ values); we fit a ridge probe (penalty by inner cross-validation), trees on
+\EsmPCTrees principal components, and trees on the genome features plus \EsmPCComb components, with scaling and components
+fitted inside each split.
+
+\section{Results}\label{sec:results}
+\input{tables/benchmark}
+
+\paragraph{Models matter most where taxonomy fails.} The taxonomy-only median is nearly as accurate as the nested model when
+a same-genus relative is labeled (Table~\ref{tab:benchmark}; \BaseRelErrSameGenus- against \ErrSameGenus-fold, bootstrap
+interval of the difference \CIDiffLoSameGenus to \CIDiffHiSameGenus), though it ranks worse ($\rho$ \BaseRelRhoSameGenus
+against \RhoSameGenus). With families or orders held out it falls far behind (\BaseRelErrNewOrder- against
+\ErrNewOrder-fold for orders, difference \CIDiffLoNewOrder to \CIDiffHiNewOrder), and its ranking collapses ($\rho$
+\BaseRelRhoNewOrder against \RhoNewOrder). A random or species-level split therefore measures largely what taxonomy already
+knows. On shuffled labels the model gives \ShuffleErrSpecies-fold ($\rho=\ShuffleRhoSpecies$), no better than the median
+(\ShuffleMedErrSpecies-fold), so the protocol itself creates no accuracy. Model selection inside each split matters little
+for the error at the growth temperature (changes of at most 0.01) but entering each genome at every tree placement lowers
+the species-level error from \FixedErrSameGenus- to \CoarseErrSameGenus-fold.
+
+\paragraph{A generic protein model matches hand-crafted features.} With the same scheme (deployed settings, each genome
+once), a ridge probe on ESM-2 embeddings is as accurate as the genome features (Table~\ref{tab:benchmark};
+\EsmProbeErrSameGenus- against \EsmFeatErrSameGenus-fold with species held out, per genome $p=\EsmProbePSameGenus$;
+\EsmProbeErrNewOrder- against \EsmFeatErrNewOrder-fold with orders held out, $p=\EsmProbePNewOrder$) and ranks slightly
+better at every level; with orders held out it has the lowest typical error of all methods. Trees on its principal
+components are clearly worse (\EsmTreesErrNewOrder-fold with orders held out). Adding \EsmPCComb embedding components to the
+features lowers the error at every level, significantly per genome with species held out (\EsmCombBetterSameGenus of
+\EsmPairNSameGenus genomes improve, $p=$\,\EsmCombPSameGenus) and with orders held out (\EsmCombBetterNewOrder,
+$p=$\,\EsmCombPNewOrder). A protein model trained without any growth label thus carries as much growth signal as genome features designed for the task, and the two are complementary; whether larger protein or genome language models go further
+is the open question the benchmark is built to answer.
+
+\paragraph{The privileged input.} Given the measured temperature, gRodon's typical error is \RelGRodonErr-fold; without
+it, \RelGRodonNoTempErr-fold (Table~\ref{tab:released}). Our model without the temperature (\RelOursErr-fold) is as accurate
+as gRodon and Phydon given it: its typical error is lower in every seed, but per genome it has the smaller error for only
+\PairGRodonBetter of \PairGRodonN genomes against gRodon ($p=\PairGRodonP$) and \PairPhydonBetter of \PairPhydonN against
+Phydon ($p=\PairPhydonP$). Given the temperature too, it is more accurate per genome against both ($p=$\,\PairTempGRodonP
+and \PairTempPhydonP). With orders held out the picture changes: Phydon, which leans on close relatives, rises to
+\RelOrdPhydonErr-fold, gRodon given the temperature stays at \RelOrdGRodonErr-fold, and our model ties with it given the
+temperature (\RelOrdOursTempErr-fold, $p=\PairOrdTempGRodonP$) but trails it without (\RelOrdOursErr-fold,
+$p=\PairOrdGRodonP$), while beating gRodon without the temperature (\RelOrdGRodonNoTempErr-fold, $p$\,\PairOrdGRodonNoTempP).
+The privileged input is worth most exactly where relatives are missing, so benchmarks for metagenome-assembled genomes should
+report results without it.
+
+\paragraph{An external test set.} GrowthBench includes \ExtN species whose doubling time comes from the species
+description and that are absent from the compilation of \citet{madin2020} (by NCBI taxonomy identifier) and from our labels,
+with no training genome in their GTDB species; \ExtNNewOrder have no labeled relative in their order (Table~\ref{tab:external}).
+The feature model trained on all labeled genomes is off by \ExtModelErr-fold (genus bootstrap \ExtModelLo to \ExtModelHi,
+$\rho=\ExtModelRho$), against \ExtBaseErr-fold for the relatives' median and \ExtGRodonErr-fold for gRodon without a
+temperature (per genome $p=\ExtPBase$ and \ExtPGRodon). The error in new orders (\ExtModelErrNewOrder-fold) exceeds the
+cross-validated one, and ranges calibrated by cross-validation hold only \ExtCoverage\% of the values ($p=\ExtCoverageP$
+against 80\%) and \ExtCoverageSlowIn of \ExtNSlow slow growers: cross-validation within one compilation overstates how well
+uncertainty transfers to newly described lineages.
+
+\input{tables/released}
+
+\paragraph{Structured label noise creates biology.} The \NExcludedKevbrinaWord methanotroph labels traced to a study of
+growth at low temperature \citep{kevbrina2001} differ from their source records by about \KevRatio-fold, a unit step; neither
+version is a maximal rate. With relatedness controlled (phylogenetic generalized least squares, \citealp{pagel1999}), these
+values alone make carriers of methane or ammonia monooxygenase look \KevFoldWith-fold slower (adjusted $p=\KevPWith$);
+without them \KevFoldWithout-fold ($p=\KevPWithout$). Because they agreed with each other, no comparison with relatives saw
+the problem. With clean labels no energy-metabolism input is associated with doubling time once relatedness is controlled
+(adjusted $p\ge\PglsEnergyMinP$; Figure~\ref{fig:lifestyle}); what remains is that slow growers have fewer transporter
+genes. A benchmark built on the uncurated labels could reward models for reproducing the artefact.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.6\linewidth,alt={Forest plot of fold change in doubling time for each gene-content input, without and with phylogenetic control; with control most intervals cross one and no energy-metabolism input remains significant after adjustment.}]{fig5_lifestyle}
+\caption{Gene content and doubling time across \PglsNGroups species groups, without control for relatedness (open circles)
+and with phylogenetic generalized least squares (squares, 95\% intervals), with growth temperature and domain as
+covariates. $^{*}$Adjusted $p<0.05$.}
+\label{fig:lifestyle}
+\end{figure}
+
+\paragraph{Ranges are calibrated overall, not for the cases that matter.} Ranges set by novelty level contain
+\CovNovAllSpecies\% and \CovNovAllOrder\% of measured values with species and orders held out, but only \CovNovArchOrder\%
+for archaea from new orders; setting them by level and domain restores at least \CovDomArchMin\% for archaea. No range built
+from the inputs covers slow growers (\CovDomSlowMin to \CovDomSlowMax\%): their error is \ErrSlowSpecies- to
+\ErrSlowOrder-fold, almost always toward faster growth. A cross-fitted probability of $d>24$\,h ranks them (AUC
+\SlowProbAucSpecies and \SlowProbAucOrder) and is calibrated (error at most \SlowProbECEMax), but in the top fifth of
+genomes only \SlowProbTopSpecies\% are slow, against \SlowBaseRate\% overall. Coverage by group, not marginal coverage, is
+the uncertainty metric this task needs.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth,alt={Panel a: scatter of predicted against measured doubling time, with isolate and metagenome-assembled predictions for each species joined by lines. Panel b: box plots of predicted doubling time of GEM genomes by habitat. Panel c: bar chart of the share of GEM genomes by closest labeled relative.}]{fig4_mags_gem}
+\caption{From isolates to the GEM catalog. (a) Predicted against measured doubling time for \MagNSpecies species held out of
+training, from the isolate genome (open) and from metagenome-assembled genomes (filled, median per species). (b) Predicted
+doubling times of GEM genomes by habitat. (c) Closest labeled relative of the GEM genomes: most sit where the benchmark shows
+taxonomy alone fails.}
+\label{fig:mags}
+\end{figure}
+
+\paragraph{Transfer to metagenome-assembled genomes.} For \MagNSpecies species with a measured rate, \MagNGenomes GEM
+genomes give a typical error of \MagErr-fold (\CIMagErrLo to \CIMagErrHi) against \MagIsoErr-fold from the isolate genome;
+the difference interval (\CIMagDiffLo to \CIMagDiffHi) includes zero (Figure~\ref{fig:mags}a). Predicted for the GEM
+catalog, \GEMShareNoGenus\% of genomes have no labeled relative in their genus (Figure~\ref{fig:mags}c), the regime where
+Table~\ref{tab:benchmark} shows the largest gap between the model and taxonomy.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth,alt={Line plots of typical fold error, Spearman correlation and growth-temperature error against the closest labeled relative; the median of the closest relatives is close to the model for same-genus genomes and much worse for new families and orders.}]{fig2_accuracy}
+\caption{Accuracy against the closest labeled relative (nested, \NSeedsHeadline seeds; bars span seeds). (a) Typical fold
+error and (b) Spearman correlation of the doubling time at the growth temperature and at \TRefC\,\textdegree C; dashed: fixed
+settings, each genome once; dotted: the relatives' median. (c) Growth-temperature mean absolute error.}
+\label{fig:accuracy}
+\end{figure}
+
+\section{Limitations and broader impact}
+Labels are maximal rates in culture, measured mostly for organisms that can be cultured, and are species values rather than
+values for the sequenced strain; few labeled organisms live on the thinnest energy budgets. The data set is small
+(\NGenomes genomes, \NSlow slower than a day), so differences between strong models are within a few hundredths in typical
+error and need paired tests across many seeds. Some labels remain wrong after the audit, which lowers the error rate
+without certifying the labels. The external set is small (\ExtN species) and drawn from species descriptions, which
+favour organisms that grow in culture. GEM taxonomy comes
+from an older GTDB release, so GEM novelty levels are worst cases. The benchmark contains no information about people; its
+main risk is over-interpretation of predicted growth rates as rates in the environment, which the datasheet warns against.
+
+\section{Availability}
+Code, splits, curated labels and the GEM predictions are in a public repository (link withheld for anonymous review); an archive
+with the derived tables and every result file (built by \texttt{paper/scripts/make\_archive.py}) will be deposited at
+Zenodo. Every number in this paper is generated from the result files; rebuilding them from the archive in an empty folder
+reproduced every number.
+
+\bibliographystyle{gem-plainnat}
+\bibliography{refs}
+
+\appendix
+\input{datasheet}
+\input{appendix}
+\input{checklist}
+
+\end{document}

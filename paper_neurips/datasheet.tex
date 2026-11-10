@@ -1,0 +1,31 @@
+\section{Datasheet}\label{app:datasheet}
+Following \citet{gebru2021}.
+
+\paragraph{Motivation.} The benchmark measures how well the maximal growth rate of a microbe can be predicted from its
+genome when the closest labeled relative is at a known taxonomic distance, which is the situation of genomes assembled
+from environmental DNA. It was created by the authors of this paper; no external funding is reported.
+
+\paragraph{Composition.} \NGenomes genomes of \NSpecies species (\NArchaea archaeal), each with a maximal doubling time in
+hours at the optimal growth temperature, the growth temperature, and the doubling time standardized to \TRefC\,\textdegree C
+(Section~\ref{sec:data}); \NSlow have a doubling time above one day. Inputs are computed from the genome sequence alone.
+Each genome carries its GTDB R\GTDBRelease taxonomy and species group, which define the splits. \NExcluded labels were
+removed with written evidence and are released as a separate file, so that their effect can be studied. The data contain
+no information about people.
+
+\paragraph{Collection.} Labels come from the growth-rate table distributed with gRodon \citep{weissman2021}, derived from
+the compilation of \citet{madin2020}, and from \NLiteratureWord strains whose doubling time was read in the primary
+paper. Genomes were downloaded from NCBI by accession. Most labels are species values, not values for the sequenced strain.
+
+\paragraph{Preprocessing.} Names were mapped to GTDB; rows were joined into species groups; genes were predicted with
+pyrodigal; inputs were computed as in Section~\ref{sec:data}; labels were audited with Algorithm~\ref{alg:audit}. The raw
+genome sequences are not redistributed; the scripts download them.
+
+\paragraph{Uses.} Benchmarking genome-to-phenotype prediction under taxonomic distribution shift, and uncertainty
+estimation under that shift. It should not be used to infer growth rates in the environment, which are usually much lower
+than maximal rates in culture, nor as a census of slow growers.
+
+\paragraph{Distribution and maintenance.} Code and curated labels are in a public repository
+(link withheld for anonymous review); the derived tables, result files and predictions form an archive
+built by \texttt{paper/scripts/make\_archive.py} for deposit at Zenodo. Code is released under Apache-2.0 and the derived
+data under CC BY 4.0; the upstream sources keep their own terms. Errors can be reported as repository issues, and label
+corrections are added to the exclusion file with their evidence.

@@ -1,0 +1,20 @@
+\begin{table}[t]\centering\small\setlength{\tabcolsep}{4pt}
+\caption{GrowthBench results: typical fold error $E$ (lower is better) and Spearman $\rho$ of the doubling time at the growth temperature, by the closest labeled relative of the test genomes, mean of 3 seeds on the same folds. No method uses the measured temperature. $^{a}$Deployed settings, each genome entered once, on the genomes with an embedding; the nested row chooses settings inside each split and enters each genome at four tree placements.}\label{tab:benchmark}
+\begin{tabular}{lcccccccc}
+\toprule
+& \multicolumn{2}{c}{Same genus} & \multicolumn{2}{c}{New genus} & \multicolumn{2}{c}{New family} & \multicolumn{2}{c}{New order} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-9}
+& $E$ & $\rho$ & $E$ & $\rho$ & $E$ & $\rho$ & $E$ & $\rho$ \\
+\midrule
+Training median & 2.72 & $-$0.08 & 2.74 & $-$0.07 & 2.86 & $-$0.20 & 2.78 & $-$0.18 \\
+Relatives' median & 1.81 & 0.66 & 2.12 & 0.57 & 2.59 & 0.40 & 2.45 & 0.41 \\
+\midrule
+ESM-2, ridge probe & 1.86 & 0.75 & 1.90 & 0.73 & 2.00 & 0.69 & 2.02 & 0.68 \\
+ESM-2, trees (64 PCs) & 2.03 & 0.71 & 2.11 & 0.67 & 2.19 & 0.62 & 2.23 & 0.61 \\
+\midrule
+Features + trees, fixed$^{a}$ & 1.82 & 0.74 & 1.96 & 0.71 & 2.07 & 0.67 & 2.08 & 0.67 \\
+Features + ESM-2, fixed$^{a}$ & 1.78 & 0.76 & 1.91 & 0.74 & 2.03 & 0.70 & 2.05 & 0.70 \\
+Features + trees, nested (ours) & 1.75 & 0.74 & 1.91 & 0.71 & 2.06 & 0.66 & 2.08 & 0.66 \\
+\bottomrule
+\end{tabular}
+\end{table}
