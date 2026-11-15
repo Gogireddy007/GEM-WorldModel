@@ -1,5 +1,21 @@
 # Research Log
 
+## 2026-11-14, triangulating the paper
+
+Three routes to every number. First, make_numbers.py regenerated from the result files gives the same numbers.tex. Second,
+a new script (triangulate.py) recomputes 121 numbers and worded claims straight from the per-genome predictions, with its
+own code; a planted error in three macros was caught each time, so the check is not vacuous. Third, sources outside the
+pipeline: all 37 DOIs in the bibliography resolve on Crossref with matching titles and years, and 50 of 51 external
+doubling times appear in their PubMed abstract or PMC full text (Sterolibacterium is 45 h, the midpoint of the stated 44-46 h,
+and it is not among the 48 scored species).
+
+What it caught: the Results said the 16S inputs add a little to the ranking of slow growers. That holds with orders held
+out (AUC 0.80 against 0.79 without) but not with species held out (0.838 against 0.839), so the sentence now says so. The
+text also said choosing settings inside each split changes the error by at most 0.01; the largest change is 0.015 (family
+level), now a macro. In the NeurIPS version, "lowest typical error of all methods" became "of the methods that use the
+genome alone", since gRodon given the measured temperature is lower with orders held out. Figures regenerated from the
+current files are pixel-identical to the committed ones.
+
 ## 2026-11-09, external test and released tools with orders held out
 
 Released tools with orders held out. Phydon's training table was cut by GTDB order (99.6% of its 548 species mapped by

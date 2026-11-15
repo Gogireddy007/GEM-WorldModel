@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.24.0, 2026-11-14
+
+Triangulation of the papers before submission. `paper/scripts/triangulate.py` recomputes 121 numbers and worded claims
+from the per-genome result files without using make_numbers.py; `paper/scripts/check_sources.py` checks every DOI against
+Crossref and every external label against its PubMed or PMC text (`make paper-check`). All 37 DOIs match; 50 of 51 labels
+are found as stated, the last being a range midpoint for a species that is not scored. Two sentences were overstated and are
+fixed: the 16S inputs add to the ranking of slow growers only with orders held out, and choosing settings inside each split
+changes the error by up to 0.015 (now a macro, `SelectMaxDiff`) rather than 0.01. The NeurIPS text now says the ESM-2 probe
+has the lowest error among methods that use the genome alone. Figures regenerated and compared pixel by pixel: unchanged.
+
 ## 1.23.0, 2026-11-09
 
 External test and order-level comparison with the released tools. `data/curated/external_growth_rates.csv`: 51 doubling

@@ -406,6 +406,7 @@ FlagErrOrder,2.02,pressure_tests_round2.csv
 FlagFullErrOrder,2.05,pressure_tests_round2.csv
 RefitMaxDiff,0.03,pressure_tests_round2.csv largest increase
 FlagNLabels,25,pressure_tests_round2.csv labels from flagged studies
+SelectMaxDiff,0.015,"paper_headline_accuracy.csv, nested vs deployed settings, own temperature"
 DupMaxChange,0.005,"paper_headline_predictions.csv, duplicate row removed"
 RelOrdOursErr,2.08,released_tools_comparison_nested_order.csv
 RelOrdOursRho,0.64,released_tools_comparison_nested_order.csv

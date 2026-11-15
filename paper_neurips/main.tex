@@ -212,14 +212,14 @@ against \RhoSameGenus). With families or orders held out it falls far behind (\B
 \BaseRelRhoNewOrder against \RhoNewOrder). A random or species-level split therefore measures largely what taxonomy already
 knows. On shuffled labels the model gives \ShuffleErrSpecies-fold ($\rho=\ShuffleRhoSpecies$), no better than the median
 (\ShuffleMedErrSpecies-fold), so the protocol itself creates no accuracy. Model selection inside each split matters little
-for the error at the growth temperature (changes of at most 0.01) but entering each genome at every tree placement lowers
+for the error at the growth temperature (changes of at most \SelectMaxDiff) but entering each genome at every tree placement lowers
 the species-level error from \FixedErrSameGenus- to \CoarseErrSameGenus-fold.
 
 \paragraph{A generic protein model matches hand-crafted features.} With the same scheme (deployed settings, each genome
 once), a ridge probe on ESM-2 embeddings is as accurate as the genome features (Table~\ref{tab:benchmark};
 \EsmProbeErrSameGenus- against \EsmFeatErrSameGenus-fold with species held out, per genome $p=\EsmProbePSameGenus$;
 \EsmProbeErrNewOrder- against \EsmFeatErrNewOrder-fold with orders held out, $p=\EsmProbePNewOrder$) and ranks slightly
-better at every level; with orders held out it has the lowest typical error of all methods. Trees on its principal
+better at every level; with orders held out it has the lowest typical error of the methods that use the genome alone. Trees on its principal
 components are clearly worse (\EsmTreesErrNewOrder-fold with orders held out). Adding \EsmPCComb embedding components to the
 features lowers the error at every level, significantly per genome with species held out (\EsmCombBetterSameGenus of
 \EsmPairNSameGenus genomes improve, $p=$\,\EsmCombPSameGenus) and with orders held out (\EsmCombBetterNewOrder,

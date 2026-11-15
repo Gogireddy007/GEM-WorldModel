@@ -31,7 +31,6 @@ ALLOWED = [
     r"\b16S\b", r"\b23S\b", r"R\d{3}\b", r"\b80\\%", r"\b95\\%", r"\b10\^\{-5\}", r"\$p<0\.05\$", r"p<0\.05", r"\$\\lambda\$ fixed at 1",
     r"fixing \$\\lambda\$ at 1", r"\[0,1\]", r"\$\\lambda=1\$", r"\b20 \\textdegree", r"Supplementary (Table|Figure)~\\ref", r"I, V, Y, W, R, E\s+and\s+L",
     r"\bfive-fold\b", r"three-fold", r"one doubling per day", r"\b2027\b", r"\bk-mer", r"ORCID", r"\\ln 2", r"\$E_a", r"1\.5\s*pt",
-    r"\b0\.01\b",  # "changes neither by more than 0.01": a bound stated in words, checked in CLAIMS.md (claim 22)
     r"\b24 h", r"above 24", r"\b45 C",
     r"10th and 90th percentiles",  # defines the 80% range
     r"at least 100 genomes", r"5th and 95th percentiles",  # figure layout parameters (figures.py), stated so the reader can read the plot

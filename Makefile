@@ -1,4 +1,4 @@
-.PHONY: paper paper-results tune released-tools r-packages label-check lifestyle-test ribosomal-hmms landmarks fetch-16s madin-extension genome-rows labeled-genes gem-genes tune accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
+.PHONY: paper paper-check paper-results tune released-tools r-packages label-check lifestyle-test ribosomal-hmms landmarks fetch-16s madin-extension genome-rows labeled-genes gem-genes tune accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
 
 PYTHON ?= .venv/bin/python
 PIP ?= .venv/bin/pip
@@ -190,3 +190,9 @@ paper: predict-all released-tools label-check lifestyle-test paper-results
 	$(PYTHON) scripts/pipeline/export_hq_table.py
 	$(MAKE) -C paper
 	$(MAKE) -C paper_neurips
+
+# triangulation: recompute the paper's numbers and worded claims from the per-genome files, then check references
+# (Crossref) and external labels (PubMed, PMC) against their sources; the second step needs network access
+paper-check:
+	$(PYTHON) paper/scripts/triangulate.py
+	$(PYTHON) paper/scripts/check_sources.py

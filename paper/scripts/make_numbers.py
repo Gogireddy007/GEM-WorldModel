@@ -371,6 +371,9 @@ def main():
         e = lambda x: np.exp(np.median(np.abs(x["measured"] - x["predicted"])))  # noqa: E731
         dup_change = max(dup_change, abs(e(d) - e(dd)), abs(spearmanr(d["measured"], d["predicted"]).correlation
                                                          - spearmanr(dd["measured"], dd["predicted"]).correlation))
+    ha = pd.read_csv(P / "paper_headline_accuracy.csv")
+    ha = ha[ha["target"] == "own temperature"].groupby(["held_out", "scheme"])["typical error"].mean().unstack()
+    put("SelectMaxDiff", (ha["nested"] - ha["fixed, coarsened"]).abs().max(), "paper_headline_accuracy.csv, nested vs deployed settings, own temperature", "{:.3f}")
     put("DupMaxChange", dup_change, "paper_headline_predictions.csv, duplicate row removed", "{:.3f}")
 
     # ---- released tools with whole orders held out (Phydon's training table cut by order); released_tools_order_test.py

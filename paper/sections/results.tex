@@ -68,7 +68,7 @@ studies that the audit flagged but kept lowers the error on the remaining genome
 
 \paragraph{Training scheme.} Entering each training genome once for each of its four tree placements lowers the error with
 the species held out from \FixedErrSameGenus- to \CoarseErrSameGenus-fold. Choosing the settings inside each split changes
-the error at the growth temperature by at most 0.01, but at \TRefC\,\textdegree C it is slightly worse with orders held out
+the error at the growth temperature by at most \SelectMaxDiff, but at \TRefC\,\textdegree C it is slightly worse with orders held out
 (\ErrRefNewOrder- against \FixedErrRefNewOrder-fold), so the released \TRefC\,\textdegree C errors are slightly optimistic.
 
 \paragraph{Slow growers and archaea.} Slow growth is ranked better than it is predicted. The area under the curve for a
@@ -132,8 +132,8 @@ codon usage statistics the error rises from \AblFinalErrSpecies- to \AblGStatErr
 from \AblFinalErrOrder- to \AblGStatErrOrder-fold with orders held out; without any gene features it rises to
 \AblGenesErrSpecies- and \AblGenesErrOrder-fold, worse in all \NSeedsAblation seeds. The species we added to the earlier
 training data help at both levels. The GTDB phylogeny helps only when a relative in the same genus is labeled, as one would
-expect when the closest relatives are far away. The 16S inputs leave the typical error unchanged and add a little to the
-ranking of slow growers. Energy-metabolism genes do not help, and a predicted growth temperature as an extra input gains too
+expect when the closest relatives are far away. The 16S inputs leave the typical error unchanged; with orders held out they
+add a little to the ranking of slow growers (AUC \AblFinalAucOrder against \AblSixteenAucOrder without them). Energy-metabolism genes do not help, and a predicted growth temperature as an extra input gains too
 little to justify a second model. The tuned average of two learners improved only slightly on the earlier single model
 (\TuneErrBefore- to \TuneErrAfter-fold with orders held out).
 

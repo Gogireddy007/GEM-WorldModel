@@ -1,0 +1,92 @@
+kind,item,status,detail
+reference,madin2020,ok,"title match 1.00, years [2020] vs 2020; Crossref: A synthesis of bacterial and archaeal phenotypic trait data"
+reference,weissman2021,ok,"title match 1.00, years [2021] vs 2021; Crossref: Estimating maximal microbial growth rates from cultures, metagenomes, and single cells via"
+reference,xu2025,ok,"title match 1.00, years [2025] vs 2025; Crossref: Improved maximum growth rate prediction from microbial genomes by integrating phylogenetic"
+reference,nayfach2021,ok,"title match 1.00, years [2020, 2021] vs 2020; Crossref: A genomic catalog of Earth’s microbiomes"
+reference,parks2022,ok,"title match 1.00, years [2021, 2022] vs 2021; Crossref: GTDB: an ongoing census of bacterial and archaeal diversity through a phylogenetically con"
+reference,vieirasilva2010,ok,"title match 1.00, years [2010] vs 2010; Crossref: The Systemic Imprint of Growth and Its Uses in Ecological (Meta)Genomics"
+reference,hyatt2010,ok,"title match 1.00, years [2010] vs 2010; Crossref: Prodigal: prokaryotic gene recognition and translation initiation site identification"
+reference,larralde2022,ok,"title match 1.00, years [2022] vs 2022; Crossref: Pyrodigal: Python bindings and interface to Prodigal,
+an efficient method for gene predict"
+reference,eddy2011,ok,"title match 1.00, years [2011] vs 2011; Crossref: Accelerated Profile HMM Searches"
+reference,mistry2021,ok,"title match 1.00, years [2020, 2021] vs 2020; Crossref: Pfam: The protein families database in 2021"
+reference,supek2005,ok,"title match 1.00, years [2005] vs 2005; Crossref: Comparison of codon usage measures and their applicability in prediction of microbial gene"
+reference,zeldovich2007,ok,"title match 1.00, years [2007] vs 2007; Crossref: Protein and DNA Sequence Determinants of Thermophilic Adaptation"
+reference,chan2021,ok,"title match 1.00, years [2021] vs 2021; Crossref: tRNAscan-SE 2.0: improved detection and functional classification of transfer RNA genes"
+reference,pagel1999,ok,"title match 1.00, years [1999] vs 1999; Crossref: Inferring the historical patterns of biological evolution"
+reference,freckleton2002,ok,"title match 1.00, years [2002] vs 2002; Crossref: Phylogenetic Analysis and Comparative Data: A Test and Review of Evidence"
+reference,bowers2017,ok,"title match 1.00, years [2017] vs 2017; Crossref: Minimum information about a single amplified genome (MISAG) and a metagenome-assembled gen"
+reference,weissman2022,ok,"title match 1.00, years [2022] vs 2022; Crossref: Benchmarking Community-Wide Estimates of Growth Potential from Metagenomes Using Codon Usa"
+reference,roller2016,ok,"title match 1.00, years [2016] vs 2016; Crossref: Exploiting rRNA operon copy number to investigate bacterial reproductive strategies"
+reference,gibson2018,ok,"title match 1.00, years [2018] vs 2018; Crossref: The distribution of bacterial doubling times in the wild"
+reference,corkrey2016,ok,"title match 1.00, years [2016] vs 2016; Crossref: The Biokinetic Spectrum for Temperature"
+reference,benjamini1995,ok,"title match 1.00, years [1995, 2018] vs 1995; Crossref: Controlling the False Discovery Rate: A Practical and Powerful Approach to Multiple Testin"
+reference,dinizfilho1998,ok,"title match 1.00, years [1998, 2017] vs 1998; Crossref: AN EIGENVECTOR METHOD FOR ESTIMATING PHYLOGENETIC INERTIA"
+reference,breiman2001,ok,"title match 1.00, years [2001] vs 2001; Crossref: Random Forests"
+reference,friedman2001,ok,"title match 1.00, years [2001] vs 2001; Crossref: Greedy function approximation: A gradient boosting machine."
+reference,kirchman2016,ok,"title match 1.00, years [2016] vs 2016; Crossref: Growth Rates of Microbes in the Oceans"
+reference,brown2016,ok,"title match 1.00, years [2016] vs 2016; Crossref: Measurement of bacterial replication rates in microbial communities"
+reference,konneke2005,ok,"title match 1.00, years [2005] vs 2005; Crossref: Isolation of an autotrophic ammonia-oxidizing marine archaeon"
+reference,stieglmeier2014,ok,"title match 1.00, years [2014] vs 2014; Crossref: Nitrososphaera viennensis gen. nov., sp. nov., an aerobic and mesophilic, ammonia-oxidizin"
+reference,palatinszky2015,ok,"title match 1.00, years [2015] vs 2015; Crossref: Cyanate as an energy source for nitrifiers"
+reference,nowka2015,ok,"title match 1.00, years [2015] vs 2015; Crossref: Comparison of Oxidation Kinetics of Nitrite-Oxidizing Bacteria: Nitrite Availability as a "
+reference,mohammadi2017,ok,"title match 0.98, years [2016, 2017] vs 2016; Crossref: <i>Methylacidiphilum fumariolicum</i> SolV, a thermoacidophilic ‘Knallgas’ methanotroph wi"
+reference,lehtovirtamorley2014,ok,"title match 1.00, years [2014] vs 2014; Crossref: Characterisation of terrestrial acidophilic archaeal ammonia oxidisers and their inhibitio"
+reference,kevbrina2001,ok,"title match 1.00, years [2001] vs 2001; Crossref: Growth of Mesophilic Methanotrophs at Low Temperatures"
+reference,pedregosa2011,"no DOI, check by hand",Scikit-learn: Machine Learning in {P}ython
+reference,barrnap,"no DOI, check by hand",barrnap: {BA}sic {R}apid {R}ibosomal {RNA} {P}redictor
+reference,hoehler2013,ok,"title match 1.00, years [2013] vs 2013; Crossref: Microbial life under extreme energy limitation"
+reference,lever2015,ok,"title match 1.00, years [2015] vs 2015; Crossref: Life under extreme energy limitation: a synthesis of laboratory- and field-based investiga"
+reference,lauro2009,ok,"title match 1.00, years [2009] vs 2009; Crossref: The genomic basis of trophic strategy in marine bacteria"
+reference,lin2023,ok,"title match 1.00, years [2023] vs 2023; Crossref: Evolutionary-scale prediction of atomic-level protein structure with a language model"
+external label,Aggregatilinea lenta,ok,"PMID 30775966; quoted 'doubling time under optimum conditions about 19 days'; numbers found in source: ['19', 'label as 19']; genus named: True"
+external label,Aminomonas paucivorans,ok,"PMID 10425753; quoted 'optimum growth at 35 C with generation time 16 h'; numbers found in source: ['16', 'label as 16']; genus named: True"
+external label,Anaerobium acetethylicum,ok,"PMID 26297346; quoted 'generation time under optimal conditions 60 min, optimum 30 C'; numbers found in source: ['60', 'label as 1', 'label as 60']; genus named: True"
+external label,Anaeromicrobium sediminis,ok,"PMID 27974087; quoted 'generation time 76 min at optimum 37 C'; numbers found in source: ['76', 'label as 76']; genus named: True"
+external label,Anoxybacter fermentans,ok,"PMID 25505345; quoted 'shortest generation time 27 min under optimal conditions (60 C, 20 MPa)'; numbers found in source: ['27', '20', 'label as 27']; genus named: True"
+external label,Atrimonas thermophila,ok,"PMID 38776610; quoted 'doubling time under optimal conditions (optimum 70-75 C)'; numbers found in source: ['70', '75', 'label as 11', 'label as 11.4']; genus named: True"
+external label,Aureliella helgolandensis,ok,"PMID 32219667; quoted 'maximal growth rate 0.017 per h (generation time 41 h)'; numbers found in source: ['0.017', '41', 'label as 41']; genus named: True"
+external label,Brockia lithotrophica,ok,"PMID 22493174; quoted 'optimal growth (doubling time 6.0 h) at 60-65 C'; numbers found in source: ['6.0', '60', '65', 'label as 6']; genus named: True"
+external label,Caldanaerovirga acetigignens,ok,PMID 19625440; quoted 'shortest doubling time (xylose)'; numbers found in source: ['label as 3.4']; genus named: True
+external label,Calderihabitans maritimus,ok,"PMID 23606483; quoted 'optimum growth at 65 C with doubling time 3.7 h'; numbers found in source: ['3.7', 'label as 3.7']; genus named: True"
+external label,Caldifarcimen microaerophilum,ok,"PMID 42397696; quoted 'doubling time at optimum (75 C, pH 6.0, 3.5% NaCl)'; numbers found in source: ['6.0', '3.5', 'label as 10']; genus named: True"
+external label,Caloramator quimbayensis,ok,"PMID 22843719; quoted 'doubling time 2 h under optimal conditions (50 C)'; numbers found in source: ['2', 'label as 2']; genus named: True"
+external label,Carboxydocella thermautotrophica,ok,PMID 12508854; quoted 'generation time under optimal conditions (chemolithotrophic)'; numbers found in source: ['label as 1.1']; genus named: True
+external label,Carboxydothermus islandicus,ok,PMID 21131500; quoted 'generation time on CO under optimal conditions'; numbers found in source: ['label as 2']; genus named: True
+external label,Carboxydothermus pertinax,ok,PMID 21908679; quoted 'doubling time under optimum conditions on CO with ferric citrate'; numbers found in source: ['label as 1.5']; genus named: True
+external label,Deferribacter autotrophicus,ok,"PMID 19502344; quoted 'generation time under optimal conditions 60 min'; numbers found in source: ['60', 'label as 1', 'label as 60']; genus named: True"
+external label,Deferribacter desulfuricans,ok,"PMID 12807210; quoted '40 min doubling time at optimum temperature'; numbers found in source: ['40', 'label as 40']; genus named: True"
+external label,Deferrisoma palaeochoriense,ok,PMID 26610851; quoted 'generation time under optimal conditions'; numbers found in source: ['label as 2.5']; genus named: True
+external label,Defluviitalea raffinosedens,ok,"PMC5817277; quoted 'maximum growth rate 0.58 per h under optimum conditions (full text)'; numbers found in source: ['0.58', 'label as 1.2']; genus named: True"
+external label,Desulfobacca acetoxidans,ok,"PMID 10319454; quoted 'optimum growth around 37 C, doubling time 1.7-2.2 d'; numbers found in source: ['1.7', '2.2', 'label as 2']; genus named: True"
+external label,Desulfocarbo indianensis,ok,"PMID 24876241; quoted 'doubling time under optimal conditions 2.7 days'; numbers found in source: ['2.7', 'label as 2.7']; genus named: True"
+external label,Desulfovulcanus ferrireducens,ok,"PMID 35190935; quoted 'minimum doubling time, optimum 65 C'; numbers found in source: ['label as 7', 'label as 7.1']; genus named: True"
+external label,Fervidicoccus fontis,ok,"PMID 19837732; quoted 'doubling time 6.1 h at optimum 65-70 C'; numbers found in source: ['6.1', '65', '70', 'label as 6', 'label as 6.1']; genus named: True"
+external label,Halanaerocella petrolearia,ok,PMID 21761211; quoted 'doubling time in optimized growth conditions'; numbers found in source: ['label as 3.5']; genus named: True
+external label,Hydrogenimonas urashimensis,ok,"PMID 33340909; quoted '180 min doubling time at optimum temperature'; numbers found in source: ['180', 'label as 180', 'label as 3']; genus named: True"
+external label,Lentimicrobium saccharophilum,ok,"PMID 27098854; quoted 'doubling time under optimal conditions about 1 day'; numbers found in source: ['1', 'label as 1']; genus named: True"
+external label,Mariprofundus micogutta,ok,"PMID 27766355; quoted 'doubling time 24 h at optimum 25 C'; numbers found in source: ['24', 'label as 1', 'label as 24']; genus named: True"
+external label,Methanospirillum purgamenti,ok,"PMID 39186748; quoted 'generation time 10 h (full text, PLOS ONE)'; numbers found in source: ['10', 'label as 10']; genus named: True"
+external label,Methanothermococcus jasoni,ok,"PMID 41773501; quoted 'minimum doubling time 32 min, optimum 73 C'; numbers found in source: ['32', 'label as 32']; genus named: True"
+external label,Methylacidiphilum kamchatkense,ok,"PMID 37755432; quoted 'maximal growth rate 0.11 per h, doubling time about 6.3 h, optimum 55 C'; numbers found in source: ['0.11', '6.3', 'label as 6', 'label as 6.3']; genus named: True"
+external label,Ornatilinea apprima,ok,PMID 22328612; quoted 'doubling time under optimal conditions'; numbers found in source: ['label as 6']; genus named: True
+external label,Paracoccus solventivorans,ok,"PMID 8863446; quoted 'doubling time at optimal pH and temperature on acetone'; numbers found in source: ['label as 0.5', 'label as 12']; genus named: True"
+external label,Persephonella hydrogeniphila,ok,"PMID 12807214; quoted '40 min doubling time at optimum temperature'; numbers found in source: ['40', 'label as 40']; genus named: True"
+external label,Phorcysia thermohydrogeniphila,ok,"PMID 22140151; quoted 'generation time under optimal conditions 26 min'; numbers found in source: ['26', 'label as 26']; genus named: True"
+external label,Phosphitispora fastidiosa,ok,"PMID 34878375; quoted 'optimal growth at 30 C with doubling time of 3 days'; numbers found in source: ['3', 'label as 3']; genus named: True"
+external label,Spiroplasma corruscae,ok,"PMID 8863421; quoted 'optimal growth at 32 C (doubling time 1.5 h)'; numbers found in source: ['1.5', 'label as 1.5']; genus named: True"
+external label,Spiroplasma eriocheiris,ok,"PMID 20418415; quoted 'doubling time at optimal temperature'; numbers found in source: ['label as 1', 'label as 24']; genus named: True"
+external label,Spiroplasma platyhelix,ok,PMID 9226909; quoted 'doubling time at optimum 30 C'; numbers found in source: ['label as 6.4']; genus named: True
+external label,Spiroplasma poulsonii,ok,"PMID 10319483; quoted 'optimum growth at 30 C with doubling time 15.8 h'; numbers found in source: ['15.8', 'label as 15.8']; genus named: True"
+external label,Spiroplasma syrphidicola,ok,PMID 8782692; quoted 'doubling time at the optimal temperature'; numbers found in source: ['label as 1']; genus named: True
+external label,Sporanaerobium hydrogeniformans,ok,PMID 37572166; quoted 'generation time under optimised conditions'; numbers found in source: ['label as 5']; genus named: True
+external label,Sterolibacterium denitrificans,CHECK,"PMID 12892131; quoted 'optimal growth at 30-32 C, doubling time 44-46 h on cholesterol'; numbers found in source: ['30', '32', '44', '46']; genus named: True"
+external label,Stratiformator vulcanicus,ok,"PMID 37584762; quoted 'generation time at maximal growth rate (mu max 0.0068 per h)'; numbers found in source: ['0.0068', 'label as 102']; genus named: True"
+external label,Sulfurimonas hongkongensis,ok,"PMC4149026; quoted 'generation time under optimal conditions (full text)'; numbers found in source: ['label as 0.25', 'label as 6', 'label as 6.1']; genus named: True"
+external label,Sulfurovum aggregans,ok,"PMID 24966202; quoted '3.2 h doubling time at optimum temperature'; numbers found in source: ['3.2', 'label as 3.2']; genus named: True"
+external label,Sulfurovum riftiae,ok,PMID 27116914; quoted 'generation time under optimal conditions'; numbers found in source: ['label as 3']; genus named: True
+external label,Tautonia plasticadhaerens,ok,"PMID 32399714; quoted 'generation time at mu max 0.024 per h'; numbers found in source: ['0.024', 'label as 29']; genus named: True"
+external label,Thermincola carboxydiphila,ok,PMID 16166711; quoted 'generation time under optimal conditions'; numbers found in source: ['label as 1.3']; genus named: True
+external label,Thermocrinis jamiesonii,ok,PMID 26419502; quoted 'doubling time under optimal conditions'; numbers found in source: ['label as 1.3']; genus named: True
+external label,Thermocrinis minervae,ok,"PMID 19651724; quoted 'doubling time 4.5 h at optimum 75 C'; numbers found in source: ['4.5', 'label as 4.5']; genus named: True"
+external label,Varunaivibrio sulfuroxidans,ok,PMID 27298285; quoted 'generation time under optimal conditions'; numbers found in source: ['label as 8']; genus named: True
