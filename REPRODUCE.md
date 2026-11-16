@@ -3,7 +3,7 @@
 Everything needed is in this repository or in public sources at fixed versions. There are two routes:
 
 - **From scratch.** Download the raw data and recompute everything. This takes about a day on ten cores and about 15 GB of disk.
-- **From the data archive.** Start from the derived tables attached to the GitHub release. This takes several hours and needs no genome downloads.
+- **From the data archive.** Start from the derived tables attached to the GitHub release. This takes a few minutes and needs no genome downloads.
 
 ## What you need
 
