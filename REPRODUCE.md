@@ -10,7 +10,7 @@ Everything needed is in this repository or in public sources at fixed versions. 
 - macOS or Linux, 10 cores and 16 GB of memory are enough.
 - Python 3.11. Exact package versions are in `requirements-lock.txt`.
 - R 4.6.1. Exact package versions are in `scripts/r/R_packages.lock.tsv`; gRodon 2.7.3 and Phydon 1.1.0 are installed at fixed commits.
-- Command-line tools:
+- Command-line tools (exact versions in `tools-lock.tsv`):
   - HMMER 3.4 (`hmmsearch`)
   - barrnap 0.9
   - tRNAscan-SE 2.0.13
@@ -81,7 +81,7 @@ They are kept because the step that first made them depended on an NCBI search, 
 
 ## Route 2: from the data archive
 
-The GitHub release attaches `data.zip`, which holds:
+The GitHub release [v1.25.0](https://github.com/Gogireddy007/GEM-WorldModel/releases/tag/v1.25.0) attaches `data.zip`, which holds:
 - the derived feature tables;
 - the GEM genome features;
 - the result file behind every number, table and figure.
@@ -89,13 +89,17 @@ The GitHub release attaches `data.zip`, which holds:
 `MANIFEST.tsv` lists the SHA-256 of every file in it. To use it, inside the repository:
 
 ```bash
+make install
+curl -LO https://github.com/Gogireddy007/GEM-WorldModel/releases/download/v1.25.0/data.zip
 unzip data.zip        # fills data/processed and data/raw
 make paper-from-archive
 ```
 
-This takes a few minutes and needs no downloads. It does three things:
+R is not needed for this route.
+
+This takes a few minutes and needs no genome downloads. It does three things:
 1. Retrains the deployed model.
-2. Predicts the 9,143 GEM genomes again.
+2. Predicts the GEM genomes again.
 3. Rebuilds the numbers, tables, figures and both PDFs from the archived result files.
 
 `paper/numbers.tex` and `release/gem_growth_predictions.csv` come out identical to the ones in the repository.

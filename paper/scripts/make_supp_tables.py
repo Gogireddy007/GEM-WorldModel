@@ -2,7 +2,7 @@
 """Writes LaTeX tables for the supplement straight from the code and the environment:
 
   supp_pfam.tex      every Pfam family the model uses for lifestyle and energy inputs, with its role
-  supp_software.tex  versions of the software used, read from the installed packages and the R library
+  supp_software.tex  versions of the software used, read from the lock files
   supp_exclusions.tex the excluded labels with the evidence (data/curated/label_exclusions.csv)
   supp_literature.tex the doubling times added from the literature (data/curated/literature_growth_rates.csv)
   supp_columns.tex    the columns of the released GEM prediction table (scripts/pipeline/export_hq_table.py)
@@ -10,11 +10,9 @@
 Run from the repository root: .venv/bin/python paper/scripts/make_supp_tables.py
 """
 
-import importlib.metadata as md
 import importlib.util
 import inspect
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -53,28 +51,15 @@ def pfam_table():
 
 
 def software_table():
-    py = {p: md.version(p) for p in ("scikit-learn", "numpy", "pandas", "scipy", "statsmodels", "pyrodigal", "dendropy", "biopython")}
-    tools = {}
-    for name, cmd, pattern in (("HMMER (hmmsearch)", ["hmmsearch", "-h"], r"HMMER (\d+\.\d+(?:\.\d+)?)"),
-                               ("tRNAscan-SE", ["tRNAscan-SE", "-h"], r"tRNAscan-SE (\d+\.\d+(?:\.\d+)?)"),
-                               ("barrnap", ["barrnap", "--version"], r"barrnap (\d+\.\d+(?:\.\d+)?)")):
-        try:
-            out = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-            text = out.stdout + out.stderr
-            m = re.search(pattern, text)
-            tools[name] = m.group(1) if m else "installed"
-        except (OSError, subprocess.SubprocessError):
-            tools[name] = "not found"
-    r = {}
-    try:
-        out = subprocess.run(["Rscript", "-e", '.libPaths(c(normalizePath(".Rlib"), .libPaths())); for (p in c("gRodon","Phydon","picante","castor","ape","Biostrings","coRdon")) cat(p, as.character(packageVersion(p)), "\\n"); cat("R", paste(R.version$major, R.version$minor, sep="."), "\\n")'],
-                             capture_output=True, text=True, timeout=120, cwd=ROOT)
-        for line in out.stdout.splitlines():
-            k, v = line.split()
-            r[k] = v
-    except (OSError, subprocess.SubprocessError, ValueError):
-        pass
-    rows = [f"Python & {sys.version.split()[0]} \\\\"] + [f"{tex(k)} & {v} \\\\" for k, v in py.items()]
+    """Versions from the lock files (requirements-lock.txt, scripts/r/R_packages.lock.tsv, tools-lock.tsv), so the table
+    states what the results were computed with whatever machine builds the PDF."""
+    pins = dict(line.strip().lower().split("==") for line in (ROOT / "requirements-lock.txt").read_text().splitlines()
+                if "==" in line and not line.startswith("#"))
+    py = {p: pins[p] for p in ("scikit-learn", "numpy", "pandas", "scipy", "statsmodels", "pyrodigal", "dendropy", "biopython")}
+    tools = pd.read_csv(ROOT / "tools-lock.tsv", sep="\t").set_index("tool")["version"].astype(str).to_dict()
+    lock = pd.read_csv(ROOT / "scripts" / "r" / "R_packages.lock.tsv", sep="\t").set_index("package")["version"].astype(str)
+    r = {p: lock[p].replace("-", ".") for p in ("gRodon", "Phydon", "picante", "castor", "ape", "Biostrings", "coRdon", "R")}
+    rows = [f"Python & {tools.pop('Python')} \\\\"] + [f"{tex(k)} & {v} \\\\" for k, v in py.items()]
     rows += [f"{tex(k)} & {v} \\\\" for k, v in tools.items()] + [f"{tex(k)} & {v} \\\\" for k, v in r.items()]
     return ("\\begin{table}[ht]\\centering\\small\n\\caption{Software versions used for the results in this paper.}\\label{tab:software}\n"
             "\\begin{tabular}{ll}\n\\toprule\nSoftware & Version \\\\\n\\midrule\n" + "\n".join(rows) +

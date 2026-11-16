@@ -1,0 +1,5 @@
+tool	version
+Python	3.11.14
+HMMER (hmmsearch)	3.4
+tRNAscan-SE	2.0.13
+barrnap	0.9
