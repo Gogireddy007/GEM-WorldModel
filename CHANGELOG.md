@@ -3,8 +3,8 @@
 ## 1.26.0, 2026-11-16
 
 ISMB submission format, checked against the ISMB proceedings call (2026 edition; the 2027 call is not yet published).
-ISMB review is not double-blind, so the manuscript now names Yugandhar Reddy Gogireddy and Andrew D. Steen (corresponding);
-affiliations and the contact email are marked placeholders that `audit_paper.py` refuses until they are filled in. The
+ISMB review is not double-blind, so the manuscript now names Yugandhar Reddy Gogireddy and Andrew D. Steen (corresponding,
+asteen@usc.edu), University of Southern California. The
 abstract has the five required headings, with the repository link under Availability and Implementation. Three citation
 fixes from a claim-by-claim check of the text: the Arrhenius standardization was attributed to gRodon and Phydon, which do
 not use it (both take the growth temperature as an input instead), so the attribution is removed; Corkrey et al. 2016 was

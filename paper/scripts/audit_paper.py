@@ -122,7 +122,7 @@ def main():
         if pages > PAGE_LIMIT:
             failures.append(f"main.pdf has {pages} pages, over the limit of {PAGE_LIMIT}")
         first = subprocess.run(["pdftotext", "-f", "1", "-l", "1", str(pdf), "-"], capture_output=True, text=True).stdout
-        abstract = first.split("Abstract", 1)[-1].split("Keywords", 1)[0]
+        abstract = re.split(r"Keywords|\n1\. Introduction", first.split("Abstract", 1)[-1], maxsplit=1)[0]  # ends at the keywords, if any, or the first section
         words = len(abstract.split())
         print(f"abstract: {words} words in the PDF, headings and URL included (limit 250)")
         if words > 250:
