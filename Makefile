@@ -1,4 +1,4 @@
-.PHONY: paper paper-check paper-results tune released-tools r-packages label-check lifestyle-test ribosomal-hmms landmarks fetch-16s madin-extension genome-rows labeled-genes gem-genes tune accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
+.PHONY: paper paper-from-archive fixed-inputs verify-inputs labeled-base gem-corpus paper-check paper-results tune released-tools r-packages label-check lifestyle-test ribosomal-hmms landmarks fetch-16s madin-extension genome-rows labeled-genes gem-genes tune accuracy-table predict report predict-all install test lint pull-data build-features sanity-check pretrain pretrain-full finetune-benchmark probe necessity-sufficiency pipeline gem-fast gem-slow gem-16s clean help
 
 PYTHON ?= .venv/bin/python
 PIP ?= .venv/bin/pip
@@ -45,8 +45,8 @@ help:
 install:
 	python3.11 -m venv .venv
 	$(PIP) install --upgrade pip
-	$(PIP) install torch --index-url https://download.pytorch.org/whl/cpu
-	$(PIP) install -e ".[dev]"
+	$(PIP) install -r requirements-lock.txt --extra-index-url https://download.pytorch.org/whl/cpu
+	$(PIP) install --no-deps -e .
 
 test:
 	$(PYTHON) -m pytest tests/ -v
@@ -56,6 +56,28 @@ lint:
 
 pull-data:
 	$(PYTHON) scripts/pipeline/pull_data.py
+
+# checks every downloaded file against data/input_checksums.tsv (the exact files the paper used)
+verify-inputs:
+	$(PYTHON) scripts/pipeline/verify_inputs.py
+
+# lists and sequences that are part of the method (see data/fixed/README.md)
+fixed-inputs:
+	mkdir -p data/processed
+	cp data/fixed/hq_genome_ids_all.csv data/fixed/mag_validation_ids.csv data/fixed/labeled_16s_sequences.csv data/processed/
+	$(PYTHON) -c "import numpy as np, pandas as pd; np.save('data/processed/labeled_16s_landmark_names.npy', np.array(pd.read_csv('data/fixed/labeled_16s_landmark_names.csv').species.tolist()))"
+
+# the labeled species on the GTDB tree (all 175 of them) and the species placed by genus (features_sample_expanded.csv)
+labeled-base:
+	$(PYTHON) scripts/pipeline/build_features.py --n-per-class 1000
+	$(PYTHON) scripts/pipeline/build_features_expanded.py
+
+# genome traits, GC content and 16S for the GEM genomes the paper uses (downloads each genome; several hours)
+gem-corpus:
+	$(PYTHON) scripts/pipeline/gem_fast_features.py
+	$(PYTHON) scripts/pipeline/gem_slow_features.py --workers 10 --genome-ids-file data/fixed/gem_used_genome_ids.csv
+	$(PYTHON) scripts/pipeline/gem_slow_features.py --with-16s --workers 8 --genome-ids-file data/fixed/gem_16s_genome_ids.csv \
+		--output-name unlabeled_corpus_features_16s.csv
 
 build-features:
 	$(PYTHON) scripts/pipeline/build_features.py --n-per-class $(N_PER_CLASS)
@@ -185,8 +207,20 @@ paper-results:
 	$(PYTHON) scripts/accuracy/build_external_features.py
 	cd scripts/accuracy && ../../$(PYTHON) evaluate_external.py
 
-# everything behind the paper from the downloaded data, then the PDFs (paper/Makefile); many hours
-paper: predict-all released-tools label-check lifestyle-test paper-results
+# everything behind the paper from scratch: downloads (pinned versions, checked against data/input_checksums.tsv), every
+# feature table, every model and evaluation, the GEM predictions, then the PDFs. About a day on ten cores, about 15 GB.
+paper: pull-data fixed-inputs labeled-base gem-corpus ribosomal-hmms landmarks madin-extension genome-rows fetch-16s \
+		labeled-genes gem-genes verify-inputs tune accuracy-table released-tools label-check lifestyle-test
+	$(PYTHON) scripts/pipeline/predict_gem_genomes_gbm.py
+	$(MAKE) paper-results
+	$(PYTHON) scripts/pipeline/export_hq_table.py
+	$(MAKE) -C paper
+	$(MAKE) -C paper_neurips
+
+# from the data archive (data.zip, attached to the GitHub release), no downloads: retrains the deployed model, predicts the
+# GEM genomes again, then rebuilds the numbers, tables, figures and both PDFs from the archived result files. Minutes.
+paper-from-archive:
+	$(PYTHON) scripts/pipeline/predict_gem_genomes_gbm.py
 	$(PYTHON) scripts/pipeline/export_hq_table.py
 	$(MAKE) -C paper
 	$(MAKE) -C paper_neurips

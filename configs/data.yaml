@@ -16,7 +16,8 @@
 
 grodon:
   repo: "jlw-ecoevo/gRodon2"
-  branch: "master"
+  # exact commit used for the paper (gRodon 2.7.3); the .rda files there match ours byte for byte
+  branch: "4b13053e7f49ca99bceeee36940f5e820c5b0c32"
   raw_base: "https://raw.githubusercontent.com/{repo}/{branch}/inst/extdata"
   growth_rates_file: "GrowthRates_Madin.rda"
   accession_map_file: "Accession2Species_Madin.rda"
@@ -28,7 +29,15 @@ lab_added_species:
   local_csv: "data/raw/lab_added_species.csv"
 
 gtdb:
-  base_url: "https://data.gtdb.ecogenomic.org/releases/latest"
+  # GTDB release 232 (April 2026), pinned: "latest" moves and a new release changes the taxonomy and so every split.
+  # The remote files carry the release in their names; they are saved under the plain names below.
+  base_url: "https://data.gtdb.ecogenomic.org/releases/release232/232.0"
+  remote_files:
+    bac120.tree.gz: "bac120_r232.tree.gz"
+    bac120_taxonomy.tsv.gz: "bac120_taxonomy_r232.tsv.gz"
+    ar53.tree.gz: "ar53_r232.tree.gz"
+    ar53_taxonomy.tsv.gz: "ar53_taxonomy_r232.tsv.gz"
+    bac120_metadata.tsv.gz: "bac120_metadata_r232.tsv.gz"
   bac_tree_file: "bac120.tree.gz"
   bac_taxonomy_file: "bac120_taxonomy.tsv.gz"
   arc_tree_file: "ar53.tree.gz"

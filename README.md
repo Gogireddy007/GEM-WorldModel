@@ -53,7 +53,10 @@ be used, see `Test on HQ genomes/superseded/README.md` and the 2026-10-04 entrie
 ## The paper and its data
 
 The manuscript is in `paper/` (`make` there builds both PDFs from the result files). Everything behind it, from the
-downloaded data to the PDFs, runs with `make paper` (many hours on ten cores). The GEM prediction table released with the
+downloaded data to the PDFs, runs with `make paper` (about a day on ten cores). [REPRODUCE.md](REPRODUCE.md) gives the
+full recipe: the exact tool and package versions, every data source pinned to the version the paper used (with SHA-256
+checksums of all downloaded files in `data/input_checksums.tsv`), and a shorter route from the data archive attached to
+the GitHub release. The GEM prediction table released with the
 paper is `release/gem_growth_predictions.csv`, with its columns described in `release/COLUMNS.md`; every prediction
 carries the error and 80% range measured at its novelty level for all three targets.
 

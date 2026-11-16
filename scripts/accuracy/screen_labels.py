@@ -29,7 +29,7 @@ from gem_worldmodel.utils.config import load_config, resolve_path
 
 FOLD = 5.0
 SOURCES = ["corkrey", "silva", "methanogen", "bergeys", "mediadb", "masonmm", "kremer", "prochlorococcus", "edwards", "nielsensl"]
-URL = "https://raw.githubusercontent.com/bacteria-archaea-traits/bacteria-archaea-traits/master/output/prepared_data/{}.csv"
+URL = "https://raw.githubusercontent.com/bacteria-archaea-traits/bacteria-archaea-traits/396dcd4d98ca20b613ba280f5514611651b6fb91/output/prepared_data/{}.csv"
 RAW = Path("data/raw/madin_prepared")
 
 

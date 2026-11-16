@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.25.0, 2026-11-16
+
+Reproducibility from a fresh clone. Every download is pinned to the version the paper used: GTDB release 232 (was
+`latest`), Pfam 38.2 (was `current_release`, which has since moved to 39.0), Madin et al. at commit 396dcd4 and gRodon2 at
+commit 4b13053 (were `master`); each pinned URL was checked to serve exactly our file. `data/input_checksums.tsv` holds the
+SHA-256 of all 1,323 downloaded files and `make verify-inputs` checks them. `requirements-lock.txt` and
+`scripts/r/R_packages.lock.tsv` record the exact Python and R package versions; `make install` and `make r-packages` install
+them, with gRodon 2.7.3 and Phydon 1.1.0 at fixed commits. `make paper` now runs from an empty checkout: it starts with the
+downloads, builds the labeled base tables and the GEM genome features, and orders the steps so every file exists before it
+is read (before, it assumed several files already present). Inputs that came from moving NCBI searches or from a one-off
+choice (the GEM genome lists, the labeled 16S sequences, the 16 reference 16S genes) are kept in `data/fixed/` with the
+reason for each. New REPRODUCE.md and `make paper-from-archive`. No result changes.
+
 ## 1.24.0, 2026-11-14
 
 Triangulation of the papers before submission. `paper/scripts/triangulate.py` recomputes 121 numbers and worded claims

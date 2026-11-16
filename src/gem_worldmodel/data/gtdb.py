@@ -1,6 +1,6 @@
 """This pulls the GTDB reference tree and taxonomy for phylogenetic placement.
 
-GTDB serves per-release static files at data.gtdb.ecogenomic.org/releases/latest/.
+GTDB serves per-release static files at data.gtdb.ecogenomic.org; the release is pinned in configs/data.yaml.
 This fetches the bac120 (bacterial) tree and taxonomy table; the full metadata
 table (~289MB compressed) is only fetched if explicitly requested since
 taxonomy and tree are sufficient for the GTDB-distance embedding branch.
@@ -33,6 +33,12 @@ def _download(url: str, dest: Path, timeout: int = 120) -> Path:
     return dest
 
 
+def _remote_url(g: dict, key: str) -> str:
+    """URL of a GTDB file in the pinned release (remote names carry the release, local names do not)."""
+    local = g[key]
+    return f"{g['base_url']}/{g.get('remote_files', {}).get(local, local)}"
+
+
 def _gunzip(src: Path, dest: Path) -> Path:
     if dest.exists():
         return dest
@@ -46,7 +52,7 @@ def fetch_bac_tree(cfg: dict | None = None) -> Path:
     cfg = cfg or load_config("data")
     g = cfg["gtdb"]
     raw_dir = resolve_path(cfg["paths"]["raw_dir"])
-    gz_path = _download(f"{g['base_url']}/{g['bac_tree_file']}", raw_dir / g["bac_tree_file"])
+    gz_path = _download(_remote_url(g, 'bac_tree_file'), raw_dir / g["bac_tree_file"])
     tree_path = raw_dir / g["bac_tree_file"].removesuffix(".gz")
     return _gunzip(gz_path, tree_path)
 
@@ -57,7 +63,7 @@ def fetch_bac_taxonomy(cfg: dict | None = None) -> pd.DataFrame:
     g = cfg["gtdb"]
     raw_dir = resolve_path(cfg["paths"]["raw_dir"])
     gz_path = _download(
-        f"{g['base_url']}/{g['bac_taxonomy_file']}", raw_dir / g["bac_taxonomy_file"]
+        _remote_url(g, 'bac_taxonomy_file'), raw_dir / g["bac_taxonomy_file"]
     )
     tsv_path = raw_dir / g["bac_taxonomy_file"].removesuffix(".gz")
     _gunzip(gz_path, tsv_path)
@@ -78,7 +84,7 @@ def fetch_full_metadata(cfg: dict | None = None) -> pd.DataFrame:
         )
     raw_dir = resolve_path(cfg["paths"]["raw_dir"])
     gz_path = _download(
-        f"{g['base_url']}/{g['bac_metadata_file']}", raw_dir / g["bac_metadata_file"]
+        _remote_url(g, 'bac_metadata_file'), raw_dir / g["bac_metadata_file"]
     )
     return pd.read_csv(gz_path, sep="\t", compression="gzip", low_memory=False)
 
@@ -88,7 +94,7 @@ def fetch_arc_tree(cfg: dict | None = None) -> Path:
     cfg = cfg or load_config("data")
     g = cfg["gtdb"]
     raw_dir = resolve_path(cfg["paths"]["raw_dir"])
-    gz_path = _download(f"{g['base_url']}/{g['arc_tree_file']}", raw_dir / g["arc_tree_file"])
+    gz_path = _download(_remote_url(g, 'arc_tree_file'), raw_dir / g["arc_tree_file"])
     return _gunzip(gz_path, raw_dir / g["arc_tree_file"].removesuffix(".gz"))
 
 
@@ -97,7 +103,7 @@ def fetch_arc_taxonomy(cfg: dict | None = None) -> pd.DataFrame:
     cfg = cfg or load_config("data")
     g = cfg["gtdb"]
     raw_dir = resolve_path(cfg["paths"]["raw_dir"])
-    gz_path = _download(f"{g['base_url']}/{g['arc_taxonomy_file']}", raw_dir / g["arc_taxonomy_file"])
+    gz_path = _download(_remote_url(g, 'arc_taxonomy_file'), raw_dir / g["arc_taxonomy_file"])
     tsv_path = _gunzip(gz_path, raw_dir / g["arc_taxonomy_file"].removesuffix(".gz"))
     df = pd.read_csv(tsv_path, sep="\t", header=None, names=["accession", "gtdb_taxonomy"])
     df["accession_bare"] = df["accession"].str.replace(r"^(RS_|GB_)", "", regex=True)

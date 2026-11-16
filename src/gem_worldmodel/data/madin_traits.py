@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 
 TRAITS_URL = (
     "https://raw.githubusercontent.com/bacteria-archaea-traits/"
-    "bacteria-archaea-traits/master/output/condensed_species_NCBI.csv"
+    "bacteria-archaea-traits/396dcd4d98ca20b613ba280f5514611651b6fb91/output/condensed_species_NCBI.csv"
 )
 
 

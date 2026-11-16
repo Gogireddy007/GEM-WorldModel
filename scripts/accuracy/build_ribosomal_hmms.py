@@ -2,7 +2,7 @@
 """This builds the ribosomal protein HMM file used to find the highly expressed
 genes for codon usage bias.
 
-It takes Pfam-A (downloaded if missing) and keeps the prokaryotic ribosomal
+It takes Pfam-A release 38.2 (downloaded if missing; pinned, since the current release moves) and keeps the prokaryotic ribosomal
 protein families by name, plus Ribosomal_L27A, which is where Pfam files
 bacterial L15. Every kept family has curated gathering thresholds, which the
 search uses as its cutoff. Eukaryote-only and mitochondrial families are left
@@ -14,7 +14,7 @@ import re
 import urllib.request
 from pathlib import Path
 
-PFAM_URL = "https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz"
+PFAM_URL = "https://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam38.2/Pfam-A.hmm.gz"
 RAW = Path("data/raw")
 PATTERN = re.compile(r"^(Ribosomal_[LS][0-9]+(p|P)?(_[NCnc])?|ribosomal_L24|Ribosom_S12_S23|Ribosomal_L27A)$")
 
