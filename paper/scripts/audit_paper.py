@@ -37,7 +37,8 @@ ALLOWED = [
     r"are 1 when",  # definition of a presence input
     r"ESM-2",  # a model name
     r"q_\{0\.1\},\s*q_\{0\.9\}",  # the residual quantiles of the 80% range (Algorithm 2)
-    r"\[1(,\$[^$]*\$)?\]",  # author and address keys of the template
+    r"\[\d(,\$[^$]*\$)?\]",  # author and address keys of the template
+    r"SHA-256",  # name of the checksum
     r"(fixing|fixed)\s+(\$[^$]*\$\s+)?at 1\b",  # lambda fixed at 1: a model setting
     r"[\w\\]*\.(py|csv|txt|tex|R)\b", r"p\{[\d.]+cm\}",  # file names and column widths
 ]

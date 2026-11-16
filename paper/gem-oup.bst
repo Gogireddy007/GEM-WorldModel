@@ -428,12 +428,7 @@ FUNCTION {format.date}
        pop$ "" }
     'skip$
   if$
-  month empty$
-    'skip$
-    { month
-      " " * swap$ *
-    }
-  if$
+  % months are not printed (Bioinformatics reference style: year only)
   extra.label *
 }
 

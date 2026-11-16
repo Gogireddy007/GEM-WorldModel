@@ -13,6 +13,8 @@
 \definecolor{auditfill}{HTML}{FCEDE6}
 \definecolor{gemfill}{HTML}{E9F1FB}
 \graphicspath{{figures/}}
+% drafting placeholder, printed in red; audit_paper.py fails while any is left
+\newcommand{\plan}[1]{\textcolor{red}{[#1]}}
 
 
 % no dotted rules above and below the abstract
@@ -31,12 +33,20 @@
 
 \title[How fast do uncultured microbes grow?]{How fast do uncultured microbes grow?}
 
-% anonymized for review
-\author{Anonymous Authors}
+% ISMB review is not double-blind: authors, affiliations and the corresponding author are required.
+% \plan{...} marks details still to be filled in; the audit fails while any remain.
+\author[1]{Yugandhar Reddy Gogireddy}
+\author[2,$\ast$]{Andrew D. Steen}
+
+\address[1]{\plan{affiliation of Yugandhar Reddy Gogireddy}}
+\address[2]{\plan{affiliation of Andrew D. Steen}}
+
+\corresp[$\ast$]{Corresponding author. \plan{email of Andrew D. Steen}}
 
 \input{sections/abstract}
 
-\keywords{microbial growth rate, metagenome-assembled genomes, codon usage bias, phylogenetic comparative methods, label curation}
+% keywords are not part of the ISMB format and are left out to stay within nine pages
+% \keywords{microbial growth rate, metagenome-assembled genomes, codon usage bias, phylogenetic comparative methods, label curation}
 
 % title, authors and abstract in the body font (the class sets them in its sans-serif family)
 {\let\sfdefault\rmdefault\maketitle}

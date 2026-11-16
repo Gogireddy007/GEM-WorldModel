@@ -5,7 +5,7 @@ Let $\mathcal{D}=\{(g_i,d_i,T_i,t_i)\}_{i=1}^{n}$ be the labeled genomes, with m
 optimal growth temperature $T_i$ and GTDB taxonomy $t_i$. From the sequence of $g_i$ alone we compute an input vector
 $\mathbf{x}_i$ (Section~\ref{sec:features}) and learn three predictors: of $y_i=\log d_i$, of $T_i$, and of
 $y^{\mathrm{ref}}_i=\log d^{\mathrm{ref}}_i$, the doubling time moved to $T_{\mathrm{ref}}=\TRefC$\,\textdegree C with an
-Arrhenius factor as in earlier predictors \citep{weissman2021,xu2025},
+Arrhenius factor,
 \begin{equation}
 \mu^{\mathrm{ref}}=\mu\exp\!\left[-\frac{E_a}{R}\left(\frac{1}{T_{\mathrm{ref}}}-\frac{1}{T}\right)\right],\qquad \mu=\frac{\ln 2}{d},
 \end{equation}

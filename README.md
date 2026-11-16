@@ -12,7 +12,7 @@ Every prediction is evaluated with whole species, genera, families or orders hel
 9,139 high-quality genomes of the Genomes from Earth's Microbiomes (GEM) catalog (Nayfach et al. 2021). Each predicted
 value is released with its expected error and an 80% range.
 
-Version 1.25.0 (2026-11-16). License: Apache-2.0.
+Version 1.26.0 (2026-11-16). License: Apache-2.0.
 
 ## Main results
 
@@ -139,7 +139,7 @@ Results that use the measured growth temperature as an input should be reported 
 | `tests/` | unit and smoke tests |
 
 `paper/scripts/make_archive.py` assembles an archive in `dist/zenodo/` for deposit. It holds the code, the derived tables and
-result files, the release table, the PDFs and a SHA-256 manifest. Both manuscripts list anonymous authors for review.
+result files, the release table, the PDFs and a SHA-256 manifest. The ISMB manuscript names its authors, as ISMB review is not double-blind; the NeurIPS version is anonymous.
 
 ## Limitations
 

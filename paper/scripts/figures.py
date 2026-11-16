@@ -139,7 +139,7 @@ def fig_mags_gem():
     m = pd.read_csv(P / "mag_validation.csv")
     m = m[(m["target"] == "own temperature") & (m["variant"] == "without 16S")]
     h = pd.read_csv(P / "hq_predictions_gbm.csv")
-    fig, (a, b, c) = plt.subplots(1, 3, figsize=(DOUBLE, 2.5), constrained_layout=True, gridspec_kw={"width_ratios": [1, 1.25, 0.6]})
+    fig, (a, b, c) = plt.subplots(1, 3, figsize=(DOUBLE, 2.3), constrained_layout=True, gridspec_kw={"width_ratios": [1, 1.25, 0.6]})
     hours = np.exp
     lim = [hours(min(m[["truth", "isolate", "mag"]].min())) / 1.5, hours(max(m[["truth", "isolate", "mag"]].max())) * 1.5]
     a.plot(lim, lim, color=GREY, linewidth=0.8, linestyle="--")
@@ -197,7 +197,7 @@ def fig_lifestyle():
     t = pd.read_csv(P / "lifestyle_phylogenetic_test.csv")
     t = t[t["analysis"] == "all labeled species"].copy()
     t = t.sort_values("fold_pgls").reset_index(drop=True)
-    fig, ax = plt.subplots(figsize=(SINGLE, 4.6), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(SINGLE, 4.1), constrained_layout=True)
     y = np.arange(len(t))
     ax.axvline(1.0, color=GREY, linewidth=0.8)
     ax.hlines(y, t["ci_low_pgls"], t["ci_high_pgls"], color=BLUE, linewidth=1.0)

@@ -93,7 +93,7 @@ against \SlowBaseRate\% overall.
 \subsection{Against gRodon and Phydon, the model helps most when the temperature is unknown}
 We ran the released gRodon \citep{weissman2021} and Phydon \citep{xu2025} on the same \RelN genomes, genes and
 species-held-out folds as our model, after removing each fold's test species from Phydon's own training table (Methods). Both
-tools need the measured growth temperature. Given it too, our model has a typical error of \RelOursTempErr-fold, against
+tools take the measured growth temperature. Given it too, our model has a typical error of \RelOursTempErr-fold, against
 \RelGRodonErr-fold for gRodon and \RelPhydonErr-fold for Phydon (Table~\ref{tab:released}), with a higher Spearman correlation
 and area under the curve. It is better in every seed and, per genome, against both tools ($p=$\,\PairTempGRodonP and
 \PairTempPhydonP).

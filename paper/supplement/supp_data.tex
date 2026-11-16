@@ -6,9 +6,8 @@ the GEM genomes (\texttt{release/gem\_growth\_predictions.csv}, Table~\ref{tab:c
 files of \texttt{data/processed} that the paper is built from. With the archive unpacked in the repository, the numbers,
 tables and figures of the paper are rebuilt from the result files by \texttt{make} in \texttt{paper/}, and every model is
 retrained and evaluated from the derived tables without downloading genomes. We checked this by unpacking the archive in
-an empty folder: every number and table rebuilt from it was identical to those printed here, apart from
-Table~\ref{tab:software}, which is read from the installed software, and retraining the models from it gave the same GEM
-predictions.
+an empty folder: every number and table rebuilt from it was identical to those printed here, and retraining the models from it gave the
+same GEM predictions.
 
 Each prediction in the table carries the error and the 80\% range measured for its model and novelty level, for the
 doubling time at the growth temperature, the doubling time at \TRefC\,\textdegree C and the growth temperature. The
@@ -18,8 +17,11 @@ data, so it is a worst case.
 \input{supplement/supp_columns}
 
 \subsection{Reproducing the results}
-From the downloaded data, \texttt{make paper} runs the whole chain and builds both PDFs; it takes many hours on ten cores,
-most of them in the gene predictions for the GEM genomes and in the nested evaluation. Table~\ref{tab:reproduce} gives the
+From an empty checkout, \texttt{make paper} downloads every input at the version used here, runs the whole chain and
+builds the PDFs; it takes about a day on ten cores, most of it in the gene predictions for the GEM genomes and in the nested
+evaluation. \texttt{make verify-inputs} checks the downloaded files against their SHA-256 checksums
+(\texttt{data/input\_checksums.tsv}), and \texttt{REPRODUCE.md} in the repository lists the software versions and the
+pinned data sources. Table~\ref{tab:reproduce} gives the
 step behind each result. Every number in the text is a macro in \texttt{paper/numbers.tex}, written by
 \texttt{paper/scripts/make\_numbers.py}, and \texttt{paper/numbers\_sources.csv} gives the file each comes from.
 

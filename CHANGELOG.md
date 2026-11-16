@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.26.0, 2026-11-16
+
+ISMB submission format, checked against the ISMB proceedings call (2026 edition; the 2027 call is not yet published).
+ISMB review is not double-blind, so the manuscript now names Yugandhar Reddy Gogireddy and Andrew D. Steen (corresponding);
+affiliations and the contact email are marked placeholders that `audit_paper.py` refuses until they are filled in. The
+abstract has the five required headings, with the repository link under Availability and Implementation. Three citation
+fixes from a claim-by-claim check of the text: the Arrhenius standardization was attributed to gRodon and Phydon, which do
+not use it (both take the growth temperature as an input instead), so the attribution is removed; Corkrey et al. 2016 was
+cited for our own gRodon result and now supports the statement that temperature explains much of the variation in growth
+rate; "both tools need the measured temperature" is now "take", since gRodon also runs without it (Table 3). The
+supplement's reproduction section describes the current `make paper`, input checksums and the software table read from the
+lock files. To fit nine pages with the author block: months dropped from references, keywords left out, Figure 1 at 82% width,
+Figures 4 and 5 slightly shorter. No number changes; 121 triangulated numbers agree.
+
 ## 1.25.0, 2026-11-16
 
 Reproducibility from a fresh clone. Every download is pinned to the version the paper used: GTDB release 232 (was
